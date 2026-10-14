@@ -1,0 +1,12 @@
+{
+  "name": "santa-preorder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Santa Says My Name — one-page UK pre-order site",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
