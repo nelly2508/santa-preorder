@@ -12,9 +12,6 @@
   const payHrefs = {
     magicBundle: bundleHref,
     singleVideo: config.stripe.singleVideo,
-    sibling: config.stripe.siblingAddon,
-    rush: config.stripe.rushAddon,
-    namedSleigh: config.stripe.namedSleigh,
   };
 
   const bundleLabels = {
@@ -43,6 +40,12 @@
 
   document.querySelectorAll("[data-price='bundle']").forEach((el) => {
     el.textContent = bundlePrice;
+  });
+
+  ["sibling", "rush", "namedSleigh"].forEach((key) => {
+    document.querySelectorAll(`[data-price='${key}']`).forEach((el) => {
+      if (prices[key]) el.textContent = `+${prices[key]}`;
+    });
   });
 
   if (!early) {
