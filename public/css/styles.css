@@ -1024,6 +1024,170 @@ p + p {
   }
 }
 
+.back-link {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+}
+
+.back-link a {
+  color: var(--berry);
+  font-weight: 600;
+}
+
+.legal {
+  padding-top: 2.4rem;
+  padding-bottom: 4.25rem;
+}
+
+.legal h1 {
+  font-size: clamp(2.15rem, 6vw, 3.4rem);
+  margin-bottom: 0.7rem;
+}
+
+.legal h2,
+.legal h3 {
+  scroll-margin-top: 5.5rem;
+}
+
+.legal .updated {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.legal .prose h2 {
+  font-size: clamp(1.5rem, 3vw, 1.95rem);
+  margin-top: 2.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.legal .prose h3 {
+  margin-top: 1.2rem;
+  font-size: 1.12rem;
+}
+
+.legal .prose .summary h2,
+.legal .prose .contents h2,
+.legal .prose .callout h2 {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+  font-size: 1.35rem;
+}
+
+.legal .summary,
+.legal .contents {
+  margin-top: 1.25rem;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.legal .prose ul,
+.legal .prose ol {
+  margin: 0.55rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.legal .prose li + li {
+  margin-top: 0.4rem;
+}
+
+.legal .prose li::marker {
+  color: var(--berry);
+}
+
+.legal .prose ul + p,
+.legal .prose ol + p {
+  margin-top: 0.85rem;
+}
+
+.legal .prose .legal-points {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding-left: 0;
+}
+
+.legal .prose .legal-points li + li {
+  margin-top: 0;
+}
+
+.legal .prose .legal-points li {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.95rem 1rem;
+}
+
+.legal .prose .legal-points h3 {
+  margin-top: 0;
+  margin-bottom: 0.3rem;
+}
+
+.legal .prose .legal-points p {
+  color: var(--ink-soft);
+}
+
+.legal .prose .legal-points .basis {
+  display: inline-block;
+  margin-top: 0.7rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: #f8ead0;
+  color: #7a4e12;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.legal .callout {
+  margin-top: 1.75rem;
+}
+
+.legal .callout a {
+  color: var(--gold);
+}
+
+.legal a {
+  overflow-wrap: anywhere;
+}
+
+.model-form {
+  margin: 0.9rem 0 0;
+  padding: 0.95rem 1rem;
+  background: var(--paper);
+  border-left: 4px solid var(--gold-deep);
+  border-radius: 0 1rem 1rem 0;
+  color: var(--ink-soft);
+}
+
+.model-form p + p {
+  margin-top: 0.35rem;
+}
+
+.site-footer a[aria-current="page"] {
+  color: var(--cream);
+  font-weight: 600;
+}
+
+.legal address {
+  margin-top: 0.75rem;
+  font-style: normal;
+  color: var(--ink-soft);
+}
+
+@media (min-width: 720px) {
+  .legal .contents ol {
+    columns: 2;
+    column-gap: 1.5rem;
+  }
+
+  .legal .contents li {
+    break-inside: avoid;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

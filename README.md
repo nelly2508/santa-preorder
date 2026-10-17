@@ -1,6 +1,6 @@
 # Santa Says My Name
 
-One-page pre-order site for a personalised Father Christmas video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
+Pre-order site for a personalised Father Christmas video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
 
 ## Swap the Stripe and Tally links
 
@@ -27,7 +27,14 @@ Leave `{CHECKOUT_SESSION_ID}` as written. Stripe fills it in. That string is `ta
 
 The order form is https://tally.so/r/Dq25LE and has a hidden field named `order`. The free-video email form is https://tally.so/r/aON07Z (no child details, no `order` field).
 
-Put your real postal address and email in `trader`. They appear in the footer and the privacy notice.
+Put your real postal address in `trader.address`. The contact email is `trader.email`, set to `hello@santasaysmyname.com` so you can change it in one place. Both appear in the footer, the short privacy notice, and on `/privacy` and `/terms`.
+
+## Privacy and terms
+
+- `/privacy` — privacy policy (UK GDPR)
+- `/terms` — terms of sale
+
+The footer links to both. A trailing slash works too (`/privacy/`, `/terms/`). Child details used to make a video, and the video files, are deleted about 90 days after delivery. A basic sales record is kept for 6 years for tax.
 
 The page charges £16.99 for the Magic bundle until the end of Sunday 15 November 2026, then switches the bundle buttons to the £19.99 link. Set `earlyBird` to `false` to end the offer sooner.
 

@@ -22,7 +22,7 @@
    https://tally.so/r/Dq25LE?order={CHECKOUT_SESSION_ID}
    Stripe replaces {CHECKOUT_SESSION_ID}. The Tally form Dq25LE has a hidden
    field named order. Child details stay on Tally, never on the card page,
-   and are deleted by 6 January 2027.
+   and are deleted about 90 days after delivery.
 
    Early bird
    magicBundleEarlyBird (£16.99) is used until the end of Sun 15 Nov 2026.
@@ -60,9 +60,11 @@ window.SANTA_CONFIG = {
   tallyOrderForm: "https://tally.so/r/Dq25LE",
   tallyFreeVideo: "https://tally.so/r/aON07Z",
 
+  // Contact details for the footer, the privacy notice, and /privacy and /terms.
+  // Change the email here and it updates everywhere those pages use it.
   trader: {
     name: "Neil Carroll trading as Santa Says My Name",
     address: "[geographic address]",
-    email: "[email]",
+    email: "hello@santasaysmyname.com",
   },
 };
