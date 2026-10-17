@@ -71,7 +71,7 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, />Continue to secure payment</);
     assert.match(
       html,
-      /id="pay-continue"[\s\S]*?Adding a brother or sister\? On your phone, tap ‘Details’ in the top-right corner of the checkout to add siblings \(\+£11\.99 each, up to 4\)\./
+      /id="pay-continue"[\s\S]*?Adding more than one brother or sister\? Add the sibling extra at checkout, then on your phone tap ‘Details’ \(top right\) to change how many \(\+£11\.99 each, up to 4\)\./
     );
     const pay = html.match(/<a[^>]*id="pay-continue"[^>]*>/)[0];
     assert.match(pay, /aria-disabled="true"/);
