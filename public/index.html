@@ -215,6 +215,7 @@
               <strong data-price="bundle">£16.99</strong>
               <span data-early-only>early bird</span>
             </p>
+            <p class="sibling-line"><span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. <span data-two-children="magicBundle">2 children = £16.99 + £11.99</span>.</p>
             <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
           </article>
 
@@ -229,16 +230,18 @@
             <p class="price">
               <strong>£14.99</strong>
             </p>
+            <p class="sibling-line"><span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. <span data-two-children="singleVideo">2 children = £14.99 + £11.99</span>.</p>
             <a class="btn btn-pine" data-pay="singleVideo" href="#checkout">Pre-order the single video — £14.99</a>
           </article>
         </div>
 
-        <p class="addons-note">Sibling and rush are on every checkout. The named sleigh is on the single video only.</p>
+        <p class="addons-note">A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>, on every checkout. Rush is on every checkout. The named sleigh is on the single video only.</p>
         <div class="addons">
           <article>
-            <h3>Sibling <span data-price="sibling">+£11.99</span></h3>
-            <p>Up to 4 extra children. The full Magic bundle for each. On every checkout.</p>
-            <p>Adding a brother or sister? After payment, the order form asks for each child's name, how to say it and their good deed.</p>
+            <h3>Sibling</h3>
+            <p class="addon-rate" data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</p>
+            <p>Up to 5 children in one order. <span data-two-children="video">2 children = your video + £11.99</span>. Each extra child gets the full Magic bundle.</p>
+            <p>After payment, the order form asks for each child's name, how to say it and their good deed.</p>
           </article>
           <article>
             <h3>Rush <span data-price="rush">+£4.99</span></h3>
@@ -253,12 +256,14 @@
         <div class="checkout" id="checkout">
           <h3>Before you pay</h3>
           <p>Child's details are collected on the order form after payment, never on the card page. We delete them about 90 days after delivery.</p>
+          <p class="chosen" id="chosen-package" role="status" aria-live="polite">You've chosen: <strong id="chosen-name">Magic bundle</strong> — <span id="chosen-price">£16.99 early bird</span></p>
           <label class="agree">
             <input type="checkbox" id="reg37" name="make-before-cancellation">
             <span>Please start making my video straight away, during the 14-day cancellation period. I understand that once you start, I lose the legal right to cancel. The Nice List Promise still applies.</span>
           </label>
-          <p id="agree-hint" class="agree-hint" role="alert" hidden>Tick the box above, then choose how to pay.</p>
-          <p class="fine">Sibling (up to 4) and rush are picked on all three checkouts. The named sleigh is on the single video only. A child's name never sits on the card page. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
+          <p id="agree-hint" class="agree-hint">Tick the box to continue</p>
+          <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1" aria-describedby="agree-hint">Continue to secure payment</a>
+          <p class="fine">A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>, so one order can include up to 5 children. Rush is on every checkout. The named sleigh is on the single video only. A child's name never sits on the card page. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
         </div>
       </div>
     </section>
@@ -275,7 +280,7 @@
           <li>
             <h3>Tell us about your child</h3>
             <p>2 minutes. First name and how to say it, age, one good deed, one wish, and who it's from.</p>
-            <p>Adding a brother or sister? After payment, the order form asks for each child's name, how to say it and their good deed.</p>
+            <p>Adding a brother or sister? A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. After payment, the order form asks for each child's name, how to say it and their good deed.</p>
           </li>
           <li>
             <h3>We make it</h3>
@@ -328,7 +333,7 @@
           </details>
           <details>
             <summary>Adding a brother or sister?</summary>
-            <p>Adding a brother or sister? After payment, the order form asks for each child's name, how to say it and their good deed. You can add up to 4 siblings, on any checkout.</p>
+            <p>A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. <span data-two-children="video">2 children = your video + £11.99</span>. Each extra child gets the full Magic bundle. After payment, the order form asks for each child's name, how to say it and their good deed.</p>
           </details>
           <details>
             <summary>What happens to my child's details?</summary>
@@ -410,7 +415,7 @@
         <a href="#promise">Nice List Promise</a>
       </nav>
       <div class="terms-blurb">
-        <p>Prices in pounds sterling. No VAT is charged. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99. Standard orders are delivered by the date on this page. Rush is within 48 hours.</p>
+        <p>Prices in pounds sterling. No VAT is charged. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99. A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. Standard orders are delivered by the date on this page. Rush is within 48 hours.</p>
         <p>The tick box before payment is your request that we start making the video during the 14-day cancellation period. Once we start, that legal right to cancel ends. The Nice List Promise still applies. Videos are AI-generated. A human elf checks every one.</p>
       </div>
     </div>
@@ -425,6 +430,7 @@
   </dialog>
 
   <script src="js/config.js"></script>
+  <script src="js/checkout-choice.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

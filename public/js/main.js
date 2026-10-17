@@ -5,14 +5,6 @@
   const early = isEarlyBird(config);
   const prices = config.prices;
   const bundlePrice = early ? prices.magicBundleEarly : prices.magicBundleFull;
-  const bundleHref = early
-    ? config.stripe.magicBundleEarlyBird
-    : config.stripe.magicBundleFullPrice;
-
-  const payHrefs = {
-    magicBundle: bundleHref,
-    singleVideo: config.stripe.singleVideo,
-  };
 
   const bundleLabels = {
     bundle: early
@@ -24,8 +16,6 @@
   };
 
   document.querySelectorAll("[data-pay]").forEach((link) => {
-    const key = link.getAttribute("data-pay");
-    if (payHrefs[key]) link.href = payHrefs[key];
     const label = link.getAttribute("data-label");
     if (label && bundleLabels[label]) link.textContent = bundleLabels[label];
   });
@@ -42,11 +32,25 @@
     el.textContent = bundlePrice;
   });
 
-  ["sibling", "rush", "namedSleigh"].forEach((key) => {
+  ["rush", "namedSleigh"].forEach((key) => {
     document.querySelectorAll(`[data-price='${key}']`).forEach((el) => {
       if (prices[key]) el.textContent = `+${prices[key]}`;
     });
   });
+
+  const choiceApi = window.SANTA_CHECKOUT;
+  if (choiceApi && prices.sibling) {
+    const rate = choiceApi.siblingRate(prices.sibling);
+    document.querySelectorAll("[data-sibling-rate]").forEach((el) => {
+      el.textContent = rate;
+    });
+    document.querySelectorAll("[data-two-children]").forEach((el) => {
+      el.textContent = choiceApi.twoChildrenFor(el.getAttribute("data-two-children"), {
+        early,
+        prices,
+      });
+    });
+  }
 
   if (!early) {
     document.querySelectorAll("[data-early-only]").forEach((el) => {
@@ -75,26 +79,7 @@
     }
   });
 
-  const box = document.getElementById("reg37");
-  const hint = document.getElementById("agree-hint");
-  document.querySelectorAll("[data-pay]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      if (!box || box.checked) return;
-      event.preventDefault();
-      if (hint) hint.hidden = false;
-      const checkout = document.getElementById("checkout");
-      if (checkout) {
-        checkout.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      box.focus();
-    });
-  });
-
-  if (box) {
-    box.addEventListener("change", () => {
-      if (box.checked && hint) hint.hidden = true;
-    });
-  }
+  setupCheckout();
 
   setupSample();
   setupEnlarge();
@@ -104,6 +89,81 @@
     const end = new Date(cfg.earlyBirdEnds);
     if (Number.isNaN(end.getTime())) return false;
     return Date.now() <= end.getTime();
+  }
+
+  function setupCheckout() {
+    const box = document.getElementById("reg37");
+    const hint = document.getElementById("agree-hint");
+    const checkout = document.getElementById("checkout");
+    const continueLink = document.getElementById("pay-continue");
+    const chosenName = document.getElementById("chosen-name");
+    const chosenPrice = document.getElementById("chosen-price");
+    if (!box || !continueLink || !choiceApi) return;
+
+    let selectedKey = "magicBundle";
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function renderChoice() {
+      const picked = choiceApi.packageChoice(selectedKey, {
+        early,
+        prices,
+        stripe: config.stripe,
+      });
+      if (chosenName && chosenName.textContent !== picked.name) chosenName.textContent = picked.name;
+      if (chosenPrice && chosenPrice.textContent !== picked.detail) chosenPrice.textContent = picked.detail;
+      return picked;
+    }
+
+    function syncContinue(moveFocus) {
+      const picked = renderChoice();
+      const ready = box.checked;
+      if (hint) hint.hidden = ready;
+      if (checkout) checkout.classList.toggle("is-ready", ready);
+      continueLink.setAttribute("aria-disabled", ready ? "false" : "true");
+      if (ready) {
+        continueLink.href = picked.href;
+        continueLink.removeAttribute("tabindex");
+        continueLink.setAttribute("aria-describedby", "chosen-package");
+        if (moveFocus) continueLink.focus();
+      } else {
+        continueLink.href = "#checkout";
+        continueLink.tabIndex = -1;
+        continueLink.setAttribute("aria-describedby", "agree-hint");
+      }
+    }
+
+    function scrollToCheckout() {
+      if (!checkout) return;
+      checkout.scrollIntoView({
+        behavior: motion.matches ? "auto" : "smooth",
+        block: "center",
+      });
+    }
+
+    document.querySelectorAll("[data-pay]").forEach((link) => {
+      if (link === continueLink) return;
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        selectedKey = link.getAttribute("data-pay") === "singleVideo" ? "singleVideo" : "magicBundle";
+        syncContinue(false);
+        scrollToCheckout();
+        if (box.checked) continueLink.focus();
+        else box.focus({ preventScroll: true });
+      });
+    });
+
+    box.addEventListener("change", () => {
+      syncContinue(box.checked);
+    });
+
+    continueLink.addEventListener("click", (event) => {
+      if (box.checked && continueLink.getAttribute("aria-disabled") !== "true") return;
+      event.preventDefault();
+      if (hint) hint.hidden = false;
+      box.focus();
+    });
+
+    syncContinue(false);
   }
 
   function setupEnlarge() {
