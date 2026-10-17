@@ -4,15 +4,15 @@ Pre-order site for a personalised Santa video. Plain HTML, CSS and JavaScript, s
 
 ## Swap the Stripe and Tally links
 
-The live URLs are in [`public/js/config.js`](public/js/config.js). There are three Payment Links. Sibling and rush are optional items on all three. The named sleigh video is an optional item on the single-video link only, because both bundles already include it. The page shows those prices and has no separate pay buttons for them.
+The live URLs are in [`public/js/config.js`](public/js/config.js). There are three Payment Links. Sibling and rush are optional items on all three. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order). The named sleigh video is an optional item on the single-video link only, because both bundles already include it. The page shows those prices and has no separate pay buttons for them. The order buttons on the page remember the package and continue to Stripe only after the “before you pay” box is ticked.
 
 ### Payment Links
 
-1. `magicBundleEarlyBird` — Magic bundle early bird £16.99. Optional items: Sibling £11.99 (up to 4), Rush £4.99.  
+1. `magicBundleEarlyBird` — Magic bundle early bird £16.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush £4.99.  
    https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00
-2. `magicBundleFullPrice` — Magic bundle £19.99. Optional items: Sibling £11.99 (up to 4), Rush £4.99.  
+2. `magicBundleFullPrice` — Magic bundle £19.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush £4.99.  
    https://buy.stripe.com/eVq5kE0ET2X0dR03nL1wY01
-3. `singleVideo` — Single video £14.99. Optional items: Sibling £11.99 (up to 4), Rush £4.99, Named sleigh video £4.99 (voice only).  
+3. `singleVideo` — Single video £14.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush £4.99, Named sleigh video £4.99 (voice only).  
    https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02
 
 ### After payment
@@ -48,7 +48,7 @@ Drop the 20-second sample film at `public/assets/sample.mp4` (fictional child, s
 https://tally.so/r/Dq25LE?order=<session_id>&children=<n>&rush=<0|1>&sleigh=<0|1>&package=<bundle_early_bird|bundle|single>
 ```
 
-`children` is 1 plus the quantity of the Sibling add-on. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the rush add-on was bought.
+`children` is 1 plus the quantity of the Sibling add-on. Each sibling is one extra child at £11.99, up to 4 siblings. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the rush add-on was bought.
 
 If the session is missing, unpaid, or Stripe returns an error, the customer still goes to Tally with only `order` set, and the error is logged. They are never left on a dead page.
 

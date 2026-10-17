@@ -5,18 +5,18 @@
    checkouts, not their own links.
 
    Optional items
-   - Sibling £11.99, up to 4: on all three Payment Links.
+   - Sibling £11.99 per extra child, up to 4 siblings: on all three Payment Links.
    - Rush £4.99: on all three Payment Links.
    - Named sleigh video £4.99, voice only: on the single-video link only.
      Both Magic bundles already include the named sleigh clip.
 
    Payment Links (live)
    1. magicBundleEarlyBird — Magic bundle early bird £16.99
-      Optional items: Sibling, Rush.
+      Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush.
    2. magicBundleFullPrice — Magic bundle £19.99
-      Optional items: Sibling, Rush.
+      Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush.
    3. singleVideo — Single video £14.99
-      Optional items: Sibling, Rush, Named sleigh video.
+      Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush, Named sleigh video.
 
    After-payment redirect, set on each Payment Link:
    https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}

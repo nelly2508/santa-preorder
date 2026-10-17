@@ -738,8 +738,24 @@ p + p {
   color: rgba(240, 215, 164, 0.85);
 }
 
+.sibling-line {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #b3121f;
+}
+
+.price-card--lead .sibling-line {
+  color: #f0d7a4;
+}
+
 .addons-note {
   margin: 1.4rem 0 0;
+  font-weight: 600;
+}
+
+.addon-rate {
+  margin: 0;
+  color: #b3121f;
   font-weight: 600;
 }
 
@@ -774,10 +790,49 @@ p + p {
   padding: 1.15rem;
   background: var(--paper);
   border: 1px solid var(--line);
+  scroll-margin-top: 5.5rem;
+}
+
+.checkout.is-ready {
+  border-color: #1f5e3b;
+  box-shadow: 0 10px 24px rgba(31, 94, 59, 0.12);
 }
 
 .checkout h3 {
   margin-bottom: 0.4rem;
+}
+
+.chosen {
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #1f5e3b;
+  border-radius: 0.8rem;
+  background: #e7f3ea;
+  font-weight: 600;
+}
+
+.checkout .btn-pay {
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+.checkout .btn-pay[aria-disabled="true"] {
+  background: #efe2d0;
+  color: #6d584c;
+  border-color: #e4d3c0;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.checkout .btn-pay[aria-disabled="true"]:hover {
+  filter: none;
+}
+
+.checkout .btn-pay[aria-disabled="false"] {
+  background: #1f5e3b;
+  color: #f6ead0;
+  border-color: #174a2e;
+  box-shadow: 0 10px 24px rgba(31, 94, 59, 0.28);
 }
 
 .agree {
@@ -793,12 +848,12 @@ p + p {
   width: 1.25rem;
   height: 1.25rem;
   margin-top: 0.15rem;
-  accent-color: var(--pine);
+  accent-color: #1f5e3b;
 }
 
 .agree-hint {
   margin-top: 0.75rem;
-  color: var(--berry);
+  color: #b3121f;
   font-weight: 600;
 }
 
