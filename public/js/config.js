@@ -18,11 +18,12 @@
    3. singleVideo — Single video £14.99
       Optional items: Sibling, Rush, Named sleigh video.
 
-   After-payment redirect, already set on each link:
-   https://tally.so/r/Dq25LE?order={CHECKOUT_SESSION_ID}
-   Stripe replaces {CHECKOUT_SESSION_ID}. The Tally form Dq25LE has a hidden
-   field named order. Child details stay on Tally, never on the card page,
-   and are deleted by 6 January 2027.
+   After-payment redirect, set on each Payment Link:
+   https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}
+   Stripe replaces {CHECKOUT_SESSION_ID}. The server reads the Checkout
+   Session and sends the customer to Tally with order, children, rush, sleigh
+   and package. See the README. Child details stay on Tally, never on the
+   card page, and are deleted by 6 January 2027.
 
    Early bird
    magicBundleEarlyBird (£16.99) is used until the end of Sun 15 Nov 2026.
@@ -30,8 +31,9 @@
    (£19.99). Set earlyBird to false to end the £16.99 offer sooner.
 
    Tally
-   tallyOrderForm  — https://tally.so/r/Dq25LE (hidden field: order).
-                     Preview link. The Stripe redirect adds ?order={CHECKOUT_SESSION_ID}.
+   tallyOrderForm  — https://tally.so/r/Dq25LE
+                     Hidden fields: order, children, rush, sleigh, package.
+                     Preview link. The paid redirect fills them in.
    tallyFreeVideo  — https://tally.so/r/aON07Z
                      Email only, for the free "Santa's on his way" video.
                      No child details and no order field.
@@ -55,7 +57,7 @@ window.SANTA_CONFIG = {
     singleVideo: "https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02",
   },
 
-  tallyAfterPayment: "https://tally.so/r/Dq25LE?order={CHECKOUT_SESSION_ID}",
+  tallyAfterPayment: "https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}",
 
   tallyOrderForm: "https://tally.so/r/Dq25LE",
   tallyFreeVideo: "https://tally.so/r/aON07Z",
