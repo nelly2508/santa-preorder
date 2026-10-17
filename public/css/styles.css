@@ -742,6 +742,10 @@ p + p {
   box-shadow: 0 10px 24px rgba(31, 94, 59, 0.28);
 }
 
+.checkout .btn-pay + .fine {
+  font-weight: 700;
+}
+
 .agree {
   display: grid;
   grid-template-columns: auto 1fr;
