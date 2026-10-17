@@ -428,6 +428,24 @@ p + p {
   font-weight: 600;
 }
 
+.hear .kicker {
+  color: #b3121f;
+}
+
+.hear-player {
+  margin: 0;
+  max-width: 100%;
+}
+
+.hear-frame {
+  border: 2px solid #1f5e3b;
+  max-width: 100%;
+}
+
+.hear-frame video {
+  border-radius: 1rem;
+}
+
 .gifts {
   list-style: none;
   margin: 1.5rem 0 0;

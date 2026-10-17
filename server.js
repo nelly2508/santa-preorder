@@ -9,6 +9,13 @@ const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
 const ROOT = path.resolve(__dirname, "public");
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Content-Security-Policy":
+    "default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+};
+
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -33,10 +40,7 @@ function send(res, status, body, headers, method) {
   const payload = Buffer.from(body);
   res.writeHead(status, {
     "Content-Length": payload.length,
-    "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Content-Security-Policy":
-      "default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+    ...SECURITY_HEADERS,
     ...headers,
   });
   res.end(method === "HEAD" ? undefined : payload);
@@ -91,7 +95,102 @@ function candidateFiles(urlPath) {
   return files;
 }
 
-function serveFirst(files, index, res, method) {
+// One satisfiable byte range, or null to send the whole file.
+// "unsatisfiable" means the client asked for bytes the file does not have.
+function parseSingleRange(header, size) {
+  if (header == null || header === "") return null;
+  const value = Array.isArray(header) ? String(header[0]) : String(header);
+  const match = /^bytes=(\d*)-(\d*)$/i.exec(value.trim());
+  if (!match) return null;
+
+  const startText = match[1];
+  const endText = match[2];
+  if (startText === "" && endText === "") return null;
+
+  if (startText === "") {
+    const suffix = Number(endText);
+    if (!Number.isFinite(suffix) || suffix <= 0 || size <= 0) return "unsatisfiable";
+    const length = Math.min(Math.floor(suffix), size);
+    return { start: size - length, end: size - 1 };
+  }
+
+  const start = Number(startText);
+  if (!Number.isFinite(start) || start < 0) return null;
+  if (size <= 0 || start >= size) return "unsatisfiable";
+
+  let end = size - 1;
+  if (endText !== "") {
+    end = Number(endText);
+    if (!Number.isFinite(end) || end < start) return null;
+    if (end >= size) end = size - 1;
+  }
+
+  return { start, end };
+}
+
+function streamFile(filePath, res, range) {
+  const options = range ? { start: range.start, end: range.end } : {};
+  const stream = fs.createReadStream(filePath, options);
+  stream.on("error", () => {
+    res.destroy();
+  });
+  stream.pipe(res);
+}
+
+function serveFile(filePath, stat, res, method, rangeHeader) {
+  const ext = path.extname(filePath).toLowerCase();
+  const cache = LONG_CACHE.has(ext) ? "public, max-age=86400" : "no-cache";
+  const headers = {
+    "Content-Type": MIME[ext] || "application/octet-stream",
+    "Accept-Ranges": "bytes",
+    "Cache-Control": cache,
+    ...SECURITY_HEADERS,
+  };
+  const range = parseSingleRange(rangeHeader, stat.size);
+
+  if (range === "unsatisfiable") {
+    send(
+      res,
+      416,
+      "",
+      {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Range": `bytes */${stat.size}`,
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-cache",
+      },
+      method
+    );
+    return;
+  }
+
+  if (range) {
+    const length = range.end - range.start + 1;
+    res.writeHead(206, {
+      ...headers,
+      "Content-Length": length,
+      "Content-Range": `bytes ${range.start}-${range.end}/${stat.size}`,
+    });
+    if (method === "HEAD") {
+      res.end();
+      return;
+    }
+    streamFile(filePath, res, range);
+    return;
+  }
+
+  res.writeHead(200, {
+    ...headers,
+    "Content-Length": stat.size,
+  });
+  if (method === "HEAD") {
+    res.end();
+    return;
+  }
+  streamFile(filePath, res);
+}
+
+function serveFirst(files, index, res, method, rangeHeader) {
   if (index >= files.length) {
     notFound(res, method);
     return;
@@ -100,24 +199,10 @@ function serveFirst(files, index, res, method) {
   const filePath = files[index];
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
-      serveFirst(files, index + 1, res, method);
+      serveFirst(files, index + 1, res, method, rangeHeader);
       return;
     }
-    const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, {
-      "Content-Type": MIME[ext] || "application/octet-stream",
-      "Content-Length": stat.size,
-      "X-Content-Type-Options": "nosniff",
-      "Referrer-Policy": "strict-origin-when-cross-origin",
-      "Content-Security-Policy":
-        "default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'",
-      "Cache-Control": LONG_CACHE.has(ext) ? "public, max-age=86400" : "no-cache",
-    });
-    if (method === "HEAD") {
-      res.end();
-      return;
-    }
-    fs.createReadStream(filePath).pipe(res);
+    serveFile(filePath, stat, res, method, rangeHeader);
   });
 }
 
@@ -176,7 +261,7 @@ function createServer(options = {}) {
       return;
     }
 
-    serveFirst(files, 0, res, req.method);
+    serveFirst(files, 0, res, req.method, req.headers.range);
   });
 }
 
