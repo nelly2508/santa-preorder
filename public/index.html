@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Santa Says My Name — Father Christmas says their name</title>
+  <meta name="description" content="A personalised Father Christmas video by the fire. He says their name, their good deed and their wish. Delivered by 15 December. Early bird £16.99.">
+  <meta name="theme-color" content="#140e0c">
+  <meta property="og:title" content="Santa Says My Name">
+  <meta property="og:description" content="Father Christmas. By the fire. Saying their name. Delivered by 15 December.">
+  <meta property="og:image" content="assets/fireside.webp">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="logo" href="#top">
+      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path fill="currentColor" d="M16 3.2 18.4 11H26l-6.2 4.6 2.4 7.6L16 18.8 9.8 23.2l2.4-7.6L6 11h7.6z"/>
+      </svg>
+      Santa Says My Name
+    </a>
+    <nav class="desktop-nav" aria-label="On this page">
+      <a href="#what">What you get</a>
+      <a href="#scenes">Scenes</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <p class="ai-pill">Made with AI · Checked by a human elf</p>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="snow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="kicker">Pre-order · delivered by 15 December</p>
+          <h1>Father Christmas. By the fire. Saying their name.</h1>
+          <p class="lede">A personalised video with their name said right, their good deed and their wish. Delivered by 15 December.</p>
+          <p class="ai-line">Videos are AI-generated. A human elf checks every one.</p>
+          <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
+          <p class="reassurance js-early-note">Early bird ends Sun 15 Nov · Nice List Promise: love it or your money back</p>
+        </div>
+        <figure class="hero-figure">
+          <div class="hero-frame">
+            <img src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Father Christmas in a green armchair, reading a letter beside a lit fire" fetchpriority="high">
+          </div>
+          <figcaption>By the fire · about a minute · no photos of your child</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="sample">
+      <div class="wrap narrow">
+        <p class="kicker">Sample</p>
+        <h2>He looks up, and says their name.</h2>
+        <figure class="player">
+          <div class="player-frame">
+            <!-- Drop the 20-second sample at public/assets/sample.mp4.
+                 Fictional child "Oliver, 7", same pipeline as real orders.
+                 The page plays it muted and offers tap-for-sound. -->
+            <video id="sample-video" poster="assets/fireside.webp" playsinline preload="none" muted>
+              <source src="assets/sample.mp4" type="video/mp4">
+            </video>
+            <p id="sample-slot" class="slot-badge">
+              <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#e8b75a"/><path d="M26 20v24l20-12z" fill="#2a1608"/></svg>
+              Sample clip slot
+            </p>
+            <button type="button" id="sound-toggle" class="sound-btn" hidden aria-pressed="false">Tap for sound</button>
+          </div>
+          <figcaption id="sample-caption">Sample clip slot. Made with AI. The Oliver film plays here.</figcaption>
+        </figure>
+        <p class="fine">Fictional name, Oliver, 7. Videos are AI-generated.</p>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="what">
+      <div class="wrap">
+        <p class="kicker">The Magic bundle</p>
+        <h2>What you get</h2>
+        <ul class="gifts">
+          <li>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><rect x="4" y="8" width="24" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13.5v5l5-2.5z" fill="currentColor"/></svg>
+            </span>
+            <div>
+              <h3>Their own video from Father Christmas</h3>
+              <p>About a minute by the fire. He says their name, their good deed and their wish, and who it's from.</p>
+            </div>
+          </li>
+          <li>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><path d="M6 10h20v12H6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 10l10 8 10-8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+            <div>
+              <h3>A letter from Santa</h3>
+              <p>Printable, to match the video.</p>
+            </div>
+          </li>
+          <li>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><path fill="currentColor" d="M16 4.5 18.7 12H26l-6 4.4 2.3 7.1L16 19.2 9.7 23.5 12 16.4 6 12h7.3z"/></svg>
+            </span>
+            <div>
+              <h3>Nice List certificate</h3>
+              <p>With their name on it.</p>
+            </div>
+          </li>
+          <li>
+            <span class="icon" aria-hidden="true">
+              <svg viewBox="0 0 32 32"><path d="M4 20c4-1 6-6 10-6h8l4 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 14c1-4 4-6 8-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="22" r="2" fill="currentColor"/><circle cx="22" cy="22" r="2" fill="currentColor"/></svg>
+            </span>
+            <div>
+              <h3>Christmas Eve sleigh video</h3>
+              <p>“I'm on my way, Oliver!” Named in the bundle. Voice only: Santa from behind, no lip-sync.</p>
+            </div>
+          </li>
+        </ul>
+        <p class="fine">The single video is the fireside film, plus a generic sleigh clip.</p>
+      </div>
+    </section>
+
+    <section class="section" id="scenes">
+      <div class="wrap">
+        <p class="kicker">Scenes</p>
+        <h2>Choose the scene</h2>
+        <p class="lede">Fireside first. That's the film we make today.</p>
+        <div class="scenes">
+          <article class="scene scene--lead">
+            <img src="assets/fireside.webp" width="1152" height="864" alt="Illustrated fireside with Father Christmas reading a letter" loading="lazy">
+            <p class="tag">Ready now</p>
+            <h3>By the fire</h3>
+            <p>The personalised film. Ready now.</p>
+          </article>
+          <article class="scene">
+            <img src="assets/workshop.webp" width="1152" height="864" alt="Illustrated empty workshop bench with wooden toys and a lantern" loading="lazy">
+            <p class="tag tag-wait">Late November</p>
+            <h3>In the workshop</h3>
+            <p>Coming late November. Tick the box on the order form and we'll email you to choose; otherwise you get the fireside.</p>
+          </article>
+          <article class="scene">
+            <img src="assets/sleigh.webp" width="1280" height="720" alt="Illustrated sleigh over snowy rooftops, Father Christmas seen from behind" loading="lazy">
+            <p class="tag">Christmas Eve</p>
+            <h3>On the sleigh</h3>
+            <p>Your Christmas Eve clip, in the Magic bundle. The named one is voice only.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="pricing">
+      <div class="wrap">
+        <p class="kicker">Pricing</p>
+        <h2>Pay now. Video by 15 December.</h2>
+        <p class="lede js-price-switch">Early bird £16.99 until Sun 15 Nov 2026, then £19.99. Order by Sat 12 Dec for delivery by Tue 15 Dec.</p>
+
+        <div class="price-grid">
+          <article class="price-card price-card--lead">
+            <div class="ribbons">
+              <p class="ribbon">Lead offer</p>
+              <p class="ribbon ribbon-gold" data-early-only>Early bird</p>
+            </div>
+            <h3>Magic bundle</h3>
+            <ul class="ticks">
+              <li>Personalised fireside video</li>
+              <li>Christmas Eve sleigh video <strong>with their name</strong></li>
+              <li>Letter from Santa</li>
+              <li>Nice List certificate</li>
+            </ul>
+            <p class="price">
+              <s data-early-only>£19.99</s>
+              <strong data-price="bundle">£16.99</strong>
+              <span data-early-only>early bird</span>
+            </p>
+            <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
+          </article>
+
+          <article class="price-card">
+            <h3>Single video</h3>
+            <ul class="ticks">
+              <li>Personalised fireside video</li>
+              <li>Generic Christmas Eve sleigh video</li>
+              <li class="miss">Letter from Santa</li>
+              <li class="miss">Nice List certificate</li>
+            </ul>
+            <p class="price">
+              <strong>£14.99</strong>
+            </p>
+            <a class="btn btn-pine" data-pay="singleVideo" href="#checkout">Pre-order the single video — £14.99</a>
+          </article>
+        </div>
+
+        <p class="addons-note">Sibling and rush are on every checkout. The named sleigh is on the single video only.</p>
+        <div class="addons">
+          <article>
+            <h3>Sibling <span data-price="sibling">+£11.99</span></h3>
+            <p>Up to 4 extra children. The full Magic bundle for each. On every checkout.</p>
+          </article>
+          <article>
+            <h3>Rush <span data-price="rush">+£4.99</span></h3>
+            <p>Within 48 hours, on every checkout. Needed after Sat 12 Dec. Last rush order Fri 18 Dec.</p>
+          </article>
+          <article>
+            <h3>Named sleigh <span data-price="namedSleigh">+£4.99</span></h3>
+            <p>On the single-video checkout only. Both bundles already include it. Voice only.</p>
+          </article>
+        </div>
+
+        <div class="checkout" id="checkout">
+          <h3>Before you pay</h3>
+          <p>Child's details are collected on the order form after payment, never on the card page. We delete them by 6 January 2027.</p>
+          <label class="agree">
+            <input type="checkbox" id="reg37" name="make-before-cancellation">
+            <span>I'd like my video made before the 14-day cancellation period ends. I understand that once it's delivered I lose the legal right to cancel. The Nice List Promise still applies.</span>
+          </label>
+          <p id="agree-hint" class="agree-hint" role="alert" hidden>Tick the box above, then choose how to pay.</p>
+          <p class="fine">Sibling (up to 4) and rush are picked on all three checkouts. The named sleigh is on the single video only. A child's name never sits on the card page. <a data-link="tally" href="#privacy">Preview the order form</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
+      <div class="wrap">
+        <p class="kicker">Pre-order</p>
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li>
+            <h3>Pick and pay</h3>
+            <p>30 seconds. Tick any extras in the same checkout. Stripe takes the card. We never see it.</p>
+          </li>
+          <li>
+            <h3>Tell us about them</h3>
+            <p>2 minutes. First name and how to say it, age, one good deed, one wish, and who it's from.</p>
+          </li>
+          <li>
+            <h3>We make it</h3>
+            <p>A human elf checks every video before it's sent.</p>
+          </li>
+          <li>
+            <h3>It lands in your inbox</h3>
+            <p>By 15 Dec. Order by 12 Dec, or add rush.</p>
+          </li>
+        </ol>
+        <aside class="callout">
+          <h3>Pay now. Delivered by 15 December.</h3>
+          <p>You pay today. Pre-orders are sent in batches from 1 December. Order by Sat 12 Dec and it arrives by Tue 15 Dec. From 13 to 18 Dec it's rush only, delivered within 48 hours.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="promise">
+      <div class="wrap narrow">
+        <div class="promise">
+          <p class="kicker">Refunds</p>
+          <h2>The Nice List Promise</h2>
+          <p class="lede">Love it, or your money back.</p>
+          <ul>
+            <li>Wrong name or pronunciation: free remake within 24 hours.</li>
+            <li>Still not right: full refund within 7 days of delivery. Just reply to the email.</li>
+            <li>Changed your mind before we've made it: full refund.</li>
+            <li>Not with you by 15 Dec, or within 48 hours on rush: full refund, and you keep the video.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="wrap narrow">
+        <p class="kicker">FAQ</p>
+        <h2>Questions</h2>
+        <div class="faqs">
+          <details>
+            <summary>How is it made?</summary>
+            <p>Father Christmas is an original AI character with an original AI voice. Not an actor, and not a copy of anyone. We add your child's details to his script, make the voice, and lip-sync it to our fireside film. A real person watches every video before it's sent. Videos are AI-generated.</p>
+          </details>
+          <details>
+            <summary>Will he say the name right?</summary>
+            <p>Yes. You tell us how it's said (“Saoirse = SEER-sha”). If it's still wrong, we remake it free within 24 hours.</p>
+          </details>
+          <details>
+            <summary>Do you need a photo of my child?</summary>
+            <p>No. No photos, no surnames, no school. Just a first name and a few details.</p>
+          </details>
+          <details>
+            <summary>What happens to my child's details?</summary>
+            <p>We use them only to make the video. They're never used for ads or to train AI. We collect them on the order form after payment, never on the card page. We delete your child's details and the video files by 6 January 2027, so download your video to keep it. Full notice below.</p>
+          </details>
+          <details>
+            <summary>Can grandparents order?</summary>
+            <p>Yes. You tick a box to confirm the parent is happy for you to share the details. We send the video to you to pass on.</p>
+          </details>
+          <details>
+            <summary>What if I'm not happy?</summary>
+            <p>The Nice List Promise: we remake it, then refund you. Wrong name: free remake within 24 hours. Still not right: full refund within 7 days of delivery.</p>
+          </details>
+          <details>
+            <summary>Will Santa promise a present?</summary>
+            <p>Only if you tell us it's definitely under the tree. Otherwise he'll say he'll “see what the elves can do”.</p>
+          </details>
+          <details>
+            <summary>Can I share it?</summary>
+            <p>Yes. It's yours. Play it on the TV, or send it to family.</p>
+          </details>
+          <details>
+            <summary>When does it arrive?</summary>
+            <p>Pay now. Order by Sat 12 Dec and it arrives by Tue 15 Dec. Pre-orders go out in batches from 1 Dec. From 13 to 18 Dec it's rush only, within 48 hours.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="privacy">
+      <div class="wrap narrow prose">
+        <p class="kicker">Privacy</p>
+        <h2>Your child's details</h2>
+        <p>We collect a child's details only on the order form, after you've paid. They never go into the payment. We delete them, and the video files, by 6 January 2027.</p>
+
+        <h3>Who we are</h3>
+        <p><span data-trader="name">Neil Carroll trading as Santa Says My Name</span>, <span data-trader="address">[geographic address]</span>, <a data-trader="email" href="#privacy">[email]</a>. We are the data controller.</p>
+
+        <h3>What we collect</h3>
+        <p>From you, the buyer: your name, email and order details. Stripe handles card payments; we never see your card. About your child, only what you type on the order form: first name and how to say it, age, one good deed, one wish, a short personal message, and who it's from and where they live (town or country only). We never ask for photos, surnames, schools or addresses.</p>
+
+        <h3>Why</h3>
+        <p>To make and deliver the video you've ordered. Lawful basis: contract with you.</p>
+
+        <h3>Who helps us</h3>
+        <p>Stripe (payments), Tally (order form), ElevenLabs (voice), sync.so (lip-sync), our email provider and our file host. They act for us under contract. Some are in the US, under UK transfer safeguards.</p>
+
+        <h3>What we don't do</h3>
+        <p>No ads from this data, no selling, no AI training on your child's details, and no tracking on the page where the video plays.</p>
+
+        <h3>How long</h3>
+        <p>Your child's details and the video files are deleted by 6 January 2027. We keep a basic order record (your name, email, amount) for 6 years for tax.</p>
+
+        <h3>Your rights</h3>
+        <p>Ask to see, correct or delete your data at any time by emailing <a data-trader="email" href="#privacy">[email]</a>. You can complain to the ICO (ico.org.uk).</p>
+      </div>
+    </section>
+
+    <section class="final" id="order">
+      <div class="wrap final-inner">
+        <h2>Their name. By the fire. Before Christmas.</h2>
+        <a class="btn" data-pay="magicBundle" data-label="final" href="#checkout">Pre-order now — £16.99 early bird</a>
+        <p class="not-ready">Not ready? <a class="text-link" data-link="free" href="#order">Get the free “Santa's on his way” video</a></p>
+        <p class="fine">Email only. No child details. Videos are AI-generated.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="terms">
+    <div class="wrap footer-grid">
+      <div>
+        <p><span data-trader="name">Neil Carroll trading as Santa Says My Name</span></p>
+        <p><span data-trader="address">[geographic address]</span></p>
+        <p><a data-trader="email" href="#terms">[email]</a></p>
+      </div>
+      <nav aria-label="Legal">
+        <a href="#terms">Terms</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#promise">Nice List Promise</a>
+      </nav>
+      <div class="terms-blurb">
+        <p>Prices in pounds sterling. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99. Pay now; standard orders placed by 12 December are delivered by 15 December.</p>
+        <p>The tick box before payment is your request that we start during the 14-day cancellation period. The Nice List Promise still applies. Videos are AI-generated. A human elf checks every one.</p>
+      </div>
+    </div>
+    <p class="footer-line">Made with AI · Checked by a human elf</p>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
