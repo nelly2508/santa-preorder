@@ -166,6 +166,51 @@ test("without a test key, a sandbox session uses the main secret", async () => {
   assert.strictEqual(seen, "rk_test_only");
 });
 
+test("a paid session adds the buyer email, and leaves it off when Stripe has none", async () => {
+  const withEmail = await resolveOrderRedirect({
+    sessionId: "cs_live_mail1",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret" },
+    log() {},
+    retrieveSession() {
+      return {
+        ...paid([line({ description: "Single video", unitAmount: 1499 })]),
+        customer_details: { email: " parent+tag@example.com " },
+      };
+    },
+  });
+  assert.strictEqual(
+    withEmail,
+    "https://tally.so/r/Dq25LE?order=cs_live_mail1&children=1&rush=0&sleigh=0&package=single&email=parent%2Btag%40example.com"
+  );
+
+  const withoutEmail = await resolveOrderRedirect({
+    sessionId: "cs_live_nomail",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret" },
+    log() {},
+    retrieveSession() {
+      return paid([line({ description: "Single video", unitAmount: 1499 })]);
+    },
+  });
+  assert.strictEqual(
+    withoutEmail,
+    "https://tally.so/r/Dq25LE?order=cs_live_nomail&children=1&rush=0&sleigh=0&package=single"
+  );
+  assert.strictEqual(new URL(withoutEmail).searchParams.has("email"), false);
+
+  const blankEmail = await resolveOrderRedirect({
+    sessionId: "cs_live_blankmail",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret" },
+    log() {},
+    retrieveSession() {
+      return {
+        ...paid([line({ description: "Single video", unitAmount: 1499 })]),
+        customer_details: { email: "   " },
+      };
+    },
+  });
+  assert.strictEqual(new URL(blankEmail).searchParams.has("email"), false);
+});
+
 test("an unpaid, invalid, or failed session still reaches Tally with only the order id", async () => {
   const logs = [];
   const unpaid = await resolveOrderRedirect({
@@ -173,7 +218,11 @@ test("an unpaid, invalid, or failed session still reaches Tally with only the or
     env: { STRIPE_SECRET_KEY: "rk_live_secret" },
     log(message) { logs.push(message); },
     retrieveSession() {
-      return { payment_status: "unpaid", line_items: { data: [line({ description: "Single video" })] } };
+      return {
+        payment_status: "unpaid",
+        customer_details: { email: "unpaid@example.com" },
+        line_items: { data: [line({ description: "Single video" })] },
+      };
     },
   });
   const broken = await resolveOrderRedirect({
@@ -209,10 +258,13 @@ test("GET /order/continue redirects, and the homepage still loads", async () => 
     env: { STRIPE_SECRET_KEY: "rk_live_secret" },
     log() {},
     retrieveSession() {
-      return paid([
-        line({ description: "Single video", unitAmount: 1499 }),
-        line({ description: "Sibling", quantity: 3 }),
-      ]);
+      return {
+        ...paid([
+          line({ description: "Single video", unitAmount: 1499 }),
+          line({ description: "Sibling", quantity: 3 }),
+        ]),
+        customer_details: { email: "buyer@example.com" },
+      };
     },
   });
   const port = await listen(server);
@@ -221,7 +273,7 @@ test("GET /order/continue redirects, and the homepage still loads", async () => 
     assert.strictEqual(redirect.status, 302);
     assert.strictEqual(
       redirect.headers.get("location"),
-      "https://tally.so/r/Dq25LE?order=cs_live_route1&children=4&rush=0&sleigh=0&package=single"
+      "https://tally.so/r/Dq25LE?order=cs_live_route1&children=4&rush=0&sleigh=0&package=single&email=buyer%40example.com"
     );
     const home = await fetch(`http://127.0.0.1:${port}/`);
     assert.strictEqual(home.status, 200);

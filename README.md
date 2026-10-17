@@ -45,10 +45,10 @@ The only video on the page is the short Hear Santa hello at `public/assets/santa
 `GET /order/continue?session_id={CHECKOUT_SESSION_ID}` runs on the Node server Railway already starts. It looks up that Checkout Session with the Stripe API, counts the children, and redirects to:
 
 ```
-https://tally.so/r/Dq25LE?order=<session_id>&children=<n>&rush=<0|1>&sleigh=<0|1>&package=<bundle_early_bird|bundle|single>
+https://tally.so/r/Dq25LE?order=<session_id>&children=<n>&rush=<0|1>&sleigh=<0|1>&package=<bundle_early_bird|bundle|single>&email=<address>
 ```
 
-`children` is 1 plus the quantity of the Sibling add-on. Each sibling is one extra child at £11.99, up to 4 siblings. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the rush add-on was bought.
+`email` is the address on the Checkout Session (`customer_details.email`), URL-encoded. It is left off when Stripe has no email. `children` is 1 plus the quantity of the Sibling add-on. Each sibling is one extra child at £11.99, up to 4 siblings. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the rush add-on was bought.
 
 If the session is missing, unpaid, or Stripe returns an error, the customer still goes to Tally with only `order` set, and the error is logged. They are never left on a dead page.
 
@@ -92,14 +92,17 @@ Leave the `{CHECKOUT_SESSION_ID}` placeholder exactly like that. Stripe replaces
 
 ### 4. Add the hidden fields in Tally
 
-On https://tally.so/r/Dq25LE, keep the hidden field named `order` and add four more hidden fields:
+On https://tally.so/r/Dq25LE, keep the hidden field named `order` and add these hidden fields:
 
 - `children`
 - `rush`
 - `sleigh`
 - `package`
+- `email`
 
-Tally fills a hidden field from the query string when the names match. `children` is how many children the order is for (1 to 5). `rush` and `sleigh` are `1` or `0`. `package` is `bundle_early_bird`, `bundle`, or `single`.
+Tally fills a hidden field from the query string when the names match. The names are case-sensitive. `children` is how many children the order is for (1 to 5). `rush` and `sleigh` are `1` or `0`. `package` is `bundle_early_bird`, `bundle`, or `single`. `email` is the buyer’s address from Stripe.
+
+A visible Email question is not filled by the URL on its own. Add the hidden field `email`, then on the Email question open the block menu (`⠿`), turn on Default answer, and choose the hidden field `email`. Publish the form. The address then shows in that question, and the buyer can change it before they submit.
 
 ### How the products are recognised
 
