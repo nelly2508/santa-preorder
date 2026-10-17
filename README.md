@@ -1,6 +1,6 @@
 # Santa Says My Name
 
-One-page pre-order site for a personalised Father Christmas video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
+One-page pre-order site for a personalised Santa video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
 
 ## Swap the Stripe and Tally links
 
