@@ -22,6 +22,12 @@
       font-weight: 700;
       font-style: normal;
     }
+    @font-face {
+      font-family: "Mr Dafoe";
+      src: url("fonts/mr-dafoe.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
@@ -65,18 +71,23 @@
       pointer-events: none;
     }
     .content {
-      position: relative;
+      position: absolute;
+      inset: 0;
       z-index: 3;
-      height: 100%;
-      padding: 96px 90px 70px;
+      display: flex;
+      flex-direction: column;
+      padding: 96px 90px 108px;
       text-align: center;
+    }
+    .grow {
+      flex: 1 0 24px;
     }
     .brand {
       margin: 0;
       font-family: "Cormorant SC", serif;
       font-weight: 600;
-      font-size: 26px;
-      letter-spacing: 0.34em;
+      font-size: 28px;
+      letter-spacing: 0.42em;
       color: #1f5e3b;
     }
     h1 {
@@ -123,7 +134,7 @@
       letter-spacing: 0.6em;
     }
     .foot {
-      margin: 48px 0 0;
+      margin: 0;
       font-family: "Cormorant SC", serif;
       font-weight: 600;
       font-size: 26px;
@@ -131,10 +142,20 @@
       color: #1f5e3b;
     }
     .signed {
-      margin: 18px 0 0;
-      font-family: "DM Serif Display", serif;
-      font-size: 52px;
+      margin: 8px 0 0;
+      font-family: "Mr Dafoe", cursive;
+      font-size: 108px;
+      font-weight: 400;
       color: #b3121f;
+      line-height: 1;
+    }
+    .issuer {
+      margin: 10px 0 0;
+      font-family: "Cormorant SC", serif;
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: 0.16em;
+      color: #1f5e3b;
     }
   </style>
 </head>
@@ -144,15 +165,17 @@
     <div class="inner"></div>
     <p class="watermark">SAMPLE</p>
     <div class="content">
-      <p class="brand">SANTA SAYS MY NAME</p>
+      <p class="brand">NORTH POLE</p>
       <h1>The Nice List</h1>
       <p class="sub">THIS IS TO CERTIFY THAT</p>
       <p class="name">Lily</p>
       <div class="line"></div>
       <p class="deed">is on Santa’s Nice List for helping Grandad in the garden.</p>
       <p class="stars" aria-hidden="true">★ ★ ★</p>
+      <div class="grow"></div>
       <p class="foot">NORTH POLE · CHRISTMAS 2026</p>
       <p class="signed">Santa</p>
+      <p class="issuer">Issued by Santa Says My Name</p>
     </div>
   </article>
 </body>

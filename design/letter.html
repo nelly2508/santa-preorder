@@ -22,6 +22,12 @@
       font-weight: 700;
       font-style: normal;
     }
+    @font-face {
+      font-family: "Mr Dafoe";
+      src: url("fonts/mr-dafoe.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
     * { box-sizing: border-box; }
     html, body {
       margin: 0;
@@ -98,22 +104,36 @@
       background: #1f5e3b;
     }
     p {
-      margin: 0 0 28px;
+      margin: 0 0 22px;
       font-family: "DM Serif Display", serif;
-      font-size: 34px;
-      line-height: 1.45;
+      font-size: 32px;
+      line-height: 1.38;
     }
     .signoff {
-      margin-top: 18px;
+      margin-top: 6px;
     }
     .signoff p {
-      margin-bottom: 8px;
+      margin-bottom: 0;
     }
     .name {
-      margin: 10px 0 0;
-      font-family: "DM Serif Display", serif;
-      font-size: 64px;
+      margin: 4px 0 0;
+      font-family: "Mr Dafoe", cursive;
+      font-size: 108px;
+      font-weight: 400;
       color: #b3121f;
+      line-height: 1.05;
+    }
+    .ps {
+      margin: 8px 0 0;
+      font-size: 28px;
+      line-height: 1.35;
+      color: #1f5e3b;
+    }
+    .rudolph {
+      margin: 0;
+      font-family: "Mr Dafoe", cursive;
+      font-size: 64px;
+      color: #1f5e3b;
       line-height: 1;
     }
   </style>
@@ -139,10 +159,14 @@
       <p>I have been sitting by the fire with your letter. Helping Grandad in the garden this year was a lovely good deed, and I am very proud of you.</p>
       <p>I have told the elves about your wish. They will see what they can do.</p>
       <p>Be good, Lily, and I will see you at Christmas.</p>
+      <p>I will look for your roof on Christmas Eve. Leave a little carrot out if you like. The reindeer do enjoy a snack after a long flight.</p>
+      <p>You have made this a happy year, Lily, and I am glad your name is on my list.</p>
       <div class="signoff">
         <p>With love from the North Pole,</p>
         <p class="name">Santa</p>
       </div>
+      <p class="ps">P.S. Rudolph says hello, and he’s been practising his landing on your roof!</p>
+      <p class="rudolph">Rudolph</p>
     </div>
   </article>
 </body>
