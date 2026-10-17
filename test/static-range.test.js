@@ -72,10 +72,32 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
     assert.match(
       html,
-      /A quick hello from Santa\. Your child's own video uses their name, a good deed they've done, and more\./
+      /A quick hello from Santa\. The film you order says your child's name, a good deed and a wish\./
+    );
+    const hear = html.indexOf('id="hear"');
+    const what = html.indexOf('id="what"');
+    const scenes = html.indexOf('id="scenes"');
+    const samples = html.indexOf('id="samples"');
+    const pricing = html.indexOf('id="pricing"');
+    const checkout = html.indexOf('id="checkout"');
+    const how = html.indexOf('id="how"');
+    const faq = html.indexOf('id="faq"');
+    const order = html.indexOf('id="order"');
+    const privacy = html.indexOf('id="privacy"');
+    assert.ok(
+      hear < what &&
+        what < scenes &&
+        scenes < samples &&
+        samples < pricing &&
+        pricing < checkout &&
+        checkout < how &&
+        how < faq &&
+        faq < order &&
+        order < privacy,
+      "homepage sections are out of order"
     );
     assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bautoplay\b/);
-    assert.doesNotMatch(html, /Father Christmas/);
+    assert.doesNotMatch(html, /Father Christmas|Oliver|sample\.mp4|Sample clip|sample-video/i);
     assert.doesNotMatch(html, /id="hear"[\s\S]*?style=/);
   });
 });

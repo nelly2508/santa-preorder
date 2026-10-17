@@ -4,7 +4,7 @@ Pre-order site for a personalised Santa video. Plain HTML, CSS and JavaScript, s
 
 ## Swap the Stripe and Tally links
 
-The live URLs are in [`public/js/config.js`](public/js/config.js). There are three Payment Links. Sibling and rush are optional items on all three. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order). The named sleigh video is an optional item on the single-video link only, because both bundles already include it. The page shows those prices and has no separate pay buttons for them. The order buttons on the page remember the package and continue to Stripe only after the “before you pay” box is ticked.
+The live URLs are in [`public/js/config.js`](public/js/config.js). There are three Payment Links. Sibling and rush are optional items on all three. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order). The named sleigh video is an optional item on the single-video link only, because the Magic bundle already includes it. The page shows those prices and has no separate pay buttons for them. The order buttons on the page remember the package and continue to Stripe only after the “before you pay” box is ticked.
 
 ### Payment Links
 
@@ -38,7 +38,7 @@ The footer links to both. A trailing slash works too (`/privacy/`, `/terms/`). C
 
 The page charges £16.99 for the Magic bundle until the end of Sunday 15 November 2026, then switches the bundle buttons to the £19.99 link. Set `earlyBird` to `false` to end the offer sooner.
 
-Drop the 20-second sample film at `public/assets/sample.mp4` (fictional child, same pipeline as a real order). Until that file is there, the sample section keeps a poster and a video element.
+The only video on the page is the short Hear Santa hello at `public/assets/santa-preview.mp4`, with a poster and captions. Letter and certificate samples are the Lily images in `public/assets`. There is no full sample film.
 
 ## After payment: the redirect
 

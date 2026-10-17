@@ -59,7 +59,10 @@ test("the page copy uses the configured sibling price and the pay step", async (
     const home = await fetch(`http://127.0.0.1:${port}/`);
     const html = await home.text();
     const mentions = html.split(rate).length - 1;
-    assert.ok(mentions >= 6, `expected the sibling rate in the pricing, checkout, FAQ and footer, found ${mentions}`);
+    assert.ok(
+      mentions >= 5,
+      `expected the sibling rate on the price cards, the sibling extra, the FAQ and the footer, found ${mentions}`
+    );
     assert.match(html, /2 children = £16\.99 \+ £11\.99/);
     assert.match(html, /2 children = £14\.99 \+ £11\.99/);
     assert.match(html, /2 children = your video \+ £11\.99/);

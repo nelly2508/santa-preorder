@@ -80,8 +80,6 @@
   });
 
   setupCheckout();
-
-  setupSample();
   setupEnlarge();
 
   function isEarlyBird(cfg) {
@@ -184,58 +182,5 @@
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) dialog.close();
     });
-  }
-
-  function setupSample() {
-    const video = document.getElementById("sample-video");
-    const soundBtn = document.getElementById("sound-toggle");
-    const slot = document.getElementById("sample-slot");
-    const caption = document.getElementById("sample-caption");
-    if (!video) return;
-
-    function showSlot() {
-      const source = video.querySelector("source");
-      if (source) source.removeAttribute("src");
-      video.removeAttribute("src");
-      video.removeAttribute("controls");
-      if (slot) slot.hidden = false;
-    }
-
-    function showFilm() {
-      if (slot) slot.hidden = true;
-      video.controls = true;
-      if (caption) {
-        caption.textContent = "Real sample. Made with AI. This is exactly what you'll get.";
-      }
-      if (soundBtn) soundBtn.hidden = false;
-      video.muted = true;
-      const play = video.play();
-      if (play && typeof play.catch === "function") play.catch(() => {});
-    }
-
-    fetch("assets/sample.mp4", { method: "HEAD" })
-      .then((res) => {
-        if (!res.ok) {
-          showSlot();
-          return;
-        }
-        video.preload = "auto";
-        video.addEventListener("loadeddata", showFilm, { once: true });
-        video.addEventListener("error", showSlot, { once: true });
-        video.load();
-      })
-      .catch(showSlot);
-
-    if (soundBtn) {
-      soundBtn.addEventListener("click", () => {
-        video.muted = !video.muted;
-        soundBtn.textContent = video.muted ? "Tap for sound" : "Mute";
-        soundBtn.setAttribute("aria-pressed", video.muted ? "false" : "true");
-        if (!video.muted) {
-          const play = video.play();
-          if (play && typeof play.catch === "function") play.catch(() => {});
-        }
-      });
-    }
   }
 })();

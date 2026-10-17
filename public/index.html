@@ -24,8 +24,8 @@
       Santa Says My Name
     </a>
     <nav class="desktop-nav" aria-label="On this page">
+      <a href="#hear">Hear Santa</a>
       <a href="#what">What you get</a>
-      <a href="#scenes">Scenes</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </nav>
@@ -39,9 +39,9 @@
         <div class="hero-copy">
           <p class="kicker">Pre-order · delivered by 15 December</p>
           <h1>Santa. By the fire. Saying your child's name.</h1>
-          <p class="lede">A personalised video with your child's name said right, a good deed and a wish. Delivered by 15 December.</p>
-          <p class="ai-line">Videos are AI-generated. A human elf checks every one.</p>
+          <p class="lede">A personalised video. Your child's name said right, a good deed and a wish.</p>
           <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
+          <p class="hero-next"><a href="#pricing">See pricing</a></p>
           <p class="reassurance js-early-note">Early bird ends Sun 15 Nov · Nice List Promise: love it or your money back</p>
         </div>
         <figure class="hero-figure">
@@ -50,30 +50,6 @@
           </div>
           <figcaption>By the fire · about a minute · no photos of your child</figcaption>
         </figure>
-      </div>
-    </section>
-
-    <section class="section" id="sample">
-      <div class="wrap narrow">
-        <p class="kicker">Sample</p>
-        <h2>He looks up, and says your child's name.</h2>
-        <figure class="player">
-          <div class="player-frame">
-            <!-- Drop the 20-second sample at public/assets/sample.mp4.
-                 Fictional child "Oliver, 7", same pipeline as real orders.
-                 The page plays it muted and offers tap-for-sound. -->
-            <video id="sample-video" poster="assets/fireside.webp" playsinline preload="none" muted>
-              <source src="assets/sample.mp4" type="video/mp4">
-            </video>
-            <p id="sample-slot" class="slot-badge">
-              <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#e8b75a"/><path d="M26 20v24l20-12z" fill="#2a1608"/></svg>
-              Sample clip slot
-            </p>
-            <button type="button" id="sound-toggle" class="sound-btn" hidden aria-pressed="false">Tap for sound</button>
-          </div>
-          <figcaption id="sample-caption">Sample clip slot. Made with AI. The Oliver film plays here.</figcaption>
-        </figure>
-        <p class="fine">Fictional name, Oliver, 7. Videos are AI-generated.</p>
       </div>
     </section>
 
@@ -95,10 +71,10 @@
             >
               <source src="/assets/santa-preview.mp4" type="video/mp4">
               <track src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English" default>
-              A quick hello from Santa. Your child's own video uses their name, a good deed they've done, and more.
+              A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
             </video>
           </div>
-          <figcaption>A quick hello from Santa. Your child's own video uses their name, a good deed they've done, and more.</figcaption>
+          <figcaption>A quick hello from Santa. The film you order says your child's name, a good deed and a wish.</figcaption>
         </figure>
       </div>
     </section>
@@ -141,10 +117,47 @@
             </span>
             <div>
               <h3>Christmas Eve sleigh video</h3>
-              <p>“I'm on my way, Lily!” Named in the bundle. Voice only: Santa from behind, no lip-sync.</p>
+              <p>In the bundle, Santa says your child's name. Voice only, and you see Santa from behind. “I'm on my way, Lily!” is an example.</p>
             </div>
           </li>
         </ul>
+        <p class="fine"><a class="text-link" href="#pricing">See pricing</a></p>
+      </div>
+    </section>
+
+    <section class="section" id="scenes">
+      <div class="wrap">
+        <p class="kicker">Scenes</p>
+        <h2>By the fire first</h2>
+        <p class="lede">That's the film we make today. A workshop scene comes later.</p>
+        <div class="scenes">
+          <article class="scene scene--lead">
+            <img src="assets/fireside.webp" width="1152" height="864" alt="Illustrated fireside with Santa reading a letter" loading="lazy">
+            <p class="tag">Ready now</p>
+            <h3>By the fire</h3>
+            <p>Santa says your child's name.</p>
+          </article>
+          <article class="scene">
+            <img src="assets/workshop.webp" width="1152" height="864" alt="Illustrated empty workshop bench with wooden toys and a lantern" loading="lazy">
+            <p class="tag tag-wait">Late November</p>
+            <h3>In the workshop</h3>
+            <p>Coming late November. After you pay, you can tick a box and we'll email you to choose. If you don't, you get the fireside.</p>
+          </article>
+          <article class="scene">
+            <img src="assets/sleigh.webp" width="1280" height="720" alt="Illustrated sleigh over snowy rooftops, Santa seen from behind" loading="lazy">
+            <p class="tag">Christmas Eve</p>
+            <h3>On the sleigh</h3>
+            <p>In the Magic bundle, this clip says your child's name. Voice only, Santa seen from behind.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="samples">
+      <div class="wrap">
+        <p class="kicker">Samples</p>
+        <h2>Letter and certificate</h2>
+        <p class="lede">Examples, made out to Lily. Yours will have your child's name.</p>
         <div class="doc-samples">
           <figure>
             <button type="button" class="doc-open" data-enlarge>
@@ -159,35 +172,7 @@
             <figcaption>Sample Nice List certificate for Lily. Tap to enlarge.</figcaption>
           </figure>
         </div>
-        <p class="fine">The single video is the fireside film, plus a generic sleigh clip.</p>
-      </div>
-    </section>
-
-    <section class="section" id="scenes">
-      <div class="wrap">
-        <p class="kicker">Scenes</p>
-        <h2>Choose the scene</h2>
-        <p class="lede">Fireside first. That's the film we make today.</p>
-        <div class="scenes">
-          <article class="scene scene--lead">
-            <img src="assets/fireside.webp" width="1152" height="864" alt="Illustrated fireside with Santa reading a letter" loading="lazy">
-            <p class="tag">Ready now</p>
-            <h3>By the fire</h3>
-            <p>The personalised film. Ready now.</p>
-          </article>
-          <article class="scene">
-            <img src="assets/workshop.webp" width="1152" height="864" alt="Illustrated empty workshop bench with wooden toys and a lantern" loading="lazy">
-            <p class="tag tag-wait">Late November</p>
-            <h3>In the workshop</h3>
-            <p>Coming late November. Tick the box on the order form and we'll email you to choose; otherwise you get the fireside.</p>
-          </article>
-          <article class="scene">
-            <img src="assets/sleigh.webp" width="1280" height="720" alt="Illustrated sleigh over snowy rooftops, Santa seen from behind" loading="lazy">
-            <p class="tag">Christmas Eve</p>
-            <h3>On the sleigh</h3>
-            <p>Your Christmas Eve clip, in the Magic bundle. The named one is voice only.</p>
-          </article>
-        </div>
+        <p class="fine"><a class="text-link" href="#pricing">See pricing</a></p>
       </div>
     </section>
 
@@ -235,13 +220,11 @@
           </article>
         </div>
 
-        <p class="addons-note">A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>, on every checkout. Rush is on every checkout. The named sleigh is on the single video only.</p>
         <div class="addons">
           <article>
             <h3>Sibling</h3>
             <p class="addon-rate" data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</p>
-            <p>Up to 5 children in one order. <span data-two-children="video">2 children = your video + £11.99</span>. Each extra child gets the full Magic bundle.</p>
-            <p>After payment, the order form asks for each child's name, how to say it and their good deed.</p>
+            <p>Up to 5 children in one order. Each extra child gets the full Magic bundle. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
           </article>
           <article>
             <h3>Rush <span data-price="rush">+£4.99</span></h3>
@@ -249,13 +232,13 @@
           </article>
           <article>
             <h3>Named sleigh <span data-price="namedSleigh">+£4.99</span></h3>
-            <p>On the single-video checkout only. Both bundles already include it. Voice only.</p>
+            <p>On the single video only. The Magic bundle already includes it. Voice only.</p>
           </article>
         </div>
 
         <div class="checkout" id="checkout">
           <h3>Before you pay</h3>
-          <p>Child's details are collected on the order form after payment, never on the card page. We delete them about 90 days after delivery.</p>
+          <p>We collect your child's details on the order form after payment, never on the card page. We delete those details about 90 days after delivery.</p>
           <p class="chosen" id="chosen-package" role="status" aria-live="polite">You've chosen: <strong id="chosen-name">Magic bundle</strong> — <span id="chosen-price">£16.99 early bird</span></p>
           <label class="agree">
             <input type="checkbox" id="reg37" name="make-before-cancellation">
@@ -263,7 +246,7 @@
           </label>
           <p id="agree-hint" class="agree-hint">Tick the box to continue</p>
           <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1" aria-describedby="agree-hint">Continue to secure payment</a>
-          <p class="fine">A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>, so one order can include up to 5 children. Rush is on every checkout. The named sleigh is on the single video only. A child's name never sits on the card page. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
+          <p class="fine">Rush, and a named sleigh on the single video, are on the card page. Your child's name is never typed there. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
         </div>
       </div>
     </section>
@@ -279,8 +262,7 @@
           </li>
           <li>
             <h3>Tell us about your child</h3>
-            <p>2 minutes. First name and how to say it, age, one good deed, one wish, and who it's from.</p>
-            <p>Adding a brother or sister? A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. After payment, the order form asks for each child's name, how to say it and their good deed.</p>
+            <p>About 2 minutes. A first name and how to say it, age, one good deed, one wish, and who it's from. A brother or sister needs the same.</p>
           </li>
           <li>
             <h3>We make it</h3>
@@ -292,8 +274,8 @@
           </li>
         </ol>
         <aside class="callout">
-          <h3>Pay now. Delivered by 15 December.</h3>
-          <p>You pay today. Pre-orders are sent in batches from 1 December. Order by Sat 12 Dec and it arrives by Tue 15 Dec. From 13 to 18 Dec it's rush only, delivered within 48 hours.</p>
+          <h3>When it arrives</h3>
+          <p>You pay today. We send pre-orders in batches from 1 December. Order by Sat 12 Dec and the video arrives by Tue 15 Dec. From 13 to 18 Dec, rush is the only way to order, and it arrives within 48 hours.</p>
         </aside>
       </div>
     </section>
@@ -333,11 +315,11 @@
           </details>
           <details>
             <summary>Adding a brother or sister?</summary>
-            <p>A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. <span data-two-children="video">2 children = your video + £11.99</span>. Each extra child gets the full Magic bundle. After payment, the order form asks for each child's name, how to say it and their good deed.</p>
+            <p>A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. <span data-two-children="video">2 children = your video + £11.99</span>. Each extra child gets the full Magic bundle. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
           </details>
           <details>
             <summary>What happens to my child's details?</summary>
-            <p>We use them only to make the video. They're never used for ads or to train AI. We collect them on the order form after payment, never on the card page. We delete your child's details and the video files about 90 days after we send the video, so download your video to keep it. The full notice is in our <a href="/privacy">privacy policy</a>.</p>
+            <p>We use your child's details only to make the video, not for ads and not to train AI. We collect the details on the order form after payment, never on the card page. We delete the details and the video files about 90 days after we send the video, so download it to keep it. The full notice is in our <a href="/privacy">privacy policy</a>.</p>
           </details>
           <details>
             <summary>Can grandparents order?</summary>
@@ -345,7 +327,7 @@
           </details>
           <details>
             <summary>What if I'm not happy?</summary>
-            <p>The Nice List Promise: we remake it, then refund you. Wrong name: free remake within 24 hours. Still not right: full refund within 7 days of delivery.</p>
+            <p>See the Nice List Promise above. A wrong name means a free remake within 24 hours. If you're still not happy, we refund you within 7 days of delivery.</p>
           </details>
           <details>
             <summary>Will Santa promise a present?</summary>
@@ -363,11 +345,20 @@
       </div>
     </section>
 
+    <section class="final" id="order">
+      <div class="wrap final-inner">
+        <h2>Your child's name. By the fire. Before Christmas.</h2>
+        <a class="btn" data-pay="magicBundle" data-label="final" href="#checkout">Pre-order now — £16.99 early bird</a>
+        <p class="not-ready">Not ready? <a class="text-link" data-link="free" href="#order">Get the free “Santa's on his way” video</a></p>
+        <p class="fine">Email only. No child details. Videos are AI-generated.</p>
+      </div>
+    </section>
+
     <section class="section section-tint" id="privacy">
       <div class="wrap narrow prose">
         <p class="kicker">Privacy</p>
         <h2>Your child's details</h2>
-        <p>We collect a child's details only on the order form, after you've paid. They never go into the payment. We delete the details used to make the video, and the video files, about 90 days after we send it.</p>
+        <p>We collect your child's details only on the order form, after you've paid. Those details never go into the payment. We delete the details used to make the video, and the video files, about 90 days after we send it.</p>
         <p>This is the short version. The <a href="/privacy">privacy policy</a> has the full detail, including cookies, how long we keep things, and how to complain to the ICO. The <a href="/terms">terms of sale</a> are the contract for your order.</p>
 
         <h3>Who we are</h3>
@@ -390,15 +381,6 @@
 
         <h3>Your rights</h3>
         <p>Ask to see, correct or delete your data, or to use your other rights, by emailing <a data-trader="email" href="mailto:hello@santasaysmyname.com">hello@santasaysmyname.com</a>. You can complain to the ICO at <a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>. The <a href="/privacy">privacy policy</a> sets the rights out in full.</p>
-      </div>
-    </section>
-
-    <section class="final" id="order">
-      <div class="wrap final-inner">
-        <h2>Your child's name. By the fire. Before Christmas.</h2>
-        <a class="btn" data-pay="magicBundle" data-label="final" href="#checkout">Pre-order now — £16.99 early bird</a>
-        <p class="not-ready">Not ready? <a class="text-link" data-link="free" href="#order">Get the free “Santa's on his way” video</a></p>
-        <p class="fine">Email only. No child details. Videos are AI-generated.</p>
       </div>
     </section>
   </main>
