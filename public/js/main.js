@@ -64,6 +64,9 @@
   document.querySelectorAll("[data-trader='address']").forEach((el) => {
     el.textContent = trader.address || "";
   });
+  document.querySelectorAll("[data-trader='identity']").forEach((el) => {
+    el.textContent = trader.identity || [trader.name, trader.address].filter(Boolean).join(", ");
+  });
   document.querySelectorAll("[data-trader='email']").forEach((el) => {
     const email = trader.email || "";
     el.textContent = email;
@@ -94,12 +97,33 @@
   }
 
   setupSample();
+  setupEnlarge();
 
   function isEarlyBird(cfg) {
     if (cfg.earlyBird === false) return false;
     const end = new Date(cfg.earlyBirdEnds);
     if (Number.isNaN(end.getTime())) return false;
     return Date.now() <= end.getTime();
+  }
+
+  function setupEnlarge() {
+    const dialog = document.getElementById("enlarge");
+    const full = document.getElementById("enlarge-img");
+    if (!dialog || !full) return;
+
+    document.querySelectorAll("[data-enlarge]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const source = button.querySelector("img");
+        if (!source) return;
+        full.src = source.currentSrc || source.src;
+        full.alt = source.alt;
+        if (typeof dialog.showModal === "function") dialog.showModal();
+      });
+    });
+
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
   }
 
   function setupSample() {

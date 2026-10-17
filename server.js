@@ -3,6 +3,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { resolveOrderRedirect, fallbackLocation } = require("./lib/order-continue");
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
@@ -120,30 +121,69 @@ function serveFirst(files, index, res, method) {
   });
 }
 
-const server = http.createServer((req, res) => {
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    res.writeHead(405, { Allow: "GET, HEAD" });
-    res.end();
-    return;
-  }
+function redirect(res, location) {
+  res.writeHead(302, {
+    Location: location,
+    "Cache-Control": "no-store",
+    "Referrer-Policy": "no-referrer",
+  });
+  res.end();
+}
 
-  let url;
-  try {
-    url = new URL(req.url, "http://localhost");
-  } catch {
-    notFound(res, req.method);
-    return;
-  }
+function createServer(options = {}) {
+  const env = options.env || process.env;
+  const log = options.log || ((message) => console.error(message));
+  return http.createServer((req, res) => {
+    let url;
+    try {
+      url = new URL(req.url, "http://localhost");
+    } catch {
+      notFound(res, req.method);
+      return;
+    }
 
-  const files = candidateFiles(url.pathname);
-  if (!files) {
-    notFound(res, req.method);
-    return;
-  }
+    if (url.pathname === "/order/continue") {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        res.writeHead(405, { Allow: "GET, HEAD", "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+      const sessionId = url.searchParams.get("session_id") || "";
+      resolveOrderRedirect({
+        sessionId,
+        env,
+        retrieveSession: options.retrieveSession,
+        log,
+      }).then(
+        (location) => redirect(res, location),
+        (error) => {
+          log(`order/continue ${sessionId || "(missing session)"}: ${error && error.message ? error.message : error}`);
+          redirect(res, fallbackLocation(/^cs_(live|test)_[A-Za-z0-9]+$/.test(sessionId) ? sessionId : ""));
+        }
+      );
+      return;
+    }
 
-  serveFirst(files, 0, res, req.method);
-});
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.writeHead(405, { Allow: "GET, HEAD" });
+      res.end();
+      return;
+    }
 
-server.listen(PORT, HOST, () => {
-  console.log(`Santa Says My Name listening on ${HOST}:${PORT}`);
-});
+    const files = candidateFiles(url.pathname);
+    if (!files) {
+      notFound(res, req.method);
+      return;
+    }
+
+    serveFirst(files, 0, res, req.method);
+  });
+}
+
+if (require.main === module) {
+  createServer().listen(PORT, HOST, () => {
+    console.log(`Santa Says My Name listening on ${HOST}:${PORT}`);
+  });
+}
+
+module.exports = { createServer };

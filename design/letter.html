@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <title>Sample letter from Santa to Lily</title>
+  <style>
+    @font-face {
+      font-family: "DM Serif Display";
+      src: url("fonts/dm-serif-display.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Cormorant SC";
+      src: url("fonts/cormorant-sc-600.ttf") format("truetype");
+      font-weight: 600;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Cormorant SC";
+      src: url("fonts/cormorant-sc-700.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Mr Dafoe";
+      src: url("fonts/mr-dafoe.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 1000px;
+      height: 1360px;
+      background: #f4e6c8;
+    }
+    .sheet {
+      position: relative;
+      width: 1000px;
+      height: 1360px;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 248, 230, 0.7), transparent 42%),
+        radial-gradient(ellipse at 0% 100%, rgba(176, 132, 74, 0.18), transparent 46%),
+        radial-gradient(ellipse at 100% 80%, rgba(179, 18, 31, 0.05), transparent 40%),
+        #f6ead0;
+      color: #2c2118;
+    }
+    .frame {
+      position: absolute;
+      inset: 36px;
+      border: 3px solid #1f5e3b;
+      box-shadow: inset 0 0 0 8px #f6ead0, inset 0 0 0 10px #b3121f;
+    }
+    .watermark {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      transform: translate(-50%, -50%) rotate(-24deg);
+      font-family: "Cormorant SC", serif;
+      font-weight: 700;
+      font-size: 168px;
+      letter-spacing: 0.18em;
+      color: #b3121f;
+      opacity: 0.14;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .content {
+      position: relative;
+      z-index: 1;
+      padding: 72px 108px 118px;
+      height: 100%;
+    }
+    .place {
+      margin: 0;
+      text-align: center;
+      font-family: "Cormorant SC", serif;
+      font-weight: 600;
+      font-size: 28px;
+      letter-spacing: 0.42em;
+      color: #1f5e3b;
+    }
+    .holly {
+      display: block;
+      width: 92px;
+      height: 48px;
+      margin: 18px auto 8px;
+    }
+    h1 {
+      margin: 8px 0 0;
+      text-align: center;
+      font-family: "DM Serif Display", serif;
+      font-weight: 400;
+      font-size: 60px;
+      line-height: 1;
+      color: #b3121f;
+    }
+    .rule {
+      width: 180px;
+      height: 2px;
+      margin: 16px auto 22px;
+      background: #1f5e3b;
+    }
+    p {
+      margin: 0 0 14px;
+      font-family: "DM Serif Display", serif;
+      font-size: 31px;
+      line-height: 1.34;
+    }
+    .signoff {
+      margin-top: 6px;
+    }
+    .signoff p {
+      margin-bottom: 0;
+    }
+    .name {
+      margin: 4px 0 0;
+      font-family: "Mr Dafoe", cursive;
+      font-size: 96px;
+      font-weight: 400;
+      color: #b3121f;
+      line-height: 1.05;
+    }
+    .ps {
+      margin: 16px 0 0;
+      font-size: 28px;
+      line-height: 1.35;
+      color: #1f5e3b;
+    }
+    .hoof {
+      display: block;
+      width: 72px;
+      height: 78px;
+      margin: 18px 0 0 4px;
+    }
+  </style>
+</head>
+<body>
+  <article class="sheet">
+    <div class="frame"></div>
+    <p class="watermark">SAMPLE</p>
+    <div class="content">
+      <p class="place">NORTH POLE</p>
+      <svg class="holly" viewBox="0 0 92 48" aria-hidden="true">
+        <path d="M18 30c-8-2-14-12-8-20 8 2 14 12 8 20z" fill="#1f5e3b"/>
+        <path d="M30 28c-2-10 6-18 14-16-2 10-6 18-14 16z" fill="#1f5e3b"/>
+        <path d="M62 28c2-10-6-18-14-16 2 10 6 18 14 16z" fill="#1f5e3b"/>
+        <path d="M74 30c8-2 14-12 8-20-8 2-14 12-8 20z" fill="#1f5e3b"/>
+        <circle cx="40" cy="22" r="6" fill="#b3121f"/>
+        <circle cx="52" cy="20" r="6" fill="#b3121f"/>
+        <circle cx="46" cy="30" r="5.5" fill="#b3121f"/>
+      </svg>
+      <h1>A letter from Santa</h1>
+      <div class="rule"></div>
+      <p>Dear Lily,</p>
+      <p>I have been sitting by the fire with your letter. Helping Grandad in the garden this year was a lovely good deed, and I am very proud of you.</p>
+      <p>I have told the elves about your wish. They will see what they can do.</p>
+      <p>Be good, Lily, and I will see you at Christmas.</p>
+      <p>I will look for your roof on Christmas Eve. Leave a little carrot out if you like. The reindeer do enjoy a snack after a long flight.</p>
+      <p>You have made this a happy year, Lily, and I am glad your name is on my list.</p>
+      <div class="signoff">
+        <p>With love from the North Pole,</p>
+        <p class="name">Santa</p>
+      </div>
+      <p class="ps">P.S. Rudolph says hello, and he’s been practising his landing on your roof!</p>
+      <svg class="hoof" viewBox="0 0 104 108" role="img" aria-label="A reindeer hoof print">
+        <g fill="#1f5e3b">
+          <path transform="rotate(-10 32 62)" d="M32 6c0 0-22 30-22 52a20 22 0 1 0 40 0C50 36 32 6 32 6z"/>
+          <path transform="rotate(10 72 62)" d="M72 6c0 0 22 30 22 52a20 22 0 1 1-40 0C54 36 72 6 72 6z"/>
+        </g>
+      </svg>
+    </div>
+  </article>
+</body>
+</html>
