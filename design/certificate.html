@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <title>Sample Nice List certificate for Lily</title>
+  <style>
+    @font-face {
+      font-family: "DM Serif Display";
+      src: url("fonts/dm-serif-display.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Cormorant SC";
+      src: url("fonts/cormorant-sc-600.ttf") format("truetype");
+      font-weight: 600;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Cormorant SC";
+      src: url("fonts/cormorant-sc-700.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: "Mr Dafoe";
+      src: url("fonts/mr-dafoe.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 1000px;
+      height: 1280px;
+      background: #f4e6c8;
+    }
+    .sheet {
+      position: relative;
+      width: 1000px;
+      height: 1280px;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 40%, #fff8e8, #f3e2c2 72%);
+      color: #2c2118;
+    }
+    .outer {
+      position: absolute;
+      inset: 28px;
+      border: 14px solid #1f5e3b;
+    }
+    .inner {
+      position: absolute;
+      inset: 52px;
+      border: 3px solid #b3121f;
+    }
+    .watermark {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 2;
+      transform: translate(-50%, -50%) rotate(-32deg);
+      margin: 0;
+      font-family: "Cormorant SC", serif;
+      font-weight: 700;
+      font-size: 210px;
+      letter-spacing: 0.12em;
+      color: transparent;
+      -webkit-text-stroke: 6px rgba(179, 18, 31, 0.55);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .content {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      padding: 96px 90px 108px;
+      text-align: center;
+    }
+    .grow {
+      flex: 1 0 24px;
+    }
+    .brand {
+      margin: 0;
+      font-family: "Cormorant SC", serif;
+      font-weight: 600;
+      font-size: 28px;
+      letter-spacing: 0.42em;
+      color: #1f5e3b;
+    }
+    h1 {
+      margin: 22px 0 0;
+      font-family: "DM Serif Display", serif;
+      font-weight: 400;
+      font-size: 84px;
+      line-height: 0.95;
+      color: #b3121f;
+    }
+    .sub {
+      margin: 28px 0 0;
+      font-family: "Cormorant SC", serif;
+      font-weight: 600;
+      font-size: 32px;
+      letter-spacing: 0.22em;
+      color: #1f5e3b;
+    }
+    .name {
+      margin: 28px 0 0;
+      font-family: "DM Serif Display", serif;
+      font-size: 108px;
+      line-height: 1;
+      color: #b3121f;
+      text-shadow: 0 0 18px #fff8e8, 0 0 8px #fff8e8;
+    }
+    .line {
+      width: 420px;
+      height: 2px;
+      margin: 10px auto 0;
+      background: #1f5e3b;
+    }
+    .deed {
+      margin: 36px auto 0;
+      max-width: 680px;
+      font-family: "DM Serif Display", serif;
+      font-size: 36px;
+      line-height: 1.35;
+    }
+    .stars {
+      margin: 28px 0 0;
+      color: #b3121f;
+      font-size: 28px;
+      letter-spacing: 0.6em;
+    }
+    .foot {
+      margin: 0;
+      font-family: "Cormorant SC", serif;
+      font-weight: 600;
+      font-size: 26px;
+      letter-spacing: 0.18em;
+      color: #1f5e3b;
+    }
+    .signed {
+      margin: 8px 0 0;
+      font-family: "Mr Dafoe", cursive;
+      font-size: 108px;
+      font-weight: 400;
+      color: #b3121f;
+      line-height: 1;
+    }
+    .issuer {
+      margin: 10px 0 0;
+      font-family: "Cormorant SC", serif;
+      font-weight: 600;
+      font-size: 22px;
+      letter-spacing: 0.16em;
+      color: #1f5e3b;
+    }
+  </style>
+</head>
+<body>
+  <article class="sheet">
+    <div class="outer"></div>
+    <div class="inner"></div>
+    <p class="watermark">SAMPLE</p>
+    <div class="content">
+      <p class="brand">NORTH POLE</p>
+      <h1>The Nice List</h1>
+      <p class="sub">THIS IS TO CERTIFY THAT</p>
+      <p class="name">Lily</p>
+      <div class="line"></div>
+      <p class="deed">is on Santa’s Nice List for helping Grandad in the garden.</p>
+      <p class="stars" aria-hidden="true">★ ★ ★</p>
+      <div class="grow"></div>
+      <p class="foot">NORTH POLE · CHRISTMAS 2026</p>
+      <p class="signed">Santa</p>
+      <p class="issuer">Issued by Santa Says My Name</p>
+    </div>
+  </article>
+</body>
+</html>
