@@ -21,9 +21,9 @@
    After-payment redirect, set on each Payment Link:
    https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}
    Stripe replaces {CHECKOUT_SESSION_ID}. The server reads the Checkout
-   Session and sends the customer to Tally with order, children, rush, sleigh
-   and package. See the README. Child details stay on Tally, never on the
-   card page, and are deleted about 90 days after delivery.
+   Session and sends the customer to Tally with order, children, rush, sleigh,
+   package, and email when Stripe has one. See the README. Child details stay
+   on Tally, never on the card page, and are deleted about 90 days after delivery.
 
    Early bird
    magicBundleEarlyBird (£16.99) is used until the end of Sun 15 Nov 2026.
@@ -32,7 +32,7 @@
 
    Tally
    tallyOrderForm  — https://tally.so/r/Dq25LE
-                     Hidden fields: order, children, rush, sleigh, package.
+                     Hidden fields: order, children, rush, sleigh, package, email.
                      Preview link. The paid redirect fills them in.
    tallyFreeVideo  — https://tally.so/r/aON07Z
                      Email only, for the free "Santa's on his way" video.
