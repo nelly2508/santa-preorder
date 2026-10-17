@@ -227,6 +227,24 @@ test("GET /order/continue redirects, and the homepage still loads", async () => 
     assert.strictEqual(home.status, 200);
     const html = await home.text();
     assert.match(html, /Santa Says My Name/);
+    assert.match(html, /href="\/privacy"/);
+    assert.match(html, /href="\/terms"/);
+    assert.doesNotMatch(html, /Father Christmas|Dunholme|Wakefield|geographic address/);
+
+    const privacy = await fetch(`http://127.0.0.1:${port}/privacy`);
+    assert.strictEqual(privacy.status, 200);
+    const privacyHtml = await privacy.text();
+    assert.match(privacyHtml, /Neil Carroll trading as Santa Says My Name, Dunholme, Thornes Road, Wakefield WF2 8QN/);
+    assert.match(privacyHtml, /hello@santasaysmyname.com/);
+    assert.match(privacyHtml, /href="\/terms"/);
+    assert.doesNotMatch(privacyHtml, /Father Christmas/);
+
+    const terms = await fetch(`http://127.0.0.1:${port}/terms/`);
+    assert.strictEqual(terms.status, 200);
+    const termsHtml = await terms.text();
+    assert.match(termsHtml, /Neil Carroll trading as Santa Says My Name, Dunholme, Thornes Road, Wakefield WF2 8QN/);
+    assert.match(termsHtml, /href="\/privacy"/);
+    assert.doesNotMatch(termsHtml, /Father Christmas/);
   } finally {
     server.close();
   }

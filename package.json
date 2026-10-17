@@ -2,7 +2,7 @@
   "name": "santa-preorder",
   "version": "1.0.0",
   "private": true,
-  "description": "Santa Says My Name — one-page UK pre-order site",
+  "description": "Santa Says My Name — UK pre-order site for a personalised Santa video",
   "scripts": {
     "start": "node server.js",
     "test": "node --test"

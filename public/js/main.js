@@ -64,6 +64,9 @@
   document.querySelectorAll("[data-trader='address']").forEach((el) => {
     el.textContent = trader.address || "";
   });
+  document.querySelectorAll("[data-trader='identity']").forEach((el) => {
+    el.textContent = trader.identity || [trader.name, trader.address].filter(Boolean).join(", ");
+  });
   document.querySelectorAll("[data-trader='email']").forEach((el) => {
     const email = trader.email || "";
     el.textContent = email;

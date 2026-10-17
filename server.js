@@ -68,7 +68,7 @@ function notFound(res, method) {
   );
 }
 
-function safeFile(urlPath) {
+function candidateFiles(urlPath) {
   let pathname;
   try {
     pathname = decodeURIComponent(urlPath);
@@ -76,10 +76,49 @@ function safeFile(urlPath) {
     return null;
   }
   if (pathname.includes("\0")) return null;
-  if (pathname === "/") pathname = "/index.html";
-  const filePath = path.resolve(ROOT, `.${pathname}`);
-  if (filePath !== ROOT && !filePath.startsWith(`${ROOT}${path.sep}`)) return null;
-  return filePath;
+  if (pathname.length > 1 && pathname.endsWith("/")) pathname = pathname.slice(0, -1);
+  if (pathname === "/" || pathname === "") pathname = "/index.html";
+
+  const names = [pathname];
+  if (!path.extname(pathname)) names.push(`${pathname}.html`);
+
+  const files = [];
+  for (const name of names) {
+    const filePath = path.resolve(ROOT, `.${name}`);
+    if (filePath !== ROOT && !filePath.startsWith(`${ROOT}${path.sep}`)) return null;
+    files.push(filePath);
+  }
+  return files;
+}
+
+function serveFirst(files, index, res, method) {
+  if (index >= files.length) {
+    notFound(res, method);
+    return;
+  }
+
+  const filePath = files[index];
+  fs.stat(filePath, (err, stat) => {
+    if (err || !stat.isFile()) {
+      serveFirst(files, index + 1, res, method);
+      return;
+    }
+    const ext = path.extname(filePath).toLowerCase();
+    res.writeHead(200, {
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      "Content-Length": stat.size,
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Content-Security-Policy":
+        "default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+      "Cache-Control": LONG_CACHE.has(ext) ? "public, max-age=86400" : "no-cache",
+    });
+    if (method === "HEAD") {
+      res.end();
+      return;
+    }
+    fs.createReadStream(filePath).pipe(res);
+  });
 }
 
 function redirect(res, location) {
@@ -131,34 +170,13 @@ function createServer(options = {}) {
       return;
     }
 
-    const filePath = safeFile(url.pathname);
-    if (!filePath) {
+    const files = candidateFiles(url.pathname);
+    if (!files) {
       notFound(res, req.method);
       return;
     }
 
-    fs.stat(filePath, (err, stat) => {
-      if (err || !stat.isFile()) {
-        notFound(res, req.method);
-        return;
-      }
-      const ext = path.extname(filePath).toLowerCase();
-      const headers = {
-        "Content-Type": MIME[ext] || "application/octet-stream",
-        "Content-Length": stat.size,
-        "X-Content-Type-Options": "nosniff",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Content-Security-Policy":
-          "default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'",
-        "Cache-Control": LONG_CACHE.has(ext) ? "public, max-age=86400" : "no-cache",
-      };
-      res.writeHead(200, headers);
-      if (req.method === "HEAD") {
-        res.end();
-        return;
-      }
-      fs.createReadStream(filePath).pipe(res);
-    });
+    serveFirst(files, 0, res, req.method);
   });
 }
 

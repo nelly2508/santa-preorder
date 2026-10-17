@@ -23,7 +23,7 @@
    Stripe replaces {CHECKOUT_SESSION_ID}. The server reads the Checkout
    Session and sends the customer to Tally with order, children, rush, sleigh
    and package. See the README. Child details stay on Tally, never on the
-   card page, and are deleted by 6 January 2027.
+   card page, and are deleted about 90 days after delivery.
 
    Early bird
    magicBundleEarlyBird (£16.99) is used until the end of Sun 15 Nov 2026.
@@ -62,9 +62,12 @@ window.SANTA_CONFIG = {
   tallyOrderForm: "https://tally.so/r/Dq25LE",
   tallyFreeVideo: "https://tally.so/r/aON07Z",
 
+  // The full identity is shown only on /privacy and /terms.
+  // Change the email here and it updates everywhere those pages use it.
   trader: {
     name: "Neil Carroll trading as Santa Says My Name",
-    address: "[geographic address]",
-    email: "[email]",
+    address: "Dunholme, Thornes Road, Wakefield WF2 8QN",
+    identity: "Neil Carroll trading as Santa Says My Name, Dunholme, Thornes Road, Wakefield WF2 8QN",
+    email: "hello@santasaysmyname.com",
   },
 };
