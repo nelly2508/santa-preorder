@@ -162,7 +162,6 @@ p + p {
 
 #hear,
 #what,
-#scenes,
 #samples,
 #pricing,
 #how,
@@ -438,7 +437,6 @@ p + p {
 }
 
 .gifts p,
-.scene p,
 .addons p,
 .steps p {
   color: var(--ink-soft);
@@ -527,64 +525,6 @@ p + p {
 .icon svg {
   width: 1.45rem;
   height: 1.45rem;
-}
-
-.scenes {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.scene {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.scene img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-}
-
-.scene h3,
-.scene p,
-.scene .tag {
-  margin-left: 1rem;
-  margin-right: 1rem;
-}
-
-.scene h3 {
-  margin-top: 0.35rem;
-}
-
-.scene p {
-  margin: 0.4rem 1rem 1.1rem;
-}
-
-.tag {
-  display: inline-block;
-  margin-top: 0.9rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  background: #e7f3ea;
-  color: var(--pine);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.tag-wait {
-  background: #f8ead0;
-  color: #7a4e12;
-}
-
-.scene--lead {
-  border: 2px solid var(--gold-deep);
-  box-shadow: var(--shadow);
 }
 
 .price-grid {
@@ -1096,11 +1036,6 @@ p + p {
 
   .section {
     padding: 5rem 0;
-  }
-
-  .scenes {
-    grid-template-columns: 1.25fr 1fr 1fr;
-    align-items: stretch;
   }
 
   .price-grid {

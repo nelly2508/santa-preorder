@@ -76,7 +76,6 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     );
     const hear = html.indexOf('id="hear"');
     const what = html.indexOf('id="what"');
-    const scenes = html.indexOf('id="scenes"');
     const samples = html.indexOf('id="samples"');
     const pricing = html.indexOf('id="pricing"');
     const checkout = html.indexOf('id="checkout"');
@@ -86,8 +85,7 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     const privacy = html.indexOf('id="privacy"');
     assert.ok(
       hear < what &&
-        what < scenes &&
-        scenes < samples &&
+        what < samples &&
         samples < pricing &&
         pricing < checkout &&
         checkout < how &&
@@ -96,9 +94,15 @@ test("the homepage offers Hear Santa without autoplay", async () => {
         order < privacy,
       "homepage sections are out of order"
     );
+    assert.match(html, /Santa sits in an armchair by the fire/);
     assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bautoplay\b/);
     assert.doesNotMatch(html, /Father Christmas|Oliver|sample\.mp4|Sample clip|sample-video/i);
+    assert.doesNotMatch(html, /workshop|By the fire first|coming later|workshop\.webp|sleigh\.webp|id="scenes"/i);
     assert.doesNotMatch(html, /id="hear"[\s\S]*?style=/);
+    const terms = await fetch(`http://127.0.0.1:${port}/terms`);
+    const termsHtml = await terms.text();
+    assert.match(termsHtml, /The personalised film is Santa by the fire\. That is the film we make\./);
+    assert.doesNotMatch(termsHtml, /workshop|coming later|asked to choose it/i);
   });
 });
 
