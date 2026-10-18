@@ -2,9 +2,22 @@
   const config = window.SANTA_CONFIG;
   if (!config) return;
 
-  const early = isEarlyBird(config);
+  const choiceApi = window.SANTA_CHECKOUT;
+  const now = previewNow();
+  const phase = choiceApi && choiceApi.offerPhase
+    ? choiceApi.offerPhase({
+        now,
+        earlyBird: config.earlyBird,
+        earlyBirdEnds: config.earlyBirdEnds,
+        lateOrders: config.lateOrders,
+        lateOrdersFrom: config.lateOrdersFrom,
+      })
+    : "early";
+  const early = phase === "early";
+  const late = phase === "late";
   const prices = config.prices;
-  const bundlePrice = early ? prices.magicBundleEarly : prices.magicBundleFull;
+  const bundlePrice = late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull;
+  const singlePrice = late ? prices.singleVideoLate : prices.singleVideo;
 
   const bundleLabels = {
     bundle: early
@@ -28,17 +41,23 @@
     link.href = config.tallyFreeVideo;
   });
 
+  document.querySelectorAll("[data-pay='singleVideo']").forEach((link) => {
+    if (link.id === "pay-continue") return;
+    link.textContent = `Pre-order the single video — ${singlePrice}`;
+  });
+
   document.querySelectorAll("[data-price='bundle']").forEach((el) => {
     el.textContent = bundlePrice;
   });
 
-  ["rush", "namedSleigh"].forEach((key) => {
-    document.querySelectorAll(`[data-price='${key}']`).forEach((el) => {
-      if (prices[key]) el.textContent = `+${prices[key]}`;
-    });
+  document.querySelectorAll("[data-price='single']").forEach((el) => {
+    el.textContent = singlePrice;
   });
 
-  const choiceApi = window.SANTA_CHECKOUT;
+  document.querySelectorAll("[data-price='namedSleigh']").forEach((el) => {
+    if (prices.namedSleigh) el.textContent = `+${prices.namedSleigh}`;
+  });
+
   if (choiceApi && prices.sibling) {
     const rate = choiceApi.siblingRate(prices.sibling);
     document.querySelectorAll("[data-sibling-rate]").forEach((el) => {
@@ -47,6 +66,7 @@
     document.querySelectorAll("[data-two-children]").forEach((el) => {
       el.textContent = choiceApi.twoChildrenFor(el.getAttribute("data-two-children"), {
         early,
+        late,
         prices,
       });
     });
@@ -59,6 +79,17 @@
     document.querySelectorAll(".js-early-note").forEach((el) => {
       el.textContent = "Nice List Promise: love it or your money back";
     });
+  }
+
+  if (late) {
+    document.querySelectorAll("[data-before-late]").forEach((el) => {
+      el.hidden = true;
+    });
+    document.querySelectorAll("[data-late-only]").forEach((el) => {
+      el.hidden = false;
+    });
+    const pricingHeading = document.getElementById("pricing-heading");
+    if (pricingHeading) pricingHeading.textContent = "Pay now. Rush delivery included.";
   }
 
   const trader = config.trader || {};
@@ -82,11 +113,16 @@
   setupCheckout();
   setupEnlarge();
 
-  function isEarlyBird(cfg) {
-    if (cfg.earlyBird === false) return false;
-    const end = new Date(cfg.earlyBirdEnds);
-    if (Number.isNaN(end.getTime())) return false;
-    return Date.now() <= end.getTime();
+  function previewNow() {
+    try {
+      const raw = new URLSearchParams(window.location.search).get("asof");
+      if (!raw) return new Date();
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return new Date();
+      return parsed;
+    } catch (error) {
+      return new Date();
+    }
   }
 
   function setupCheckout() {
@@ -104,6 +140,7 @@
     function renderChoice() {
       const picked = choiceApi.packageChoice(selectedKey, {
         early,
+        late,
         prices,
         stripe: config.stripe,
       });

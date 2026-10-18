@@ -7,6 +7,8 @@
   }
   if (root) root.SANTA_CHECKOUT = api;
 })(typeof window === "undefined" ? null : window, function () {
+  const LATE_ORDERS_FROM = "2026-12-13T00:00:00Z";
+
   function siblingRate(amount) {
     return `+${amount} per extra child (up to 4 siblings)`;
   }
@@ -15,11 +17,30 @@
     return `2 children = ${base} + ${sibling}`;
   }
 
+  function offerPhase(options) {
+    const source = options || {};
+    const now = source.now instanceof Date ? source.now : new Date(source.now == null ? Date.now() : source.now);
+    const nowMs = now.getTime();
+    const lateFrom = new Date(source.lateOrdersFrom || LATE_ORDERS_FROM);
+    let late = false;
+    if (source.lateOrders === true) late = true;
+    else if (source.lateOrders === false) late = false;
+    else late = !Number.isNaN(lateFrom.getTime()) && !Number.isNaN(nowMs) && nowMs >= lateFrom.getTime();
+
+    if (late) return "late";
+    if (source.earlyBird === false) return "standard";
+    const earlyEnd = new Date(source.earlyBirdEnds || "");
+    if (!Number.isNaN(earlyEnd.getTime()) && !Number.isNaN(nowMs) && nowMs <= earlyEnd.getTime()) return "early";
+    return "standard";
+  }
+
   function twoChildrenFor(key, options) {
     const prices = options.prices || {};
+    const late = !!options.late;
     let base = prices.magicBundleFull;
-    if (key === "singleVideo") base = prices.singleVideo;
+    if (key === "singleVideo") base = late ? prices.singleVideoLate : prices.singleVideo;
     else if (key === "video") base = "your video";
+    else if (late) base = prices.magicBundleLate;
     else if (options.early) base = prices.magicBundleEarly;
     return twoChildrenExample(base, prices.sibling);
   }
@@ -27,12 +48,21 @@
   function packageChoice(key, options) {
     const prices = options.prices || {};
     const stripe = options.stripe || {};
+    const late = !!options.late;
     if (key === "singleVideo") {
       return {
         key: "singleVideo",
         name: "Single video",
-        detail: prices.singleVideo,
-        href: stripe.singleVideo,
+        detail: late ? `${prices.singleVideoLate}, rush included` : prices.singleVideo,
+        href: late ? stripe.lateSingle : stripe.singleVideo,
+      };
+    }
+    if (late) {
+      return {
+        key: "magicBundle",
+        name: "Magic bundle",
+        detail: `${prices.magicBundleLate}, rush included`,
+        href: stripe.lateBundle,
       };
     }
     const early = !!options.early;
@@ -45,8 +75,10 @@
   }
 
   return {
+    LATE_ORDERS_FROM,
     siblingRate,
     twoChildrenExample,
+    offerPhase,
     twoChildrenFor,
     packageChoice,
   };
