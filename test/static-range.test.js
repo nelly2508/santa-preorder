@@ -37,11 +37,15 @@ async function withServer(fn, options) {
 test("preview assets are the original files, with a smaller webp poster", () => {
   assert.strictEqual(
     sha256(path.join(PUBLIC, "assets/santa-preview.mp4")),
-    "e0206e322733236e4ff2dc9191c51d946cdee7692436c3ef3079f6b261851ff9"
+    "4e2689099236ff17cf6e7445bb5688d33d3902ae92ab3b847c38219436836b5b"
   );
   assert.strictEqual(
     sha256(path.join(PUBLIC, "assets/santa-preview-poster.jpg")),
-    "e121eb54721f9ea2f394ee39246ba8b4ffed03ae1aabe81a031cd8bec30acd36"
+    "5733b7b151adcaf4c5fb5f81e34c24e33909e5f167616bda8138c41e2c6e6542"
+  );
+  assert.strictEqual(
+    sha256(path.join(PUBLIC, "assets/santa-preview.vtt")),
+    "36a2bf353fc8bca777b1b4307967c5bb3444b34bc304dd532045816f09ec541d"
   );
   const jpg = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster.jpg")).size;
   const webp = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster.webp")).size;
@@ -51,8 +55,9 @@ test("preview assets are the original files, with a smaller webp poster", () => 
   assert.match(vtt, /^WEBVTT\r?\n/);
   assert.match(
     vtt,
-    /Ho ho! I can't make any promises, but I'll have a quiet word with the elves in the workshop\./
+    /I can't make any promises, Saoirse, but I'll have a quiet word with the elves\./
   );
+  assert.doesNotMatch(vtt, /Ho ho/);
 });
 
 test("the homepage offers Hear Santa without autoplay", async () => {
@@ -73,6 +78,10 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.match(
       html,
       /A quick hello from Santa\. The film you order says your child's name, a good deed and a wish\./
+    );
+    assert.match(
+      html,
+      /Santa says Saoirse \(Seer-sha\) perfectly\. He'll get your child's name right too\./
     );
     const hear = html.indexOf('id="hear"');
     const what = html.indexOf('id="what"');

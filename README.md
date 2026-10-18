@@ -38,7 +38,7 @@ The footer links to both. A trailing slash works too (`/privacy/`, `/terms/`). C
 
 The page charges £16.99 for the Magic bundle until the end of Sunday 15 November 2026, then switches the bundle buttons to the £19.99 link. Set `earlyBird` to `false` to end the offer sooner.
 
-The only video on the page is the short Hear Santa hello at `public/assets/santa-preview.mp4`, with a poster and captions. Letter and certificate samples are the Lily images in `public/assets`. There is no full sample film.
+The only video on the page is the short Hear Santa clip at `public/assets/santa-preview.mp4`. Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster.jpg` and the captions are `public/assets/santa-preview.vtt`. Letter and certificate samples are the Lily images in `public/assets`.
 
 ## After payment: the redirect
 
