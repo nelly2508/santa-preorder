@@ -1052,7 +1052,7 @@ p + p {
   }
 
   .addons {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .steps {

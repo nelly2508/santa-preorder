@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Santa Says My Name — Santa says your child's name</title>
-  <meta name="description" content="A personalised Santa video by the fire. He says your child's name, a good deed and a wish. Delivered by 15 December. Early bird £16.99.">
+  <meta name="description" content="A personalised Santa video by the fire. He says your child's name, a good deed and a wish. Order by 12 December for delivery by 15 December. From 13 December, rush delivery is included.">
   <meta name="theme-color" content="#140e0c">
   <meta property="og:title" content="Santa Says My Name">
-  <meta property="og:description" content="Santa. By the fire. Saying your child's name. Delivered by 15 December.">
+  <meta property="og:description" content="Santa. By the fire. Saying your child's name. Order by 12 December for delivery by 15 December.">
   <meta property="og:image" content="assets/fireside.webp">
   <meta property="og:type" content="website">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -37,7 +37,8 @@
       <div class="snow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <p class="kicker">Pre-order · delivered by 15 December</p>
+          <p class="kicker" data-before-late>Pre-order · delivered by 15 December</p>
+          <p class="kicker" data-late-only hidden>Pre-order · rush delivery included</p>
           <h1>Santa. By the fire. Saying your child's name.</h1>
           <p class="lede">A personalised video. Your child's name said right, a good deed and a wish.</p>
           <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
@@ -154,8 +155,9 @@
     <section class="section section-tint" id="pricing">
       <div class="wrap">
         <p class="kicker">Pricing</p>
-        <h2>Pay now. Video by 15 December.</h2>
-        <p class="lede js-price-switch">Early bird £16.99 until Sun 15 Nov 2026, then £19.99. Order by Sat 12 Dec for delivery by Tue 15 Dec.</p>
+        <h2 id="pricing-heading">Pay now. Video by 15 December.</h2>
+        <p class="lede js-price-switch" data-before-late>Early bird £16.99 until Sun 15 Nov 2026, then £19.99. Order by Sat 12 Dec for delivery by Tue 15 Dec, in good time for Christmas.</p>
+        <p class="lede" data-late-only hidden>Ordering late? Rush delivery is included so your video arrives in time.</p>
 
         <div class="price-grid">
           <article class="price-card price-card--lead">
@@ -188,7 +190,7 @@
               <li class="miss">Nice List certificate</li>
             </ul>
             <p class="price">
-              <strong>£14.99</strong>
+              <strong data-price="single">£14.99</strong>
             </p>
             <p class="sibling-line"><span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. <span data-two-children="singleVideo">2 children = £14.99 + £11.99</span>.</p>
             <a class="btn btn-pine" data-pay="singleVideo" href="#checkout">Pre-order the single video — £14.99</a>
@@ -200,10 +202,6 @@
             <h3>Sibling</h3>
             <p class="addon-rate" data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</p>
             <p>Up to 5 children in one order. Each extra child gets the full Magic bundle. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
-          </article>
-          <article>
-            <h3>Rush <span data-price="rush">+£4.99</span></h3>
-            <p>Within 48 hours, on every checkout. Needed after Sat 12 Dec. Last rush order Fri 18 Dec.</p>
           </article>
           <article>
             <h3>Named sleigh <span data-price="namedSleigh">+£4.99</span></h3>
@@ -222,7 +220,7 @@
           <p id="agree-hint" class="agree-hint">Tick the box to continue</p>
           <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1" aria-describedby="agree-hint">Continue to secure payment</a>
           <p class="fine">Adding more than one brother or sister? Add the sibling extra at checkout, then on your phone tap ‘Details’ (top right) to change how many (+£11.99 each, up to 4).</p>
-          <p class="fine">Rush, and a named sleigh on the single video, are on the card page. Your child's name is never typed there. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
+          <p class="fine">A named sleigh on the single video is on the card page. The Magic bundle already includes it. Your child's name is never typed there. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
         </div>
       </div>
     </section>
@@ -246,12 +244,12 @@
           </li>
           <li>
             <h3>It lands in your inbox</h3>
-            <p>By 15 Dec. Order by 12 Dec, or add rush.</p>
+            <p>By 15 Dec if you order by 12 Dec, in good time for Christmas. From 13 Dec, rush delivery is included and the video arrives within 48 hours.</p>
           </li>
         </ol>
         <aside class="callout">
           <h3>When it arrives</h3>
-          <p>You pay today. We send pre-orders in batches from 1 December. Order by Sat 12 Dec and the video arrives by Tue 15 Dec. From 13 to 18 Dec, rush is the only way to order, and it arrives within 48 hours.</p>
+          <p>You pay today. We send pre-orders in batches from 1 December. Order by Sat 12 Dec and the video arrives by Tue 15 Dec, in good time for Christmas. From Sun 13 Dec the price includes rush delivery, and it arrives within 48 hours. The last day is Fri 18 Dec.</p>
         </aside>
       </div>
     </section>
@@ -315,7 +313,7 @@
           </details>
           <details>
             <summary>When does it arrive?</summary>
-            <p>Pay now. Order by Sat 12 Dec and it arrives by Tue 15 Dec. Pre-orders go out in batches from 1 Dec. From 13 to 18 Dec it's rush only, within 48 hours.</p>
+            <p>Pay now. Order by Sat 12 Dec and it arrives by Tue 15 Dec, in good time for Christmas. Pre-orders go out in batches from 1 Dec. From Sun 13 Dec the price includes rush delivery, within 48 hours. The last day is Fri 18 Dec.</p>
           </details>
         </div>
       </div>
@@ -373,7 +371,7 @@
         <a href="#promise">Nice List Promise</a>
       </nav>
       <div class="terms-blurb">
-        <p>Prices in pounds sterling. No VAT is charged. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99. A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. Standard orders are delivered by the date on this page. Rush is within 48 hours.</p>
+        <p>Prices in pounds sterling. No VAT is charged. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99 and the single video is £14.99. From Sun 13 Dec 2026 the Magic bundle is £24.98 and the single video is £19.98, with rush delivery included. A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. A named sleigh on the single video is +£4.99. Order by Sat 12 Dec for delivery by Tue 15 Dec, in good time for Christmas. From 13 Dec, rush delivery is included and arrives within 48 hours.</p>
         <p>The tick box before payment is your request that we start making the video during the 14-day cancellation period. Once we start, that legal right to cancel ends. The Nice List Promise still applies. Videos are AI-generated. A human elf checks every one.</p>
       </div>
     </div>

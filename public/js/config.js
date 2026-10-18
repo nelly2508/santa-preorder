@@ -1,22 +1,25 @@
 /* =============================================================================
    Santa Says My Name — live checkout links
    -----------------------------------------------------------------------------
-   Three Stripe Payment Links only. Extras are optional items inside those
-   checkouts, not their own links.
+   Five Stripe Payment Links. Sibling and named sleigh stay as optional items
+   inside a checkout. Rush is not an optional add-on.
 
    Optional items
-   - Sibling £11.99 per extra child, up to 4 siblings: on all three Payment Links.
-   - Rush £4.99: on all three Payment Links.
-   - Named sleigh video £4.99, voice only: on the single-video link only.
+   - Sibling £11.99 per extra child, up to 4 siblings: on every Payment Link.
+   - Named sleigh video £4.99, voice only: on the single-video links only.
      Both Magic bundles already include the named sleigh clip.
 
    Payment Links (live)
    1. magicBundleEarlyBird — Magic bundle early bird £16.99
-      Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush.
+      Optional items: Sibling.
    2. magicBundleFullPrice — Magic bundle £19.99
-      Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush.
+      Optional items: Sibling.
    3. singleVideo — Single video £14.99
-      Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush, Named sleigh video.
+      Optional items: Sibling, Named sleigh video.
+   4. lateBundle — Magic bundle £19.99 with rush £4.99 included (£24.98)
+      Optional items: Sibling. Used from Sun 13 Dec 2026.
+   5. lateSingle — Single video £14.99 with rush £4.99 included (£19.98)
+      Optional items: Sibling, Named sleigh video. Used from Sun 13 Dec 2026.
 
    After-payment redirect, set on each Payment Link:
    https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}
@@ -27,8 +30,18 @@
 
    Early bird
    magicBundleEarlyBird (£16.99) is used until the end of Sun 15 Nov 2026.
-   From 16 Nov the page sends Magic bundle buttons to magicBundleFullPrice
-   (£19.99). Set earlyBird to false to end the £16.99 offer sooner.
+   From 16 Nov the Magic bundle buttons use magicBundleFullPrice (£19.99).
+   Set earlyBird to false to end the £16.99 offer sooner.
+
+   Late orders
+   From 00:00 Europe/London on Sun 13 Dec 2026 the UK is on GMT, so the
+   switch is 2026-12-13T00:00:00Z. From that moment Magic bundle buttons use
+   lateBundle and single-video buttons use lateSingle. Late wins over early
+   bird. lateOrders true forces those links. lateOrders false keeps the
+   earlier links. Leave it null to follow lateOrdersFrom.
+   A ?asof= date on the page (for example ?asof=2026-12-13T00:00:00Z) pretends
+   that moment has arrived, so the switch can be checked. An invalid value is
+   ignored. true or false on lateOrders still wins over ?asof=.
 
    Tally
    tallyOrderForm  — https://tally.so/r/Dq25LE
@@ -41,11 +54,15 @@
 window.SANTA_CONFIG = {
   earlyBird: true,
   earlyBirdEnds: "2026-11-15T23:59:59+00:00",
+  lateOrders: null,
+  lateOrdersFrom: "2026-12-13T00:00:00Z",
 
   prices: {
     magicBundleFull: "£19.99",
     magicBundleEarly: "£16.99",
+    magicBundleLate: "£24.98",
     singleVideo: "£14.99",
+    singleVideoLate: "£19.98",
     sibling: "£11.99",
     rush: "£4.99",
     namedSleigh: "£4.99",
@@ -55,6 +72,8 @@ window.SANTA_CONFIG = {
     magicBundleEarlyBird: "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00",
     magicBundleFullPrice: "https://buy.stripe.com/eVq5kE0ET2X0dR03nL1wY01",
     singleVideo: "https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02",
+    lateBundle: "https://buy.stripe.com/4gMaEYevJfJM7sCf6t1wY03",
+    lateSingle: "https://buy.stripe.com/dRmcN6aft69cfZ87E11wY04",
   },
 
   tallyAfterPayment: "https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}",

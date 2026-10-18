@@ -4,16 +4,25 @@ Pre-order site for a personalised Santa video. Plain HTML, CSS and JavaScript, s
 
 ## Swap the Stripe and Tally links
 
-The live URLs are in [`public/js/config.js`](public/js/config.js). There are three Payment Links. Sibling and rush are optional items on all three. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order). The named sleigh video is an optional item on the single-video link only, because the Magic bundle already includes it. The page shows those prices and has no separate pay buttons for them. The order buttons on the page remember the package and continue to Stripe only after the “before you pay” box is ticked.
+The live URLs are in [`public/js/config.js`](public/js/config.js). There are five Payment Links. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order), and is an optional item on every link. The named sleigh video (£4.99, voice only) is an optional item on the single-video links only, because the Magic bundle already includes it. Rush is not an optional add-on. The page shows those prices and has no separate pay buttons for the extras. The order buttons on the page remember the package and continue to Stripe only after the “before you pay” box is ticked.
 
 ### Payment Links
 
-1. `magicBundleEarlyBird` — Magic bundle early bird £16.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush £4.99.  
+1. `magicBundleEarlyBird` — Magic bundle early bird £16.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings).  
    https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00
-2. `magicBundleFullPrice` — Magic bundle £19.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush £4.99.  
+2. `magicBundleFullPrice` — Magic bundle £19.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings).  
    https://buy.stripe.com/eVq5kE0ET2X0dR03nL1wY01
-3. `singleVideo` — Single video £14.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Rush £4.99, Named sleigh video £4.99 (voice only).  
+3. `singleVideo` — Single video £14.99. Optional items: Sibling £11.99 per extra child (up to 4 siblings), Named sleigh video £4.99 (voice only).  
    https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02
+4. `lateBundle` — Magic bundle £19.99 with rush £4.99 built in (£24.98). Optional items: Sibling £11.99 per extra child (up to 4 siblings).  
+   https://buy.stripe.com/4gMaEYevJfJM7sCf6t1wY03
+5. `lateSingle` — Single video £14.99 with rush £4.99 built in (£19.98). Optional items: Sibling £11.99 per extra child (up to 4 siblings), Named sleigh video £4.99 (voice only).  
+   https://buy.stripe.com/dRmcN6aft69cfZ87E11wY04
+
+Sandbox copies of the two late links, for testing only. Do not put these on the live page:
+
+- late bundle: https://buy.stripe.com/test_dRm8wQ81eaOFeUL03U8og03
+- late single: https://buy.stripe.com/test_4gM5kEchu5ul7sjcQG8og04
 
 ### After payment
 
@@ -36,7 +45,11 @@ The contact email is `trader.email`, set to `hello@santasaysmyname.com` so you c
 
 The footer links to both. A trailing slash works too (`/privacy/`, `/terms/`). Child details used to make a video, and the video files, are deleted about 90 days after delivery. A basic sales record is kept for 6 years for tax.
 
-The page charges £16.99 for the Magic bundle until the end of Sunday 15 November 2026, then switches the bundle buttons to the £19.99 link. Set `earlyBird` to `false` to end the offer sooner.
+The page charges £16.99 for the Magic bundle until the end of Sunday 15 November 2026, then switches the bundle buttons to the £19.99 link. The single video stays at £14.99. Set `earlyBird` to `false` to end the £16.99 offer sooner.
+
+From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the switch is `2026-12-13T00:00:00Z`. From that moment the Magic bundle buttons use `lateBundle` (£24.98) and the single-video buttons use `lateSingle` (£19.98). Rush delivery is included in those prices. Between 16 November and 12 December the bundle uses the full-price link. A late date wins over early bird.
+
+`lateOrders` controls the switch. `true` forces the late links. `false` keeps the earlier links even after 13 December. `null` follows `lateOrdersFrom`. To preview a date without editing the config, open the page with `?asof=2026-12-13T00:00:00Z` (or any other ISO date). An invalid `asof` is ignored. `lateOrders` set to `true` or `false` still wins over `asof` for whether the late prices are on. `asof` only changes what this page shows. It does not change Stripe.
 
 The only video on the page is the short Hear Santa clip at `public/assets/santa-preview.mp4`. Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster.jpg` and the captions are `public/assets/santa-preview.vtt`. Letter and certificate samples are the Lily images in `public/assets`.
 
@@ -48,7 +61,7 @@ The only video on the page is the short Hear Santa clip at `public/assets/santa-
 https://tally.so/r/Dq25LE?order=<session_id>&children=<n>&rush=<0|1>&sleigh=<0|1>&package=<bundle_early_bird|bundle|single>&email=<address>
 ```
 
-`email` is the address on the Checkout Session (`customer_details.email`), URL-encoded. It is left off when Stripe has no email. `children` is 1 plus the quantity of the Sibling add-on. Each sibling is one extra child at £11.99, up to 4 siblings. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the rush add-on was bought.
+`email` is the address on the Checkout Session (`customer_details.email`), URL-encoded. It is left off when Stripe has no email. `children` is 1 plus the quantity of the Sibling add-on. Each sibling is one extra child at £11.99, up to 4 siblings. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the Checkout Session includes the rush line (`sku` `addon_rush`). The late links include that line, so a late order is `rush=1` with package `bundle` or `single`.
 
 If the session is missing, unpaid, or Stripe returns an error, the customer still goes to Tally with only `order` set, and the error is logged. They are never left on a dead page.
 
@@ -82,13 +95,13 @@ Never put these keys in the repo or in `public/js/config.js`.
 
 ### 3. Point the Payment Links at this route
 
-On each of the three Payment Links, set the after-payment redirect to:
+On each Payment Link, including the two late-order links, set the after-payment redirect to:
 
 ```
 https://santasaysmyname.com/order/continue?session_id={CHECKOUT_SESSION_ID}
 ```
 
-Leave the `{CHECKOUT_SESSION_ID}` placeholder exactly like that. Stripe replaces it. Do this for the early-bird Magic bundle, the full-price Magic bundle, and the single video.
+Leave the `{CHECKOUT_SESSION_ID}` placeholder exactly like that. Stripe replaces it. Do this for the early-bird Magic bundle, the full-price Magic bundle, the single video, and both late-order links.
 
 ### 4. Add the hidden fields in Tally
 

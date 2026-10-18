@@ -96,6 +96,41 @@ test("rush and sleigh come from sku or name, and both bundles include the sleigh
   );
 });
 
+test("a late-link session is rush with the underlying package", () => {
+  const lateBundle = summariseCheckout(paid([
+    line({ description: "Magic bundle", packageName: "bundle", unitAmount: 1999 }),
+    line({ sku: "addon_rush", description: "Rush delivery", unitAmount: 499 }),
+  ]));
+  const lateSingle = summariseCheckout(paid([
+    line({ description: "Single Santa Video", packageName: "single", unitAmount: 1499 }),
+    line({ sku: "addon_rush", description: "Rush delivery", unitAmount: 499 }),
+  ]));
+  assert.deepStrictEqual(
+    { rush: lateBundle.rush, sleigh: lateBundle.sleigh, packageType: lateBundle.packageType, children: lateBundle.children },
+    { rush: true, packageType: "bundle", sleigh: true, children: 1 }
+  );
+  assert.deepStrictEqual(
+    { rush: lateSingle.rush, sleigh: lateSingle.sleigh, packageType: lateSingle.packageType, children: lateSingle.children },
+    { rush: true, packageType: "single", sleigh: false, children: 1 }
+  );
+});
+
+test("a paid late-link session redirects with rush=1 and the package", async () => {
+  const location = await resolveOrderRedirect({
+    sessionId: "cs_live_latebundle1",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret" },
+    log() {},
+    retrieveSession: async () => paid([
+      line({ description: "Magic bundle", packageName: "bundle", unitAmount: 1999 }),
+      line({ sku: "addon_rush", description: "Rush delivery", unitAmount: 499 }),
+    ], { package: "bundle" }),
+  });
+  assert.strictEqual(
+    location,
+    "https://tally.so/r/Dq25LE?order=cs_live_latebundle1&children=1&rush=1&sleigh=1&package=bundle"
+  );
+});
+
 test("package prefers the payment link metadata, then the price", () => {
   const fromLink = summariseCheckout(paid([
     line({ description: "Video", unitAmount: 1999 }),
