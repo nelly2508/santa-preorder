@@ -1318,6 +1318,17 @@ body.has-consent {
   margin-top: 1.1rem;
 }
 
+body[data-orders-closed] #orders-closed {
+  display: block !important;
+  color: var(--gold);
+}
+
+body[data-orders-closed] a[data-pay],
+body[data-orders-closed] #pay-continue,
+body[data-orders-closed] #checkout {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

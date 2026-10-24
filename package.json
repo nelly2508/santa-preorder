@@ -5,12 +5,14 @@
   "description": "Santa Says My Name — UK pre-order site for a personalised Santa video",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "email:sample": "node scripts/send-order-email-sample.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "nodemailer": "^6.10.1",
     "stripe": "^23.0.0"
   }
 }

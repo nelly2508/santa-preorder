@@ -15,6 +15,13 @@
     : "early";
   const early = phase === "early";
   const late = phase === "late";
+  const ordersClosed = document.body.hasAttribute("data-orders-closed")
+    || (choiceApi && choiceApi.ordersOpen && !choiceApi.ordersOpen(now));
+  if (ordersClosed) {
+    document.body.setAttribute("data-orders-closed", "");
+    const note = document.getElementById("orders-closed");
+    if (note) note.hidden = false;
+  }
   const prices = config.prices;
   const bundlePrice = late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull;
   const singlePrice = late ? prices.singleVideoLate : prices.singleVideo;
@@ -110,7 +117,7 @@
     }
   });
 
-  setupCheckout();
+  if (!ordersClosed) setupCheckout();
   setupEnlarge();
 
   function previewNow() {
@@ -156,12 +163,14 @@
       if (checkout) checkout.classList.toggle("is-ready", ready);
       continueLink.setAttribute("aria-disabled", ready ? "false" : "true");
       if (ready) {
-        continueLink.href = picked.href;
+        continueLink.href = `/order/pay?package=${encodeURIComponent(picked.key)}`;
+        continueLink.setAttribute("data-pay", picked.key);
         continueLink.removeAttribute("tabindex");
         continueLink.setAttribute("aria-describedby", "chosen-package");
         if (moveFocus) continueLink.focus();
       } else {
         continueLink.href = "#checkout";
+        continueLink.removeAttribute("data-pay");
         continueLink.tabIndex = -1;
         continueLink.setAttribute("aria-describedby", "agree-hint");
       }

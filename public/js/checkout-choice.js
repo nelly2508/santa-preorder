@@ -8,6 +8,9 @@
   if (root) root.SANTA_CHECKOUT = api;
 })(typeof window === "undefined" ? null : window, function () {
   const LATE_ORDERS_FROM = "2026-12-13T00:00:00Z";
+  // After 23:59 UK on 19 December 2026. GMT that week, so this is midnight
+  // at the start of 20 December. Rush orders close at this same instant.
+  const ORDERS_CLOSE_AT = "2026-12-20T00:00:00Z";
 
   function siblingRate(amount) {
     return `+${amount} per extra child (up to 4 siblings)`;
@@ -32,6 +35,16 @@
     const earlyEnd = new Date(source.earlyBirdEnds || "");
     if (!Number.isNaN(earlyEnd.getTime()) && !Number.isNaN(nowMs) && nowMs <= earlyEnd.getTime()) return "early";
     return "standard";
+  }
+
+  function ordersOpen(now, options) {
+    const source = options || {};
+    const moment = now instanceof Date ? now : new Date(now == null ? Date.now() : now);
+    const ms = moment.getTime();
+    if (Number.isNaN(ms)) return true;
+    const closeAt = new Date(source.ordersCloseAt || ORDERS_CLOSE_AT);
+    if (Number.isNaN(closeAt.getTime())) return true;
+    return ms < closeAt.getTime();
   }
 
   function twoChildrenFor(key, options) {
@@ -76,7 +89,9 @@
 
   return {
     LATE_ORDERS_FROM,
+    ORDERS_CLOSE_AT,
     siblingRate,
+    ordersOpen,
     twoChildrenExample,
     offerPhase,
     twoChildrenFor,

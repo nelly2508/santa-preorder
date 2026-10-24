@@ -106,7 +106,8 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.match(html, /Santa sits in an armchair by the fire/);
     assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bautoplay\b/);
     assert.doesNotMatch(html, /Father Christmas|Oliver|sample\.mp4|Sample clip|sample-video/i);
-    assert.doesNotMatch(html, /workshop|By the fire first|coming later|workshop\.webp|sleigh\.webp|id="scenes"/i);
+    const withoutClosedLine = html.replace(/Santa's workshop is closed for orders this Christmas\. Thank you!/g, "");
+    assert.doesNotMatch(withoutClosedLine, /workshop|By the fire first|coming later|workshop\.webp|sleigh\.webp|id="scenes"/i);
     assert.doesNotMatch(html, /id="hear"[\s\S]*?style=/);
     const terms = await fetch(`http://127.0.0.1:${port}/terms`);
     const termsHtml = await terms.text();

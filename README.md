@@ -69,6 +69,41 @@ If the session is missing, unpaid, or Stripe returns an error, the customer stil
 
 The server chooses the key from the session id. `cs_live_…` uses `STRIPE_SECRET_KEY`. `cs_test_…` uses `STRIPE_TEST_SECRET_KEY` when that is set, and otherwise `STRIPE_SECRET_KEY`.
 
+A paid session also sends the order emails below. A mail failure never changes where the customer is sent.
+
+## Order emails
+
+When `/order/continue` has confirmed the Checkout Session is paid, the server sends two messages from the site mailbox. Refreshing the page does not send them again.
+
+- `SMTP_HOST` defaults to `secure244.inmotionhosting.com`
+- `SMTP_PORT` defaults to `465` (SSL)
+- `SMTP_USER` defaults to `elvesworkshop@santasaysmyname.com`
+- `SMTP_PASS` is the mailbox password. Railway already has it. It is never written to the log.
+- `ORDER_ALERT_TO` defaults to `neilcarroll2508@gmail.com`
+
+From and Reply-To are `Santa's Elves <elvesworkshop@santasaysmyname.com>` (the address follows `SMTP_USER`).
+
+1. A sale alert to `ORDER_ALERT_TO`, with a copy to the workshop mailbox. The subject looks like `🎄 New Santa order – £19.99 – Magic bundle`. It includes the package, amount, children, rush, sleigh, customer email, Stripe session id, the UK time, and the delivery window.
+2. A confirmation to the buyer. The Tally link is the same one the redirect uses. The delivery sentence depends on the UK date of the payment:
+   - On or before 1 December: videos start going out from 1 December, in batches, and the video is guaranteed by 15 December.
+   - From 2 December until the rush fee starts: guaranteed by 15 December.
+   - 14–15 December: within 48 hours, so the mail never promises 15 December when that date cannot be kept.
+   - From the rush fee onward, through 19 December: within 48 hours. The fee starts at 00:00 UK on 13 December 2026 (`LATE_ORDERS_FROM`, `2026-12-13T00:00:00Z` in `public/js/checkout-choice.js`). The email calls that same check. It does not keep a second copy of the timestamp.
+
+The once-only mark is metadata on the PaymentIntent (`ssm_email_alert` and `ssm_email_buyer`). The route writes it with the Stripe key it already uses. A second visit sees the mark and does not send. If a send fails, the mark is left unset for that message so the next visit can try again. Two overlapping visits share one claim, and the one that does not win the claim does not send.
+
+To preview the emails without a purchase, on a machine that has `SMTP_PASS`:
+
+```bash
+npm run email:sample
+```
+
+That sends only to `elvesworkshop@santasaysmyname.com`. Subjects start with `[Test]`. To try the real path, pay on a test Payment Link (or a live one) and refund it in Stripe. Open the continue page again and a second pair of emails should not arrive.
+
+## Orders close on 19 December
+
+After 23:59 UK time on Saturday 19 December 2026 the shop stops taking orders, including rush. That instant is `ORDERS_CLOSE_AT` (`2026-12-20T00:00:00Z`) in `public/js/checkout-choice.js`. The order page says Santa's workshop is closed. `GET /order/pay` will not redirect to Stripe. The site does not create Checkout Sessions itself; payment still happens on the existing Payment Links, and this route is what sends a customer there.
+
 ### 1. Create the restricted key
 
 In Stripe:
@@ -78,10 +113,11 @@ In Stripe:
 3. Create restricted key
 4. Name it something like “Santa order redirect”
 5. Set **Checkout Sessions** to **Read**
-6. Leave every other permission off
-7. Create the key and copy the secret (`rk_live_…`)
+6. Set **PaymentIntents** to **Read** and **Write**, so a paid order can be marked as emailed
+7. Leave every other permission off
+8. Create the key and copy the secret (`rk_live_…`)
 
-A restricted key is enough. The route only retrieves the Checkout Session. Do not use the secret key that can create charges.
+A restricted key is enough. It does not need to create charges. Checkout Sessions Read is what loads the order. PaymentIntents Write is what stops a second email. If PaymentIntents cannot be written, Checkout Sessions Write is used instead, for the same mark on the session.
 
 For sandbox payments, create the same kind of key in test mode (`rk_test_…`).
 

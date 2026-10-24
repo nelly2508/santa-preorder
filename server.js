@@ -4,6 +4,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { describeOrder, fallbackLocation } = require("./lib/order-continue");
+const { offerPhase, ordersOpen, packageChoice } = require("./public/js/checkout-choice");
+const vm = require("vm");
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
@@ -260,6 +262,54 @@ function sendOrderPage(res, method, result) {
   );
 }
 
+let siteConfigCache;
+
+function siteConfig() {
+  if (!siteConfigCache) {
+    const sandbox = { window: {} };
+    vm.createContext(sandbox);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, "js/config.js"), "utf8"), sandbox, { filename: "config.js" });
+    siteConfigCache = sandbox.window.SANTA_CONFIG;
+  }
+  return siteConfigCache;
+}
+
+function serverNow(options) {
+  if (typeof options.now === "function") return new Date(options.now());
+  if (options.now != null) return new Date(options.now);
+  return new Date();
+}
+
+const CLOSED_MESSAGE = "Santa's workshop is closed for orders this Christmas. Thank you!";
+
+function closedOrderHtml() {
+  return `<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orders closed — Santa Says My Name</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="order-continue">
+  <main class="section">
+    <div class="wrap narrow">
+      <p class="kicker">Closed</p>
+      <h1>${CLOSED_MESSAGE}</h1>
+      <p><a class="btn" href="/">Back to Santa Says My Name</a></p>
+    </div>
+  </main>
+</body>
+</html>`;
+}
+
+function markOrdersClosed(html) {
+  return html
+    .replace("<body data-sales-page>", "<body data-sales-page data-orders-closed>")
+    .replace('id="orders-closed" hidden', 'id="orders-closed"');
+}
+
 function createServer(options = {}) {
   const env = options.env || process.env;
   const log = options.log || ((message) => console.error(message));
@@ -284,16 +334,80 @@ function createServer(options = {}) {
         env,
         retrieveSession: options.retrieveSession,
         log,
+        sendMail: options.sendMail,
+        readMetadata: options.readMetadata,
+        writeMetadata: options.writeMetadata,
+        stripe: options.stripe,
+        emailWaitMs: options.emailWaitMs,
+        claimId: options.claimId,
+        now: options.emailNow,
+        claimTtlMs: options.claimTtlMs,
+        flights: options.flights,
       }).then(
         (result) => sendOrderPage(res, req.method, result),
         (error) => {
-          log(`order/continue ${sessionId || "(missing session)"}: ${error && error.message ? error.message : error}`);
+          let message = error && error.message ? error.message : String(error);
+          const secret = env && env.SMTP_PASS ? String(env.SMTP_PASS) : "";
+          if (secret) message = message.split(secret).join("[redacted]");
+          log(`order/continue ${sessionId || "(missing session)"}: ${message}`);
           sendOrderPage(res, req.method, {
             location: fallbackLocation(/^cs_(live|test)_[A-Za-z0-9]+$/.test(sessionId) ? sessionId : ""),
             purchase: null,
           });
         }
       );
+      return;
+    }
+
+    if (url.pathname === "/order/pay") {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        res.writeHead(405, { Allow: "GET, HEAD", "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+      const now = serverNow(options);
+      if (!ordersOpen(now)) {
+        send(res, 200, closedOrderHtml(), {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+        }, req.method);
+        return;
+      }
+      const config = siteConfig();
+      const phase = offerPhase({
+        now,
+        earlyBird: config.earlyBird,
+        earlyBirdEnds: config.earlyBirdEnds,
+        lateOrders: config.lateOrders,
+        lateOrdersFrom: config.lateOrdersFrom,
+      });
+      const packageKey = url.searchParams.get("package") === "singleVideo" ? "singleVideo" : "magicBundle";
+      const choice = packageChoice(packageKey, {
+        early: phase === "early",
+        late: phase === "late",
+        prices: config.prices,
+        stripe: config.stripe,
+      });
+      res.writeHead(302, {
+        Location: choice.href,
+        "Cache-Control": "no-store",
+        ...SECURITY_HEADERS,
+      });
+      res.end();
+      return;
+    }
+
+    if ((url.pathname === "/" || url.pathname === "/index.html") && (req.method === "GET" || req.method === "HEAD") && !ordersOpen(serverNow(options))) {
+      fs.readFile(path.join(ROOT, "index.html"), (err, buf) => {
+        if (err) {
+          notFound(res, req.method);
+          return;
+        }
+        send(res, 200, markOrdersClosed(buf.toString("utf8")), {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+        }, req.method);
+      });
       return;
     }
 

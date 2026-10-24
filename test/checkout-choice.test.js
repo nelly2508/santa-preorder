@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { siblingRate, twoChildrenFor, packageChoice, offerPhase } = require("../public/js/checkout-choice");
+const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
 
 const prices = {
   magicBundleFull: "£19.99",
@@ -53,6 +53,17 @@ test("the offer follows early bird, then full price, then late rush", () => {
   assert.strictEqual(offerPhase({ ...phaseOptions, now: "not-a-date" }), "standard");
 });
 
+test("orders stay open through 19 December UK, including the rush fee, and close at midnight", () => {
+  assert.strictEqual(LATE_ORDERS_FROM, "2026-12-13T00:00:00Z");
+  assert.strictEqual(ORDERS_CLOSE_AT, "2026-12-20T00:00:00Z");
+  assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-12-19T23:59:00Z" }), "late");
+  assert.strictEqual(ordersOpen("2026-12-19T23:59:00Z"), true);
+  assert.strictEqual(ordersOpen("2026-12-19T23:59:59Z"), true);
+  assert.strictEqual(ordersOpen("2026-12-20T00:00:00Z"), false);
+  assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-12-20T00:30:00Z" }), "late");
+  assert.strictEqual(ordersOpen("2026-12-13T00:00:00Z"), true);
+});
+
 test("the continue link follows the package the customer chose", () => {
   const earlyBundle = packageChoice("magicBundle", { early: true, prices, stripe });
   const laterBundle = packageChoice("magicBundle", { early: false, prices, stripe });
@@ -80,6 +91,54 @@ test("the continue link follows the package the customer chose", () => {
     { name: lateSingle.name, detail: lateSingle.detail, href: lateSingle.href },
     { name: "Single video", detail: "£19.98, rush included", href: stripe.lateSingle }
   );
+});
+
+test("the server refuses checkout after 19 December, including rush, and redirects before that", async () => {
+  async function withServer(now, run) {
+    const server = createServer({ log() {}, now });
+    const port = await new Promise((resolve) => {
+      server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+    });
+    try {
+      await run(port);
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+
+  await withServer("2026-10-24T12:00:00Z", async (port) => {
+    const early = await fetch(`http://127.0.0.1:${port}/order/pay?package=magicBundle`, { redirect: "manual" });
+    assert.strictEqual(early.status, 302);
+    assert.strictEqual(early.headers.get("location"), "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00");
+    const single = await fetch(`http://127.0.0.1:${port}/order/pay?package=singleVideo`, { redirect: "manual" });
+    assert.strictEqual(single.headers.get("location"), "https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02");
+    const odd = await fetch(`http://127.0.0.1:${port}/order/pay?package=https://evil.example`, { redirect: "manual" });
+    assert.strictEqual(odd.headers.get("location"), "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00");
+  });
+
+  await withServer("2026-12-19T18:00:00Z", async (port) => {
+    const rush = await fetch(`http://127.0.0.1:${port}/order/pay?package=singleVideo`, { redirect: "manual" });
+    assert.strictEqual(rush.status, 302);
+    assert.strictEqual(rush.headers.get("location"), "https://buy.stripe.com/dRmcN6aft69cfZ87E11wY04");
+  });
+
+  await withServer("2026-12-20T00:00:00Z", async (port) => {
+    const home = await fetch(`http://127.0.0.1:${port}/`);
+    const html = await home.text();
+    assert.match(html, /data-orders-closed/);
+    assert.match(html, /Santa's workshop is closed for orders this Christmas\. Thank you!/);
+    assert.doesNotMatch(html, /id="orders-closed" hidden/);
+    const pay = await fetch(`http://127.0.0.1:${port}/order/pay?package=magicBundle`, { redirect: "manual" });
+    assert.strictEqual(pay.status, 200);
+    assert.strictEqual(pay.headers.get("location"), null);
+    const body = await pay.text();
+    assert.match(body, /Santa's workshop is closed for orders this Christmas\. Thank you!/);
+    assert.doesNotMatch(body, /buy\.stripe\.com/);
+    const rush = await fetch(`http://127.0.0.1:${port}/order/pay?package=singleVideo`, { redirect: "manual" });
+    assert.strictEqual(rush.status, 200);
+    assert.doesNotMatch(await rush.text(), /buy\.stripe\.com/);
+  });
 });
 
 test("the page copy uses the configured sibling price and the pay step", async () => {
@@ -129,6 +188,10 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(termsHtml, /the price includes rush delivery/);
     assert.doesNotMatch(termsHtml, /Rush £4\.99|if you pay for it/);
     assert.doesNotMatch(termsHtml, /Father Christmas/);
+    assert.match(termsHtml, /Saturday 19 December/);
+    assert.match(html, /The last day is Sat 19 Dec/);
+    assert.match(html, /id="orders-closed"/);
+    assert.doesNotMatch(html, /data-orders-closed/);
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
