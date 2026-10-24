@@ -36,19 +36,19 @@ async function withServer(fn, options) {
 
 test("preview assets are the original files, with a smaller webp poster", () => {
   assert.strictEqual(
-    sha256(path.join(PUBLIC, "assets/santa-preview.mp4")),
-    "4e2689099236ff17cf6e7445bb5688d33d3902ae92ab3b847c38219436836b5b"
+    sha256(path.join(PUBLIC, "assets/santa-preview-v3.mp4")),
+    "d6d62331f67114058263b2a450deb78c4e5a862cdc4c027ea16d1429c850aefc"
   );
   assert.strictEqual(
-    sha256(path.join(PUBLIC, "assets/santa-preview-poster.jpg")),
-    "5733b7b151adcaf4c5fb5f81e34c24e33909e5f167616bda8138c41e2c6e6542"
+    sha256(path.join(PUBLIC, "assets/santa-preview-poster-v3.jpg")),
+    "d00d1ce90c0aa523f776edd6fc1fce59514c36cdcbfafb2f3f96180ea7240972"
   );
   assert.strictEqual(
     sha256(path.join(PUBLIC, "assets/santa-preview.vtt")),
     "36a2bf353fc8bca777b1b4307967c5bb3444b34bc304dd532045816f09ec541d"
   );
-  const jpg = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster.jpg")).size;
-  const webp = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster.webp")).size;
+  const jpg = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster-v3.jpg")).size;
+  const webp = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster-v3.webp")).size;
   assert.ok(webp < jpg, `webp poster should be smaller than the jpg (${webp} >= ${jpg})`);
 
   const vtt = fs.readFileSync(path.join(PUBLIC, "assets/santa-preview.vtt"), "utf8");
@@ -69,11 +69,11 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.match(html, /id="hear-santa"[\s\S]*?\bcontrols\b/);
     assert.match(html, /id="hear-santa"[\s\S]*?\bplaysinline\b/);
     assert.match(html, /id="hear-santa"[\s\S]*?preload="metadata"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?width="1280"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?height="720"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?poster="\/assets\/santa-preview-poster\.jpg"/);
+    assert.match(html, /id="hear-santa"[\s\S]*?width="1080"/);
+    assert.match(html, /id="hear-santa"[\s\S]*?height="1350"/);
+    assert.match(html, /id="hear-santa"[\s\S]*?poster="\/assets\/santa-preview-poster-v3\.jpg"/);
     assert.match(html, /id="hear-santa"[\s\S]*?aria-label="Santa saying a short hello"/);
-    assert.match(html, /src="\/assets\/santa-preview\.mp4"/);
+    assert.match(html, /src="\/assets\/santa-preview-v3\.mp4"/);
     assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
     assert.match(
       html,
@@ -105,6 +105,10 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     );
     assert.match(html, /Santa sits in an armchair by the fire/);
     assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bautoplay\b/);
+    assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bmuted\b/);
+    const css = await (await fetch(`http://127.0.0.1:${port}/css/styles.css`)).text();
+    assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/);
+    assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*object-fit:\s*contain/);
     assert.doesNotMatch(html, /Father Christmas|Oliver|sample\.mp4|Sample clip|sample-video/i);
     const withoutClosedLine = html.replace(/Santa's workshop is closed for orders this Christmas\. Thank you!/g, "");
     assert.doesNotMatch(withoutClosedLine, /workshop|By the fire first|coming later|workshop\.webp|sleigh\.webp|id="scenes"/i);
@@ -231,9 +235,9 @@ test("HEAD honours a byte range and does not send a body", async () => {
 });
 
 test("the Santa preview answers the range probe iOS uses", async () => {
-  const file = fs.readFileSync(path.join(PUBLIC, "assets/santa-preview.mp4"));
+  const file = fs.readFileSync(path.join(PUBLIC, "assets/santa-preview-v3.mp4"));
   await withServer(async (port) => {
-    const probe = await fetch(`http://127.0.0.1:${port}/assets/santa-preview.mp4`, {
+    const probe = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-v3.mp4`, {
       headers: { Range: "bytes=0-1" },
     });
     assert.strictEqual(probe.status, 206);
@@ -243,7 +247,7 @@ test("the Santa preview answers the range probe iOS uses", async () => {
     assert.strictEqual(Number(probe.headers.get("content-length")), 2);
     assert.deepStrictEqual(Buffer.from(await probe.arrayBuffer()), file.subarray(0, 2));
 
-    const rest = await fetch(`http://127.0.0.1:${port}/assets/santa-preview.mp4`, {
+    const rest = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-v3.mp4`, {
       headers: { Range: "bytes=0-" },
     });
     assert.strictEqual(rest.status, 206);
@@ -254,11 +258,11 @@ test("the Santa preview answers the range probe iOS uses", async () => {
     assert.deepStrictEqual(body.subarray(0, 8), file.subarray(0, 8));
     assert.strictEqual(body.subarray(4, 8).toString("ascii"), "ftyp");
 
-    const poster = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-poster.jpg`, { method: "HEAD" });
+    const poster = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-poster-v3.jpg`, { method: "HEAD" });
     assert.strictEqual(poster.status, 200);
     assert.strictEqual(poster.headers.get("content-type"), "image/jpeg");
 
-    const webp = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-poster.webp`, { method: "HEAD" });
+    const webp = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-poster-v3.webp`, { method: "HEAD" });
     assert.strictEqual(webp.status, 200);
     assert.strictEqual(webp.headers.get("content-type"), "image/webp");
 
@@ -285,7 +289,7 @@ test("a range header on /order/continue still sends the customer on to Tally", a
       );
       assert.doesNotMatch(body, /data-purchase-value/);
 
-      const blocked = await fetch(`http://127.0.0.1:${port}/assets/santa-preview.mp4`, { method: "POST" });
+      const blocked = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-v3.mp4`, { method: "POST" });
       assert.strictEqual(blocked.status, 405);
     },
     {

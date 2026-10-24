@@ -51,7 +51,7 @@ From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the swi
 
 `lateOrders` controls the switch. `true` forces the late links. `false` keeps the earlier links even after 13 December. `null` follows `lateOrdersFrom`. To preview a date without editing the config, open the page with `?asof=2026-12-13T00:00:00Z` (or any other ISO date). An invalid `asof` is ignored. `lateOrders` set to `true` or `false` still wins over `asof` for whether the late prices are on. `asof` only changes what this page shows. It does not change Stripe.
 
-The only video on the page is the short Hear Santa clip at `public/assets/santa-preview.mp4`. Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster.jpg` and the captions are `public/assets/santa-preview.vtt`. Letter and certificate samples are the Lily images in `public/assets`.
+The only video on the page is the short Hear Santa clip at `public/assets/santa-preview-v3.mp4` (4:5). Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster-v3.jpg` and the captions are `public/assets/santa-preview.vtt`. Letter and certificate samples are the Lily images in `public/assets`.
 
 ## After payment: the redirect
 
