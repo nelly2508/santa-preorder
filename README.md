@@ -55,13 +55,15 @@ The only video on the page is the short Hear Santa clip at `public/assets/santa-
 
 ## After payment: the redirect
 
-`GET /order/continue?session_id={CHECKOUT_SESSION_ID}` runs on the Node server Railway already starts. It looks up that Checkout Session with the Stripe API, counts the children, and redirects to:
+`GET /order/continue?session_id={CHECKOUT_SESSION_ID}` runs on the Node server Railway already starts. It looks up that Checkout Session with the Stripe API, counts the children, and shows a short page that sends the customer on to:
 
 ```
 https://tally.so/r/Dq25LE?order=<session_id>&children=<n>&rush=<0|1>&sleigh=<0|1>&package=<bundle_early_bird|bundle|single>&email=<address>
 ```
 
 `email` is the address on the Checkout Session (`customer_details.email`), URL-encoded. It is left off when Stripe has no email. `children` is 1 plus the quantity of the Sibling add-on. Each sibling is one extra child at £11.99, up to 4 siblings. A Magic bundle, early bird or full price, counts as including the named sleigh. The single video counts the sleigh only when that add-on was bought. Rush is 1 only when the Checkout Session includes the rush line (`sku` `addon_rush`). The late links include that line, so a late order is `rush=1` with package `bundle` or `single`.
+
+The query string is unchanged. The page exists so that, if this browser has already accepted the Meta cookie and Stripe reports `amount_total` in pounds, the Meta pixel can record a Purchase for that amount in GBP before the browser moves on. If the amount is missing, or the visitor has not accepted, no purchase is sent. The pixel is not loaded until Accept.
 
 If the session is missing, unpaid, or Stripe returns an error, the customer still goes to Tally with only `order` set, and the error is logged. They are never left on a dead page.
 

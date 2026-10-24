@@ -268,18 +268,21 @@ test("the Santa preview answers the range probe iOS uses", async () => {
   });
 });
 
-test("a range header on /order/continue still redirects", async () => {
+test("a range header on /order/continue still sends the customer on to Tally", async () => {
   await withServer(
     async (port) => {
       const redirect = await fetch(
         `http://127.0.0.1:${port}/order/continue?session_id=cs_live_range1`,
         { redirect: "manual", headers: { Range: "bytes=0-1" } }
       );
-      assert.strictEqual(redirect.status, 302);
-      assert.strictEqual(
-        redirect.headers.get("location"),
-        "https://tally.so/r/Dq25LE?order=cs_live_range1&children=1&rush=0&sleigh=0&package=single"
+      assert.strictEqual(redirect.status, 200);
+      assert.strictEqual(redirect.headers.get("content-range"), null);
+      const body = await redirect.text();
+      assert.match(
+        body,
+        /data-continue="https:\/\/tally\.so\/r\/Dq25LE\?order=cs_live_range1&amp;children=1&amp;rush=0&amp;sleigh=0&amp;package=single"/
       );
+      assert.doesNotMatch(body, /data-purchase-value/);
 
       const blocked = await fetch(`http://127.0.0.1:${port}/assets/santa-preview.mp4`, { method: "POST" });
       assert.strictEqual(blocked.status, 405);

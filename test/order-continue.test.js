@@ -3,7 +3,7 @@
 const assert = require("assert");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { resolveOrderRedirect, summariseCheckout } = require("../lib/order-continue");
+const { resolveOrderRedirect, summariseCheckout, purchaseFromSession, describeOrder } = require("../lib/order-continue");
 
 function line({ quantity = 1, description = "", sku = "", packageName = "", productSku = "", productName = "", unitAmount, currency = "gbp" }) {
   const product = productSku || productName ? { name: productName, metadata: productSku ? { sku: productSku } : {} } : "prod_x";
@@ -288,7 +288,66 @@ function listen(server) {
   });
 }
 
-test("GET /order/continue redirects, and the homepage still loads", async () => {
+test("a paid amount in pounds is reported as GBP, and anything else is left off", () => {
+  assert.deepStrictEqual(
+    purchaseFromSession({ payment_status: "paid", amount_total: 1699, currency: "gbp" }),
+    { value: 16.99, currency: "GBP" }
+  );
+  assert.deepStrictEqual(
+    purchaseFromSession({ payment_status: "paid", amount_total: "2498", currency: "GBP" }),
+    { value: 24.98, currency: "GBP" }
+  );
+  assert.strictEqual(
+    purchaseFromSession({ payment_status: "paid", amount_total: 1699, currency: "usd" }),
+    null
+  );
+  assert.strictEqual(purchaseFromSession({ payment_status: "paid", currency: "gbp" }), null);
+  assert.strictEqual(
+    purchaseFromSession({ payment_status: "unpaid", amount_total: 1699, currency: "gbp" }),
+    null
+  );
+});
+
+test("the Tally query stays the same when Stripe also reports the amount paid", async () => {
+  const described = await describeOrder({
+    sessionId: "cs_live_amt1",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret" },
+    log() {},
+    retrieveSession() {
+      return {
+        ...paid([line({ description: "Magic bundle", unitAmount: 1699 })]),
+        amount_total: 1699,
+        currency: "gbp",
+        customer_details: { email: "a@b.co" },
+      };
+    },
+  });
+  assert.strictEqual(
+    described.location,
+    "https://tally.so/r/Dq25LE?order=cs_live_amt1&children=1&rush=0&sleigh=1&package=bundle&email=a%40b.co"
+  );
+  assert.deepStrictEqual(described.purchase, { value: 16.99, currency: "GBP" });
+
+  const foreign = await describeOrder({
+    sessionId: "cs_live_usd1",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret" },
+    log() {},
+    retrieveSession() {
+      return {
+        ...paid([line({ description: "Single video", unitAmount: 1499 })]),
+        amount_total: 1499,
+        currency: "usd",
+      };
+    },
+  });
+  assert.strictEqual(foreign.purchase, null);
+  assert.strictEqual(
+    foreign.location,
+    "https://tally.so/r/Dq25LE?order=cs_live_usd1&children=1&rush=0&sleigh=0&package=single"
+  );
+});
+
+test("GET /order/continue sends the customer on to Tally, and the homepage still loads", async () => {
   const server = createServer({
     env: { STRIPE_SECRET_KEY: "rk_live_secret" },
     log() {},
@@ -298,6 +357,8 @@ test("GET /order/continue redirects, and the homepage still loads", async () => 
           line({ description: "Single video", unitAmount: 1499 }),
           line({ description: "Sibling", quantity: 3 }),
         ]),
+        amount_total: 4196,
+        currency: "gbp",
         customer_details: { email: "buyer@example.com" },
       };
     },
@@ -305,11 +366,18 @@ test("GET /order/continue redirects, and the homepage still loads", async () => 
   const port = await listen(server);
   try {
     const redirect = await fetch(`http://127.0.0.1:${port}/order/continue?session_id=cs_live_route1`, { redirect: "manual" });
-    assert.strictEqual(redirect.status, 302);
-    assert.strictEqual(
-      redirect.headers.get("location"),
-      "https://tally.so/r/Dq25LE?order=cs_live_route1&children=4&rush=0&sleigh=0&package=single&email=buyer%40example.com"
-    );
+    assert.strictEqual(redirect.status, 200);
+    assert.strictEqual(redirect.headers.get("content-type"), "text/html; charset=utf-8");
+    assert.strictEqual(redirect.headers.get("cache-control"), "no-store");
+    assert.strictEqual(redirect.headers.get("referrer-policy"), "no-referrer");
+    const orderHtml = await redirect.text();
+    const tally = "https://tally.so/r/Dq25LE?order=cs_live_route1&amp;children=4&amp;rush=0&amp;sleigh=0&amp;package=single&amp;email=buyer%40example.com";
+    assert.match(orderHtml, new RegExp(`data-continue="${tally.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`));
+    assert.match(orderHtml, /data-purchase-value="41\.96"/);
+    assert.match(orderHtml, /data-purchase-currency="GBP"/);
+    assert.match(orderHtml, /src="\/js\/meta-pixel\.js"/);
+    assert.doesNotMatch(orderHtml, /connect\.facebook\.net/);
+    assert.doesNotMatch(orderHtml, /[?&](?:value|amount)=/);
     const home = await fetch(`http://127.0.0.1:${port}/`);
     assert.strictEqual(home.status, 200);
     const html = await home.text();
@@ -332,6 +400,38 @@ test("GET /order/continue redirects, and the homepage still loads", async () => 
     assert.match(termsHtml, /Neil Carroll trading as Santa Says My Name, Dunholme, Thornes Road, Wakefield WF2 8QN/);
     assert.match(termsHtml, /href="\/privacy"/);
     assert.doesNotMatch(termsHtml, /Father Christmas/);
+
+    const pixel = await fetch(`http://127.0.0.1:${port}/js/meta-pixel.js`);
+    assert.strictEqual(pixel.status, 200);
+    const pixelJs = await pixel.text();
+    assert.match(pixelJs, /898274206954064/);
+    assert.match(pixelJs, /fbq\("track", "PageView"\)/);
+    assert.match(pixelJs, /fbq\("track", "ViewContent"/);
+    assert.match(pixelJs, /fbq\("track", "InitiateCheckout", \{ currency: CURRENCY \}\)/);
+    assert.match(pixelJs, /fbq\("track", "Purchase"/);
+    assert.match(pixelJs, /data-sales-page/);
+    assert.match(pixelJs, /buy\.stripe\.com/);
+    assert.match(pixelJs, /data-pay/);
+    assert.match(pixelJs, /consent === "yes"/);
+    assert.match(pixelJs, /fbq\("consent", "grant"\)/);
+    assert.match(html, /data-sales-page/);
+    assert.match(html, /src="\/js\/meta-pixel\.js"/);
+    assert.match(privacyHtml, /src="\/js\/meta-pixel\.js"/);
+    assert.match(termsHtml, /src="\/js\/meta-pixel\.js"/);
+    assert.doesNotMatch(html, /connect\.facebook\.net/);
+    assert.doesNotMatch(privacyHtml, /connect\.facebook\.net/);
+    assert.doesNotMatch(privacyHtml, /We do not use Meta today/);
+    assert.doesNotMatch(privacyHtml, /if we use them later|If we later use Meta/);
+    assert.match(privacyHtml, /only with your consent/);
+    assert.match(privacyHtml, /only if you accept/);
+    assert.match(privacyHtml, /The pixel does not load until you accept/);
+    const csp = home.headers.get("content-security-policy");
+    assert.match(csp, /script-src[^;]*'self'/);
+    assert.match(csp, /script-src[^;]*https:\/\/connect\.facebook\.net/);
+    assert.match(csp, /img-src[^;]*'self'/);
+    assert.match(csp, /img-src[^;]*https:\/\/www\.facebook\.com/);
+    assert.match(csp, /connect-src[^;]*https:\/\/www\.facebook\.com/);
+    assert.doesNotMatch(csp, /unsafe-inline/);
   } finally {
     server.close();
   }

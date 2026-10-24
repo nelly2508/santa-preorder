@@ -3,7 +3,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { resolveOrderRedirect, fallbackLocation } = require("./lib/order-continue");
+const { describeOrder, fallbackLocation } = require("./lib/order-continue");
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
@@ -13,7 +13,7 @@ const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
-    "default-src 'self'; img-src 'self'; media-src 'self'; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+    "default-src 'self'; img-src 'self' https://www.facebook.com; media-src 'self'; style-src 'self'; script-src 'self' https://connect.facebook.net; font-src 'self'; connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com; frame-src https://www.facebook.com; base-uri 'self'; frame-ancestors 'none'",
 };
 
 const MIME = {
@@ -206,13 +206,58 @@ function serveFirst(files, index, res, method, rangeHeader) {
   });
 }
 
-function redirect(res, location) {
-  res.writeHead(302, {
-    Location: location,
-    "Cache-Control": "no-store",
-    "Referrer-Policy": "no-referrer",
-  });
-  res.end();
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function orderContinueHtml(location, purchase) {
+  const safeUrl = escapeHtml(location);
+  const hasAmount = purchase && Number.isFinite(purchase.value);
+  const purchaseAttrs = hasAmount
+    ? ` data-purchase-value="${escapeHtml(purchase.value.toFixed(2))}" data-purchase-currency="GBP"`
+    : "";
+  return `<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment received — Santa Says My Name</title>
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/styles.css">
+  <noscript><meta http-equiv="refresh" content="0;url=${safeUrl}"></noscript>
+</head>
+<body class="order-continue" data-order-continue data-continue="${safeUrl}"${purchaseAttrs}>
+  <main class="section">
+    <div class="wrap narrow">
+      <p class="kicker">Paid</p>
+      <h1>Payment received.</h1>
+      <p class="lede">Next, tell us your child\u2019s name. We\u2019re opening the order form.</p>
+      <p><a class="btn" href="${safeUrl}" rel="noreferrer">Continue to the order form</a></p>
+    </div>
+  </main>
+  <script src="/js/meta-pixel.js"></script>
+</body>
+</html>`;
+}
+
+function sendOrderPage(res, method, result) {
+  const location = result && result.location ? result.location : fallbackLocation("");
+  send(
+    res,
+    200,
+    orderContinueHtml(location, result && result.purchase),
+    {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer",
+    },
+    method
+  );
 }
 
 function createServer(options = {}) {
@@ -234,16 +279,19 @@ function createServer(options = {}) {
         return;
       }
       const sessionId = url.searchParams.get("session_id") || "";
-      resolveOrderRedirect({
+      describeOrder({
         sessionId,
         env,
         retrieveSession: options.retrieveSession,
         log,
       }).then(
-        (location) => redirect(res, location),
+        (result) => sendOrderPage(res, req.method, result),
         (error) => {
           log(`order/continue ${sessionId || "(missing session)"}: ${error && error.message ? error.message : error}`);
-          redirect(res, fallbackLocation(/^cs_(live|test)_[A-Za-z0-9]+$/.test(sessionId) ? sessionId : ""));
+          sendOrderPage(res, req.method, {
+            location: fallbackLocation(/^cs_(live|test)_[A-Za-z0-9]+$/.test(sessionId) ? sessionId : ""),
+            purchase: null,
+          });
         }
       );
       return;
