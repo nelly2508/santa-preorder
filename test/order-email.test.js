@@ -456,7 +456,7 @@ test("the sample send can only address the workshop mailbox", async () => {
   assert.match(bodies, /within 48 hours/);
   await assert.rejects(
     () => sendSampleOrderEmails({ env: {}, sendMail: async () => {} }),
-    /SMTP_PASS is not set/
+    /SMTP_PASS is set/
   );
 });
 

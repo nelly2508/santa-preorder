@@ -310,6 +310,79 @@ function markOrdersClosed(html) {
     .replace('id="orders-closed" hidden', 'id="orders-closed"');
 }
 
+const WEBHOOK_MAX_BYTES = 1024 * 1024;
+
+function webhookReply(res, status, body) {
+  res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+  res.end(JSON.stringify(body));
+}
+
+function handleStripeWebhook(req, res, { env, log, options }) {
+  if (req.method !== "POST") {
+    res.writeHead(405, { Allow: "POST", "Cache-Control": "no-store" });
+    res.end();
+    return;
+  }
+  const secret = env.STRIPE_WEBHOOK_SECRET ? String(env.STRIPE_WEBHOOK_SECRET).trim() : "";
+  if (!secret) {
+    log("stripe/webhook: STRIPE_WEBHOOK_SECRET is not set, refusing");
+    req.resume();
+    webhookReply(res, 503, { error: "webhook not configured" });
+    return;
+  }
+  const chunks = [];
+  let size = 0;
+  let aborted = false;
+  req.on("data", (chunk) => {
+    size += chunk.length;
+    if (size > WEBHOOK_MAX_BYTES && !aborted) {
+      aborted = true;
+      webhookReply(res, 413, { error: "too large" });
+      req.destroy();
+      return;
+    }
+    if (!aborted) chunks.push(chunk);
+  });
+  req.on("end", async () => {
+    if (aborted) return;
+    const raw = Buffer.concat(chunks);
+    let event;
+    try {
+      const verify = options.constructWebhookEvent || ((body, sig, sec) => require("stripe").webhooks.constructEvent(body, sig, sec));
+      event = verify(raw, req.headers["stripe-signature"] || "", secret);
+    } catch {
+      log("stripe/webhook: signature verification failed");
+      webhookReply(res, 400, { error: "bad signature" });
+      return;
+    }
+    if (!event || (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded")) {
+      webhookReply(res, 200, { received: true, ignored: true });
+      return;
+    }
+    const sessionId = event.data && event.data.object && event.data.object.id ? String(event.data.object.id) : "";
+    try {
+      await describeOrder({
+        sessionId,
+        env,
+        retrieveSession: options.retrieveSession,
+        log,
+        sendMail: options.sendMail,
+        readMetadata: options.readMetadata,
+        writeMetadata: options.writeMetadata,
+        stripe: options.stripe,
+        emailWaitMs: options.webhookEmailWaitMs == null ? 20000 : options.webhookEmailWaitMs,
+        claimId: options.claimId,
+        now: options.emailNow,
+        claimTtlMs: options.claimTtlMs,
+        flights: options.flights,
+      });
+    } catch (error) {
+      log(`stripe/webhook ${sessionId}: ${error && error.message ? "order handling failed" : "order handling failed"}`);
+    }
+    webhookReply(res, 200, { received: true });
+  });
+}
+
 function createServer(options = {}) {
   const env = options.env || process.env;
   const log = options.log || ((message) => console.error(message));
@@ -319,6 +392,11 @@ function createServer(options = {}) {
       url = new URL(req.url, "http://localhost");
     } catch {
       notFound(res, req.method);
+      return;
+    }
+
+    if (url.pathname === "/stripe/webhook") {
+      handleStripeWebhook(req, res, { env, log, options });
       return;
     }
 
@@ -347,8 +425,9 @@ function createServer(options = {}) {
         (result) => sendOrderPage(res, req.method, result),
         (error) => {
           let message = error && error.message ? error.message : String(error);
-          const secret = env && env.SMTP_PASS ? String(env.SMTP_PASS) : "";
-          if (secret) message = message.split(secret).join("[redacted]");
+          for (const secret of [env && env.SMTP_PASS, env && env.BREVO_API_KEY]) {
+            if (secret) message = message.split(String(secret)).join("[redacted]");
+          }
           log(`order/continue ${sessionId || "(missing session)"}: ${message}`);
           sendOrderPage(res, req.method, {
             location: fallbackLocation(/^cs_(live|test)_[A-Za-z0-9]+$/.test(sessionId) ? sessionId : ""),

@@ -77,6 +77,8 @@ A paid session also sends the order emails below. A mail failure never changes w
 
 When `/order/continue` has confirmed the Checkout Session is paid, the server sends two messages from the site mailbox. Refreshing the page does not send them again.
 
+- `BREVO_API_KEY`: when set, mail goes through Brevo's HTTPS API (`POST https://api.brevo.com/v3/smtp/email`). Railway Hobby blocks outbound SMTP, so this is the live path. SMTP below is used only when this is unset.
+- `STRIPE_WEBHOOK_SECRET`: signing secret for `POST /stripe/webhook` (`checkout.session.completed`). Without it the route answers 503 and `/order/continue` still sends.
 - `SMTP_HOST` defaults to `secure244.inmotionhosting.com`
 - `SMTP_PORT` defaults to `465` (SSL)
 - `SMTP_USER` defaults to `elvesworkshop@santasaysmyname.com`
