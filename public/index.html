@@ -379,6 +379,17 @@
     <p class="footer-line">Made with AI · Checked by a human elf</p>
   </footer>
 
+  <dialog id="exit-popup" class="exit-popup" role="dialog" aria-modal="true" aria-labelledby="exit-popup-title">
+    <button type="button" class="exit-popup-close" id="exit-popup-close" aria-label="Close">&times;</button>
+    <div class="exit-popup-media" id="exit-popup-media"></div>
+    <div class="exit-popup-body">
+      <button type="button" class="btn btn-line" id="exit-unmute" hidden aria-pressed="false" aria-label="Unmute video">Unmute</button>
+      <p id="exit-popup-title">Before you go... give your favourite little ones that moment this Christmas.</p>
+      <a class="btn" id="exit-popup-cta" data-pay="magicBundle" href="#checkout">Hear Santa say their name</a>
+      <button type="button" class="exit-popup-dismiss" id="exit-popup-no">No thanks</button>
+    </div>
+  </dialog>
+
   <dialog id="enlarge" class="enlarge">
     <form method="dialog">
       <button type="submit" class="enlarge-close">Close</button>
@@ -390,5 +401,6 @@
   <script src="js/checkout-choice.js"></script>
   <script src="js/main.js"></script>
   <script src="/js/meta-pixel.js"></script>
+  <script src="js/exit-popup.js"></script>
 </body>
 </html>

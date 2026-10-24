@@ -53,6 +53,8 @@ From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the swi
 
 The only video on the page is the short Hear Santa clip at `public/assets/santa-preview-v3.mp4` (4:5). Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster-v3.jpg` and the captions are `public/assets/santa-preview.vtt`. Letter and certificate samples are the Lily images in `public/assets`.
 
+An exit popup on the sales page can play `public/assets/exit-sales-v4.mp4` (also 4:5). It stays closed until a desktop visitor leaves toward the top of the window, or a phone visitor has been on the page for about 25 seconds and flicks upward. It shows at most once every 7 days, waits until the cookie banner is dismissed, and does not load the video until it opens. Open the sales page with `?exitpopup=1` to show it straight away for a test. That test visit does not use up the 7 days.
+
 ## After payment: the redirect
 
 `GET /order/continue?session_id={CHECKOUT_SESSION_ID}` runs on the Node server Railway already starts. It looks up that Checkout Session with the Stripe API, counts the children, and shows a short page that sends the customer on to:

@@ -80,6 +80,15 @@
     document.addEventListener("click", onCheckoutClick, true);
   }
 
+  function trackCustom(name) {
+    if (readConsent() !== "yes") return;
+    if (typeof fbq !== "function") return;
+    if (!name) return;
+    fbq("trackCustom", name);
+  }
+
+  window.SANTA_PIXEL = { trackCustom: trackCustom };
+
   function load(done) {
     var finish = done ? once(done) : function () {};
     if (window.fbq) {
