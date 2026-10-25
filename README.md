@@ -88,7 +88,7 @@ When `/order/continue` has confirmed the Checkout Session is paid, the server se
 From and Reply-To are `Santa's Elves <elvesworkshop@santasaysmyname.com>` (the address follows `SMTP_USER`).
 
 1. A sale alert to `ORDER_ALERT_TO`, with a copy to the workshop mailbox. The subject looks like `🎄 New Santa order – £19.99 – Magic bundle`. It includes the package, amount, children, rush, sleigh, customer email, Stripe session id, the UK time, and the delivery window.
-2. A confirmation to the buyer. The Tally link is the same one the redirect uses. The delivery sentence depends on the UK date of the payment:
+2. A confirmation to the buyer. The Tally link is built by `tallyOrderUrl`, the same helper as the redirect, so it carries `order`, `children`, `rush`, `sleigh`, `package`, and `email` when Stripe has an address. The message keeps the existing wording and adds a line for anyone who paid and did not submit the form, plus a “Finish your order details” button. The delivery sentence depends on the UK date of the payment:
    - On or before 1 December: videos start going out from 1 December, in batches, and the video is guaranteed by 15 December.
    - From 2 December until the rush fee starts: guaranteed by 15 December.
    - 14–15 December: within 48 hours, so the mail never promises 15 December when that date cannot be kept.

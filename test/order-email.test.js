@@ -4,6 +4,7 @@ const assert = require("assert");
 const test = require("node:test");
 const { createServer } = require("../server");
 const { describeOrder } = require("../lib/order-continue");
+const { tallyOrderUrl } = require("../lib/tally-order-url");
 const { LATE_ORDERS_FROM, offerPhase } = require("../public/js/checkout-choice");
 const {
   WORKSHOP,
@@ -159,10 +160,15 @@ test("the customer email is warm night-and-gold html plus text, with the tally l
   assert.match(message.text, /The Santa Says My Name team/);
   assert.match(message.text, /santasaysmyname\.com/);
   assert.match(message.text, /Made with AI, checked by a human elf/);
+  assert.match(message.text, /If you didn't finish the order form after paying, use this link\./);
+  assert.match(message.text, /Finish your order details: /);
   assert.match(message.html, /#140e0c/);
   assert.match(message.html, /#e8b75a/);
+  assert.match(message.html, /If you didn't finish the order form after paying, use this link\./);
+  assert.match(message.html, />Finish your order details</);
   assert.match(message.html, new RegExp(escapeHtml(location).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(`${message.text}\n${message.html}`, /recording/i);
+  assert.doesNotMatch(`${message.text}\n${message.html}`, /money back|money-back|refund/i);
   assert.doesNotMatch(message.text, /within 48 hours/);
 
   const single = renderCustomerEmail(orderFacts({
@@ -380,6 +386,89 @@ test("the alert goes to Neil with a workshop copy, and the buyer gets the confir
   assert.strictEqual(messages[1].cc, undefined);
   assert.strictEqual(messages[1].replyTo, WORKSHOP);
   assert.ok(!JSON.stringify(messages).includes(PASS));
+});
+
+test("the confirmation email uses the same encoded Tally link as the redirect", async () => {
+  const messages = [];
+  const store = memoryMetadata();
+  const described = await describeOrder({
+    sessionId: "cs_live_samelink",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret", SMTP_PASS: PASS },
+    log() {},
+    readMetadata: store.readMetadata,
+    writeMetadata: store.writeMetadata,
+    flights: new Map(),
+    retrieveSession() {
+      return {
+        ...paidSession(Date.parse("2026-11-20T15:04:00Z") / 1000, {
+          customer_details: { email: " parent+tag@example.com " },
+        }),
+        line_items: {
+          data: [{
+            quantity: 1,
+            description: "Single video",
+            price: {
+              currency: "gbp",
+              unit_amount: 1499,
+              metadata: { package: "single" },
+              product: { name: "Single video" },
+            },
+          }],
+        },
+      };
+    },
+    sendMail(message) {
+      messages.push(message);
+    },
+  });
+  const expected = "https://tally.so/r/Dq25LE?order=cs_live_samelink&children=1&rush=0&sleigh=0&package=single&email=parent%2Btag%40example.com";
+  assert.strictEqual(described.location, expected);
+  assert.strictEqual(
+    described.location,
+    tallyOrderUrl("cs_live_samelink", { children: 1, rush: false, sleigh: false, packageType: "single" }, "parent+tag@example.com")
+  );
+  const params = new URL(described.location).searchParams;
+  assert.deepStrictEqual([...params.keys()], ["order", "children", "rush", "sleigh", "package", "email"]);
+  const buyer = messages.find((message) => message.to === "parent+tag@example.com");
+  assert.ok(buyer);
+  assert.ok(buyer.text.includes(expected));
+  assert.match(buyer.text, /If you didn't finish the order form after paying, use this link\./);
+  assert.match(buyer.text, /Finish your order details: /);
+  assert.ok(buyer.html.includes(escapeHtml(expected)));
+  assert.match(buyer.html, /href="https:\/\/tally\.so\/r\/Dq25LE\?order=cs_live_samelink&amp;children=1&amp;rush=0&amp;sleigh=0&amp;package=single&amp;email=parent%2Btag%40example\.com"/);
+  assert.match(buyer.html, />Finish your order details</);
+  assert.doesNotMatch(`${buyer.text}\n${buyer.html}`, /money back|money-back|refund/i);
+
+  const ignored = orderFacts({
+    sessionId: "cs_live_samelink",
+    location: "https://example.com/not-the-form",
+    summary: { children: 1, rush: false, sleigh: false, packageType: "single" },
+    session: paidSession(Date.parse("2026-11-20T15:04:00Z") / 1000, {
+      customer_details: { email: "parent+tag@example.com" },
+    }),
+  });
+  assert.strictEqual(ignored.tallyUrl, expected);
+
+  const messagesOnlyOrder = [];
+  const orderOnlyStore = memoryMetadata();
+  const orderOnly = await describeOrder({
+    sessionId: "cs_live_orderonly",
+    env: { STRIPE_SECRET_KEY: "rk_live_secret", SMTP_PASS: PASS },
+    log() {},
+    readMetadata: orderOnlyStore.readMetadata,
+    writeMetadata: orderOnlyStore.writeMetadata,
+    flights: new Map(),
+    retrieveSession() {
+      return paidSession(Date.parse("2026-11-20T15:04:00Z") / 1000);
+    },
+    sendMail(message) {
+      messagesOnlyOrder.push(message);
+    },
+  });
+  assert.strictEqual(orderOnly.location, "https://tally.so/r/Dq25LE?order=cs_live_orderonly");
+  const buyerOnlyOrder = messagesOnlyOrder.find((message) => message.to === "parent@example.com");
+  assert.ok(buyerOnlyOrder.text.includes(orderOnly.location));
+  assert.doesNotMatch(buyerOnlyOrder.text, /children=|rush=|sleigh=/);
 });
 
 test("a paid order still reaches Tally when the email fails, and an unpaid order sends nothing", async () => {
