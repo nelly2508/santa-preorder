@@ -51,7 +51,7 @@ From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the swi
 
 `lateOrders` controls the switch. `true` forces the late links. `false` keeps the earlier links even after 13 December. `null` follows `lateOrdersFrom`. To preview a date without editing the config, open the page with `?asof=2026-12-13T00:00:00Z` (or any other ISO date). An invalid `asof` is ignored. `lateOrders` set to `true` or `false` still wins over `asof` for whether the late prices are on. `asof` only changes what this page shows. It does not change Stripe.
 
-The only video on the page is the short Hear Santa clip at `public/assets/santa-preview-v3.mp4` (4:5). Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster-v3.jpg` and the captions are `public/assets/santa-preview.vtt`. Letter and certificate samples are the Lily images in `public/assets`.
+The only video on the page is the short Hear Santa clip at `public/assets/santa-preview-v3.mp4` (4:5). Santa says the name Saoirse. It is not the full film. The poster is `public/assets/santa-preview-poster-v3.jpg`, also served at `/assets/review-poster-v3.jpg`, and the captions are `public/assets/santa-preview.vtt`. The clip sits under the headline and loads metadata only until it is played. Letter and certificate samples are the Lily images in `public/assets`.
 
 An exit popup on the sales page can play `public/assets/exit-sales-v4.mp4` (also 4:5). It stays closed until a desktop visitor leaves toward the top of the window, or a phone visitor has been on the page for about 25 seconds and flicks upward. It shows at most once every 7 days, waits until the cookie banner is dismissed, and does not load the video until it opens. Open the sales page with `?exitpopup=1` to show it straight away for a test. That test visit does not use up the 7 days.
 
@@ -169,6 +169,14 @@ Put this metadata on the Stripe objects so live and test mode are unambiguous:
 - Named sleigh price or product: metadata `sku` = `addon_sleigh`
 
 If the metadata is missing, the route also recognises product names that contain “Sibling”, “Rush”, “sleigh”, “early bird”, “bundle”, or “single”, and the base prices £16.99, £19.99 and £14.99.
+
+## Visit counts
+
+Meta's pixel still loads only after Accept. Separately, the server counts openings of the pre-order page and groups them by `utm_source`, `utm_campaign` and `utm_content`. The count is a total for each trio. It does not store an IP address, a cookie, or any other personal data. A value that contains `@`, or characters that are not part of a short campaign name, is left blank rather than saved.
+
+`GET /admin/visits` returns the totals as JSON. Set `VISITS_SECRET` to a long random string and send it as `Authorization: Bearer`, or as the `X-Visits-Secret` header. Do not put the secret in the query string. If `VISITS_SECRET` is unset, the route answers 503. A wrong secret answers 401. The secret is never written to the log.
+
+Counts are kept in memory and, unless you pass `visitsFile: null` in code, written to `data/visit-counts.json`. On Railway set `VISITS_FILE` to a path on a volume if the totals should survive a new deploy. The file holds only the campaign names and the counts.
 
 ## Run it locally
 
