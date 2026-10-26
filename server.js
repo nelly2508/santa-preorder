@@ -4,6 +4,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { describeOrder, fallbackLocation } = require("./lib/order-continue");
+const { createVisitCounter, secretsMatch, presentedSecret } = require("./lib/visit-counts");
 const { offerPhase, ordersOpen, packageChoice } = require("./public/js/checkout-choice");
 const vm = require("vm");
 
@@ -383,9 +384,43 @@ function handleStripeWebhook(req, res, { env, log, options }) {
   });
 }
 
+function visitsFilePath(options, env) {
+  if (options.visitsFile === null) return null;
+  if (typeof options.visitsFile === "string") return options.visitsFile;
+  if (env && env.VISITS_FILE) return String(env.VISITS_FILE);
+  return path.join(__dirname, "data", "visit-counts.json");
+}
+
+function sendJson(res, status, body, method, extra) {
+  send(res, status, JSON.stringify(body), {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    ...extra,
+  }, method);
+}
+
+function handleVisitReport(req, res, env, visits) {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.writeHead(405, { Allow: "GET, HEAD", "Cache-Control": "no-store" });
+    res.end();
+    return;
+  }
+  const secret = env && env.VISITS_SECRET ? String(env.VISITS_SECRET).trim() : "";
+  if (!secret) {
+    sendJson(res, 503, { error: "not configured" }, req.method);
+    return;
+  }
+  if (!secretsMatch(presentedSecret(req), secret)) {
+    sendJson(res, 401, { error: "unauthorised" }, req.method, { "WWW-Authenticate": "Bearer" });
+    return;
+  }
+  sendJson(res, 200, visits.snapshot(), req.method);
+}
+
 function createServer(options = {}) {
   const env = options.env || process.env;
   const log = options.log || ((message) => console.error(message));
+  const visits = options.visitCounter || createVisitCounter({ filePath: visitsFilePath(options, env) });
   return http.createServer((req, res) => {
     let url;
     try {
@@ -393,6 +428,22 @@ function createServer(options = {}) {
     } catch {
       notFound(res, req.method);
       return;
+    }
+
+    if (url.pathname === "/admin/visits") {
+      handleVisitReport(req, res, env, visits);
+      return;
+    }
+
+    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+      const purpose = String(req.headers["sec-purpose"] || req.headers.purpose || "");
+      if (!/prefetch/i.test(purpose)) {
+        try {
+          visits.record(url);
+        } catch {
+          // A missed count must not stop the page.
+        }
+      }
     }
 
     if (url.pathname === "/stripe/webhook") {

@@ -71,7 +71,7 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.match(html, /id="hear-santa"[\s\S]*?preload="metadata"/);
     assert.match(html, /id="hear-santa"[\s\S]*?width="1080"/);
     assert.match(html, /id="hear-santa"[\s\S]*?height="1350"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?poster="\/assets\/santa-preview-poster-v3\.jpg"/);
+    assert.match(html, /id="hear-santa"[\s\S]*?poster="\/assets\/review-poster-v3\.jpg"/);
     assert.match(html, /id="hear-santa"[\s\S]*?aria-label="Santa saying a short hello"/);
     assert.match(html, /src="\/assets\/santa-preview-v3\.mp4"/);
     assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
@@ -261,6 +261,14 @@ test("the Santa preview answers the range probe iOS uses", async () => {
     const poster = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-poster-v3.jpg`, { method: "HEAD" });
     assert.strictEqual(poster.status, 200);
     assert.strictEqual(poster.headers.get("content-type"), "image/jpeg");
+
+    const reviewPoster = await fetch(`http://127.0.0.1:${port}/assets/review-poster-v3.jpg`);
+    assert.strictEqual(reviewPoster.status, 200);
+    assert.strictEqual(reviewPoster.headers.get("content-type"), "image/jpeg");
+    assert.strictEqual(
+      crypto.createHash("sha256").update(Buffer.from(await reviewPoster.arrayBuffer())).digest("hex"),
+      sha256(path.join(PUBLIC, "assets/santa-preview-poster-v3.jpg"))
+    );
 
     const webp = await fetch(`http://127.0.0.1:${port}/assets/santa-preview-poster-v3.webp`, { method: "HEAD" });
     assert.strictEqual(webp.status, 200);

@@ -83,9 +83,6 @@
     document.querySelectorAll("[data-early-only]").forEach((el) => {
       el.hidden = true;
     });
-    document.querySelectorAll(".js-early-note").forEach((el) => {
-      el.textContent = "Nice List Promise: love it or your money back";
-    });
   }
 
   if (late) {
@@ -118,6 +115,7 @@
   });
 
   if (!ordersClosed) setupCheckout();
+  setupSampleVideo();
   setupEnlarge();
 
   function previewNow() {
@@ -142,7 +140,46 @@
     if (!box || !continueLink || !choiceApi) return;
 
     let selectedKey = "magicBundle";
+    let siblings = 0;
+    let attempted = false;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const addSibling = document.getElementById("add-sibling");
+    const removeSibling = document.getElementById("sibling-remove");
+    const siblingCount = document.getElementById("sibling-count");
+    const siblingNext = document.getElementById("sibling-next");
+
+    function showSiblingExample(key) {
+      const want = key === "singleVideo" ? "singleVideo" : "magicBundle";
+      document.querySelectorAll("[data-two-children]").forEach((el) => {
+        el.hidden = el.getAttribute("data-two-children") !== want;
+      });
+    }
+
+    function renderSiblings() {
+      const amount = prices.sibling || "";
+      if (removeSibling) removeSibling.hidden = siblings === 0;
+      if (addSibling) {
+        addSibling.disabled = siblings >= 4;
+        addSibling.textContent = siblings === 0 ? "Add a sibling" : "Add another sibling";
+      }
+      if (siblingCount) {
+        if (siblings === 0) siblingCount.textContent = "No siblings added yet.";
+        else if (siblings === 1) siblingCount.textContent = `1 sibling added (${amount}).`;
+        else siblingCount.textContent = `${siblings} siblings added (${amount} each).`;
+      }
+      if (siblingNext) {
+        if (siblings === 0) {
+          siblingNext.hidden = true;
+          siblingNext.textContent = "";
+        } else if (siblings === 1) {
+          siblingNext.hidden = false;
+          siblingNext.textContent = "On the card page, tap Add next to Sibling.";
+        } else {
+          siblingNext.hidden = false;
+          siblingNext.textContent = `On the card page, tap Add next to Sibling, then set the quantity to ${siblings}.`;
+        }
+      }
+    }
 
     function renderChoice() {
       const picked = choiceApi.packageChoice(selectedKey, {
@@ -159,8 +196,9 @@
     function syncContinue(moveFocus) {
       const picked = renderChoice();
       const ready = box.checked;
-      if (hint) hint.hidden = ready;
+      if (hint) hint.hidden = !attempted || ready;
       if (checkout) checkout.classList.toggle("is-ready", ready);
+      box.setAttribute("aria-invalid", attempted && !ready ? "true" : "false");
       continueLink.setAttribute("aria-disabled", ready ? "false" : "true");
       if (ready) {
         continueLink.href = `/order/pay?package=${encodeURIComponent(picked.key)}`;
@@ -172,7 +210,8 @@
         continueLink.href = "#checkout";
         continueLink.removeAttribute("data-pay");
         continueLink.tabIndex = -1;
-        continueLink.setAttribute("aria-describedby", "agree-hint");
+        if (attempted && hint) continueLink.setAttribute("aria-describedby", "agree-hint");
+        else continueLink.removeAttribute("aria-describedby");
       }
     }
 
@@ -180,7 +219,7 @@
       if (!checkout) return;
       checkout.scrollIntoView({
         behavior: motion.matches ? "auto" : "smooth",
-        block: "center",
+        block: "start",
       });
     }
 
@@ -189,6 +228,7 @@
       link.addEventListener("click", (event) => {
         event.preventDefault();
         selectedKey = link.getAttribute("data-pay") === "singleVideo" ? "singleVideo" : "magicBundle";
+        showSiblingExample(selectedKey);
         syncContinue(false);
         scrollToCheckout();
         if (box.checked) continueLink.focus();
@@ -197,17 +237,56 @@
     });
 
     box.addEventListener("change", () => {
+      if (box.checked) attempted = false;
       syncContinue(box.checked);
     });
 
     continueLink.addEventListener("click", (event) => {
       if (box.checked && continueLink.getAttribute("aria-disabled") !== "true") return;
       event.preventDefault();
+      attempted = true;
       if (hint) hint.hidden = false;
+      continueLink.setAttribute("aria-describedby", "agree-hint");
+      box.setAttribute("aria-invalid", "true");
       box.focus();
     });
 
+    if (addSibling) {
+      addSibling.addEventListener("click", () => {
+        if (siblings >= 4) return;
+        siblings += 1;
+        renderSiblings();
+      });
+    }
+    if (removeSibling) {
+      removeSibling.addEventListener("click", () => {
+        if (siblings <= 0) return;
+        siblings -= 1;
+        renderSiblings();
+      });
+    }
+
+    showSiblingExample(selectedKey);
+    renderSiblings();
     syncContinue(false);
+  }
+
+  function setupSampleVideo() {
+    const video = document.getElementById("hear-santa");
+    const button = document.getElementById("sample-play");
+    if (!video || !button) return;
+    button.addEventListener("click", () => {
+      button.hidden = true;
+      const pending = video.play();
+      if (pending && typeof pending.catch === "function") {
+        pending.catch(() => {
+          button.hidden = false;
+        });
+      }
+    });
+    video.addEventListener("play", () => {
+      button.hidden = true;
+    });
   }
 
   function setupEnlarge() {

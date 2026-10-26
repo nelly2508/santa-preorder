@@ -154,19 +154,23 @@ test("the page copy uses the configured sibling price and the pay step", async (
     const html = await home.text();
     const mentions = html.split(rate).length - 1;
     assert.ok(
-      mentions >= 5,
-      `expected the sibling rate on the price cards, the sibling extra, the FAQ and the footer, found ${mentions}`
+      mentions >= 3,
+      `expected the sibling rate on the one pricing line, the FAQ and the footer, found ${mentions}`
     );
     assert.match(html, /2 children = £16\.99 \+ £11\.99/);
     assert.match(html, /2 children = £14\.99 \+ £11\.99/);
     assert.match(html, /2 children = your video \+ £11\.99/);
     assert.match(html, /You've chosen:/);
+    assert.match(html, /id="agree-hint"[^>]*hidden/);
     assert.match(html, /Tick the box to continue/);
     assert.match(html, />Continue to secure payment</);
+    assert.match(html, /id="add-sibling"[^>]*>Add a sibling</);
+    assert.match(html, /Nice List Promise: love it or your money back/);
     assert.match(
       html,
-      /id="pay-continue"[\s\S]*?Adding more than one brother or sister\? Add the sibling extra at checkout, then on your phone tap ‘Details’ \(top right\) to change how many \(\+£11\.99 each, up to 4\)\./
+      /Please start making my video straight away, during the 14-day cancellation period\. I understand that once you start, I lose the legal right to cancel\. The Nice List Promise still applies\./
     );
+    assert.doesNotMatch(html, /tap ‘Details’|tap 'Details'|top right/);
     const pay = html.match(/<a[^>]*id="pay-continue"[^>]*>/)[0];
     assert.match(pay, /aria-disabled="true"/);
     assert.match(pay, /href="#checkout"/);
