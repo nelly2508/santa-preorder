@@ -425,12 +425,24 @@ test("GET /order/continue sends the customer on to Tally, and the homepage still
     assert.match(privacyHtml, /only with your consent/);
     assert.match(privacyHtml, /only if you accept/);
     assert.match(privacyHtml, /The pixel does not load until you accept/);
+    assert.match(privacyHtml, /Microsoft Clarity/);
+    assert.match(privacyHtml, /Clarity does not load until you accept/);
+    assert.match(html, /Microsoft Clarity/);
+    assert.doesNotMatch(orderHtml, /clarity\.ms/);
+    assert.match(pixelJs, /https:\/\/www\.clarity\.ms\/tag\//);
+    assert.match(pixelJs, /"z5hnjy7wjx"/);
+    assert.match(pixelJs, /window\.clarity\("consent"\)/);
+    assert.match(pixelJs, /data-sales-page/);
     const csp = home.headers.get("content-security-policy");
     assert.match(csp, /script-src[^;]*'self'/);
     assert.match(csp, /script-src[^;]*https:\/\/connect\.facebook\.net/);
     assert.match(csp, /img-src[^;]*'self'/);
     assert.match(csp, /img-src[^;]*https:\/\/www\.facebook\.com/);
     assert.match(csp, /connect-src[^;]*https:\/\/www\.facebook\.com/);
+    assert.match(csp, /script-src[^;]*https:\/\/\*\.clarity\.ms/);
+    assert.match(csp, /connect-src[^;]*https:\/\/\*\.clarity\.ms/);
+    assert.match(csp, /img-src[^;]*https:\/\/\*\.clarity\.ms/);
+    assert.match(csp, /https:\/\/c\.bing\.com/);
     assert.doesNotMatch(csp, /unsafe-inline/);
   } finally {
     server.close();
