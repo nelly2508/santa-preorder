@@ -1,6 +1,8 @@
-/* Meta Pixel — loads only after Accept. UK ads, amounts in GBP.
+/* Meta Pixel and Microsoft Clarity — both load only after Accept.
    The choice is remembered in localStorage under ssmn_consent.
-   No thanks leaves the pixel unloaded. */
+   No thanks leaves both unloaded. Clarity is added on the pre-order
+   page only (data-sales-page). Checkout pages that include this file
+   for the pixel do not get Clarity. UK ads, amounts in GBP. */
 (function () {
   "use strict";
 
@@ -89,7 +91,23 @@
 
   window.SANTA_PIXEL = { trackCustom: trackCustom };
 
+  function loadClarity() {
+    if (!document.body || !document.body.hasAttribute("data-sales-page")) return;
+    if (typeof window.clarity !== "function") {
+      (function (c, l, a, r, i, t, y) {
+        c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", "z5hnjy7wjx");
+    }
+    window.clarity("consent");
+  }
+
   function load(done) {
+    loadClarity();
     var finish = done ? once(done) : function () {};
     if (window.fbq) {
       trackPage();
@@ -144,7 +162,7 @@
     bar.setAttribute("aria-label", "Cookies");
 
     var copy = document.createElement("p");
-    copy.appendChild(document.createTextNode("We\u2019d like to use a Meta cookie to measure our ads. It stays off unless you accept. "));
+    copy.appendChild(document.createTextNode("We\u2019d like to use a Meta cookie to measure our ads, and Microsoft Clarity to see how the pre-order page is used. They stay off unless you accept. "));
     var privacy = document.createElement("a");
     privacy.href = "/privacy#cookies";
     privacy.textContent = "Privacy";

@@ -16,7 +16,7 @@ const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
-    "default-src 'self'; img-src 'self' https://www.facebook.com; media-src 'self'; style-src 'self'; script-src 'self' https://connect.facebook.net; font-src 'self'; connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com; frame-src https://www.facebook.com; base-uri 'self'; frame-ancestors 'none'",
+    "default-src 'self' https://*.clarity.ms https://c.bing.com; img-src 'self' https://www.facebook.com https://*.clarity.ms https://c.bing.com; media-src 'self'; style-src 'self'; script-src 'self' https://connect.facebook.net https://*.clarity.ms https://c.bing.com; font-src 'self'; connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://*.clarity.ms https://c.bing.com; frame-src https://www.facebook.com; base-uri 'self'; frame-ancestors 'none'",
 };
 
 const MIME = {
