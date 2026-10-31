@@ -3,9 +3,11 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { describeOrder, fallbackLocation } = require("./lib/order-continue");
-const { createVisitCounter, secretsMatch, presentedSecret } = require("./lib/visit-counts");
-const { offerPhase, ordersOpen, packageChoice } = require("./public/js/checkout-choice");
+const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/order-continue");
+const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
+const { createFunnelCounter } = require("./lib/funnel-counts");
+const { offerPhase, ordersOpen, packageChoice, clampSiblings } = require("./public/js/checkout-choice");
+const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const vm = require("vm");
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -362,7 +364,7 @@ function handleStripeWebhook(req, res, { env, log, options }) {
     }
     const sessionId = event.data && event.data.object && event.data.object.id ? String(event.data.object.id) : "";
     try {
-      await describeOrder({
+      const result = await describeOrder({
         sessionId,
         env,
         retrieveSession: options.retrieveSession,
@@ -377,6 +379,7 @@ function handleStripeWebhook(req, res, { env, log, options }) {
         claimTtlMs: options.claimTtlMs,
         flights: options.flights,
       });
+      if (options.onPaid) await options.onPaid(sessionId, result);
     } catch (error) {
       log(`stripe/webhook ${sessionId}: ${error && error.message ? "order handling failed" : "order handling failed"}`);
     }
@@ -391,12 +394,104 @@ function visitsFilePath(options, env) {
   return path.join(__dirname, "data", "visit-counts.json");
 }
 
+function funnelFilePath(options, env) {
+  if (options.funnelFile === null) return null;
+  if (typeof options.funnelFile === "string") return options.funnelFile;
+  if (env && env.FUNNEL_FILE) return String(env.FUNNEL_FILE);
+  return path.join(__dirname, "data", "funnel-counts.json");
+}
+
 function sendJson(res, status, body, method, extra) {
   send(res, status, JSON.stringify(body), {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
     ...extra,
   }, method);
+}
+
+const FUNNEL_BODY_MAX = 2048;
+let funnelWindow = 0;
+let funnelPosts = 0;
+
+function allowFunnelPost() {
+  const window = Math.floor(Date.now() / 1000);
+  if (window !== funnelWindow) {
+    funnelWindow = window;
+    funnelPosts = 0;
+  }
+  funnelPosts += 1;
+  return funnelPosts <= 40;
+}
+
+function originAllowed(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  let host;
+  try {
+    host = new URL(origin).host;
+  } catch {
+    return false;
+  }
+  const requestHost = String(req.headers.host || "");
+  return host === requestHost || host === "santasaysmyname.com" || host === "www.santasaysmyname.com";
+}
+
+function readBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > limit) {
+        reject(Object.assign(new Error("too large"), { status: 413 }));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("error", reject);
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+  });
+}
+
+function handleFunnelEvent(req, res, funnel) {
+  if (req.method !== "POST") {
+    res.writeHead(405, { Allow: "POST", "Cache-Control": "no-store" });
+    res.end();
+    return;
+  }
+  if (!originAllowed(req)) {
+    req.resume();
+    sendJson(res, 400, { error: "bad request" }, req.method);
+    return;
+  }
+  if (!allowFunnelPost()) {
+    req.resume();
+    sendJson(res, 429, { error: "busy" }, req.method);
+    return;
+  }
+  readBody(req, FUNNEL_BODY_MAX).then((raw) => {
+    let body;
+    try {
+      body = JSON.parse(raw || "");
+    } catch {
+      sendJson(res, 400, { error: "bad request" }, req.method);
+      return;
+    }
+    if (!body || body.event !== "order_tap") {
+      sendJson(res, 400, { error: "bad request" }, req.method);
+      return;
+    }
+    try {
+      funnel.record("order_tap", body);
+    } catch {
+      // A missed count must not fail the tap.
+    }
+    send(res, 204, "", { "Cache-Control": "no-store" }, req.method);
+  }).catch((error) => {
+    const status = error && error.status === 413 ? 413 : 400;
+    sendJson(res, status, { error: "bad request" }, req.method);
+  });
 }
 
 function handleVisitReport(req, res, env, visits) {
@@ -421,7 +516,56 @@ function createServer(options = {}) {
   const env = options.env || process.env;
   const log = options.log || ((message) => console.error(message));
   const visits = options.visitCounter || createVisitCounter({ filePath: visitsFilePath(options, env) });
-  return http.createServer((req, res) => {
+  const funnel = options.funnelCounter || createFunnelCounter({ filePath: funnelFilePath(options, env) });
+  const linkCache = new Map();
+
+  async function markFunnel(sessionId, result) {
+    const info = result && result.funnel;
+    if (!info || info.alreadyCounted) return;
+    if (!funnel.claimCompletion(sessionId)) return;
+    try {
+      funnel.record("checkout_complete", info);
+    } catch {
+      return;
+    }
+    const mark = async () => {
+      if (typeof options.markFunnelCounted === "function") {
+        await options.markFunnelCounted(sessionId, info);
+        return;
+      }
+      if (options.retrieveSession && !options.stripe) return;
+      const stripe = options.stripe;
+      const paymentIntentId = info.paymentIntentId;
+      if (stripe && stripe.paymentIntents && paymentIntentId) {
+        await stripe.paymentIntents.update(paymentIntentId, { metadata: { ssm_funnel: "1" } });
+        return;
+      }
+      if (stripe && stripe.checkout && stripe.checkout.sessions) {
+        await stripe.checkout.sessions.update(sessionId, { metadata: { ssm_funnel: "1" } });
+        return;
+      }
+      if (options.retrieveSession) return;
+      const key = selectSecretKey(sessionId, env);
+      if (!key) return;
+      const Stripe = require("stripe");
+      const client = new Stripe(key);
+      if (paymentIntentId) {
+        try {
+          await client.paymentIntents.update(paymentIntentId, { metadata: { ssm_funnel: "1" } });
+          return;
+        } catch {
+          // The read-only payment intent falls through to the session mark.
+        }
+      }
+      await client.checkout.sessions.update(sessionId, { metadata: { ssm_funnel: "1" } });
+    };
+    await Promise.race([
+      mark().catch(() => log(`funnel mark failed for ${sessionId || "(missing session)"}`)),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
+  }
+
+  return http.createServer(async (req, res) => {
     let url;
     try {
       url = new URL(req.url, "http://localhost");
@@ -435,11 +579,22 @@ function createServer(options = {}) {
       return;
     }
 
+    if (url.pathname === "/admin/funnel") {
+      handleVisitReport(req, res, env, funnel);
+      return;
+    }
+
+    if (url.pathname === "/api/funnel") {
+      handleFunnelEvent(req, res, funnel);
+      return;
+    }
+
     if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
       const purpose = String(req.headers["sec-purpose"] || req.headers.purpose || "");
       if (!/prefetch/i.test(purpose)) {
         try {
           visits.record(url);
+          funnel.record("view", partsFromUrl(url));
         } catch {
           // A missed count must not stop the page.
         }
@@ -447,7 +602,7 @@ function createServer(options = {}) {
     }
 
     if (url.pathname === "/stripe/webhook") {
-      handleStripeWebhook(req, res, { env, log, options });
+      handleStripeWebhook(req, res, { env, log, options: { ...options, onPaid: markFunnel } });
       return;
     }
 
@@ -473,7 +628,10 @@ function createServer(options = {}) {
         claimTtlMs: options.claimTtlMs,
         flights: options.flights,
       }).then(
-        (result) => sendOrderPage(res, req.method, result),
+        async (result) => {
+          await markFunnel(sessionId, result);
+          sendOrderPage(res, req.method, result);
+        },
         (error) => {
           let message = error && error.message ? error.message : String(error);
           for (const secret of [env && env.SMTP_PASS, env && env.BREVO_API_KEY]) {
@@ -518,8 +676,39 @@ function createServer(options = {}) {
         prices: config.prices,
         stripe: config.stripe,
       });
+      const utm = partsFromUrl(url);
+      let location = choice.href;
+      const canCreate = options.createCheckoutSession !== null && (options.stripe || options.createCheckoutSession || (env.STRIPE_SECRET_KEY && !options.retrieveSession));
+      if (canCreate) {
+        try {
+          const origin = publicOrigin(env, req.headers.host);
+          const creator = options.createCheckoutSession || ((args) => createCheckoutSession({
+            ...args,
+            stripe: options.stripe || new (require("stripe"))(env.STRIPE_SECRET_KEY),
+            cache: linkCache,
+          }));
+          const created = await creator({
+            origin,
+            utm,
+            siblings: clampSiblings(url.searchParams.get("siblings")),
+            packageKey: choice.key,
+            paymentLinkUrl: choice.href,
+            phase,
+          });
+          if (created && created.created && created.url) {
+            location = created.url;
+            try {
+              funnel.record("checkout_start", utm);
+            } catch {
+              // A missed count must not stop checkout.
+            }
+          }
+        } catch {
+          log("checkout session was not created, using the payment link");
+        }
+      }
       res.writeHead(302, {
-        Location: choice.href,
+        Location: location,
         "Cache-Control": "no-store",
         ...SECURITY_HEADERS,
       });

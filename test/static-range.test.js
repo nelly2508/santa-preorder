@@ -49,7 +49,10 @@ test("preview assets are the original files, with a smaller webp poster", () => 
   );
   const jpg = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster-v3.jpg")).size;
   const webp = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster-v3.webp")).size;
+  const lite = fs.statSync(path.join(PUBLIC, "assets/santa-preview-poster-lite.webp")).size;
   assert.ok(webp < jpg, `webp poster should be smaller than the jpg (${webp} >= ${jpg})`);
+  assert.ok(lite < webp, `lite poster should be smaller than the full webp (${lite} >= ${webp})`);
+  assert.ok(lite < 40000, `lite poster should stay under 40KB, got ${lite}`);
 
   const vtt = fs.readFileSync(path.join(PUBLIC, "assets/santa-preview.vtt"), "utf8");
   assert.match(vtt, /^WEBVTT\r?\n/);
@@ -68,13 +71,18 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.match(html, /<h2>Hear Santa<\/h2>/);
     assert.match(html, /id="hear-santa"[\s\S]*?\bcontrols\b/);
     assert.match(html, /id="hear-santa"[\s\S]*?\bplaysinline\b/);
-    assert.match(html, /id="hear-santa"[\s\S]*?preload="metadata"/);
+    assert.match(html, /id="hear-santa"[\s\S]*?preload="none"/);
     assert.match(html, /id="hear-santa"[\s\S]*?width="1080"/);
     assert.match(html, /id="hear-santa"[\s\S]*?height="1350"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?poster="\/assets\/review-poster-v3\.jpg"/);
+    assert.match(html, /id="hear-santa"[\s\S]*?data-poster="\/assets\/santa-preview-poster-lite\.webp"/);
     assert.match(html, /id="hear-santa"[\s\S]*?aria-label="Santa saying a short hello"/);
-    assert.match(html, /src="\/assets\/santa-preview-v3\.mp4"/);
-    assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
+    assert.match(html, /data-src="\/assets\/santa-preview-v3\.mp4"/);
+    assert.match(html, /data-src="\/assets\/santa-preview\.vtt"/);
+    assert.doesNotMatch(html, /<source[^>]+src="\/assets\/santa-preview-v3\.mp4"/);
+    assert.doesNotMatch(html, /fetchpriority="high"/);
+    assert.match(html, /data-src="assets\/fireside\.webp"/);
+    assert.doesNotMatch(html, /<img[^>]* src="assets\/fireside\.webp"/);
+    assert.ok(html.indexOf('id="hero-order"') < html.indexOf('id="hear-santa"'));
     assert.match(
       html,
       /A quick hello from Santa\. The film you order says your child's name, a good deed and a wish\./

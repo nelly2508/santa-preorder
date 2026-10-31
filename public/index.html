@@ -36,46 +36,53 @@
     <section class="hero" id="top">
       <div class="snow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <div class="wrap hero-grid">
-        <div class="hero-copy">
+        <div class="hero-intro">
           <p class="kicker" data-before-late>Pre-order · delivered by 15 December</p>
           <p class="kicker" data-late-only hidden>Pre-order · rush delivery included</p>
           <h1>Santa. By the fire. Saying your child's name.</h1>
-          <figure class="player hear-player hero-sample" id="hear">
-            <div class="player-frame hear-frame">
-              <video
-                id="hear-santa"
-                controls
-                playsinline
-                preload="metadata"
-                width="1080"
-                height="1350"
-                poster="/assets/review-poster-v3.jpg"
-                aria-label="Santa saying a short hello"
-              >
-                <source src="/assets/santa-preview-v3.mp4" type="video/mp4">
-                <track src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English" default>
-                A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
-              </video>
-              <button type="button" class="sample-play" id="sample-play" aria-controls="hear-santa" aria-label="Play Santa saying Saoirse">
-                <span class="sample-play-icon" aria-hidden="true"></span>
-                Play
-              </button>
-            </div>
-            <figcaption>
-              <h2>Hear Santa</h2>
-              <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
-              <p>A quick hello from Santa. The film you order says your child's name, a good deed and a wish.</p>
-            </figcaption>
-          </figure>
+        </div>
+        <div class="hero-offer">
           <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
-          <p class="lede">A personalised video. Your child's name said right, a good deed and a wish.</p>
-          <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
+          <p class="lede">A personal video. Santa says your child's name, a good deed and a wish.</p>
+          <p class="hero-price">
+            <strong data-price="bundle">£16.99</strong>
+            <span data-early-only>early bird</span>
+            <span data-late-only hidden>rush included</span>
+          </p>
+          <a class="btn hero-cta" id="hero-order" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
           <p class="hero-next"><a href="#pricing">See pricing</a></p>
           <p class="reassurance js-early-note" data-early-only>Early bird ends Sun 15 Nov</p>
         </div>
+        <figure class="player hear-player hero-sample" id="hear">
+          <div class="player-frame hear-frame">
+            <video
+              id="hear-santa"
+              controls
+              playsinline
+              preload="none"
+              width="1080"
+              height="1350"
+              data-src="/assets/santa-preview-v3.mp4"
+              data-poster="/assets/santa-preview-poster-lite.webp"
+              aria-label="Santa saying a short hello"
+            >
+              <track data-src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English" default>
+              A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
+            </video>
+            <button type="button" class="sample-play" id="sample-play" aria-controls="hear-santa" aria-label="Play Santa saying Saoirse">
+              <span class="sample-play-icon" aria-hidden="true"></span>
+              Play
+            </button>
+          </div>
+          <figcaption>
+            <h2>Hear Santa</h2>
+            <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
+            <p>A quick hello from Santa. The film you order says your child's name, a good deed and a wish.</p>
+          </figcaption>
+        </figure>
         <figure class="hero-figure">
           <div class="hero-frame">
-            <img src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" fetchpriority="high">
+            <img data-src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" decoding="async">
           </div>
           <figcaption>By the fire · about a minute · no photos of your child</figcaption>
         </figure>
@@ -214,7 +221,7 @@
             <input type="checkbox" id="reg37" name="make-before-cancellation">
             <span class="agree-copy">
               <span class="agree-promise">Nice List Promise: love it or your money back</span>
-              <span>Please start making my video straight away, during the 14-day cancellation period. I understand that once you start, I lose the legal right to cancel. The Nice List Promise still applies.</span>
+              <span>I'd like my video made straight away, and understand that means I lose my 14-day right to cancel once it's started.</span>
             </span>
           </label>
           <p id="agree-hint" class="agree-hint" hidden>Tick the box to continue</p>
