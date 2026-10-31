@@ -168,7 +168,7 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, /Nice List Promise: love it or your money back/);
     assert.match(
       html,
-      /Please start making my video straight away, during the 14-day cancellation period\. I understand that once you start, I lose the legal right to cancel\. The Nice List Promise still applies\./
+      /I'd like my video made straight away, and understand that means I lose my 14-day right to cancel once it's started\./
     );
     assert.doesNotMatch(html, /tap ‘Details’|tap 'Details'|top right/);
     const pay = html.match(/<a[^>]*id="pay-continue"[^>]*>/)[0];

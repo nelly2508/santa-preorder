@@ -58,6 +58,45 @@
     return twoChildrenExample(base, prices.sibling);
   }
 
+  function clampSiblings(value) {
+    const count = Number(value);
+    if (!Number.isInteger(count) || count < 0) return 0;
+    return Math.min(count, 4);
+  }
+
+  function campaignPart(value) {
+    if (value == null) return "";
+    const raw = String(value).trim();
+    if (!raw || raw.includes("@")) return "";
+    return raw.replace(/[^A-Za-z0-9 ._-]+/g, "").trim().slice(0, 64);
+  }
+
+  function resumeOrder(search) {
+    const params = new URLSearchParams(String(search || "").replace(/^\?/, "").split("#")[0]);
+    const raw = params.get("package");
+    const packageKey = raw === "singleVideo" || raw === "magicBundle" ? raw : "";
+    return {
+      packageKey,
+      siblings: clampSiblings(params.get("siblings")),
+      agreed: params.get("agreed") === "1",
+    };
+  }
+
+  function orderQuery(options) {
+    const source = options || {};
+    const params = new URLSearchParams();
+    params.set("package", source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle");
+    const siblings = clampSiblings(source.siblings);
+    if (siblings > 0) params.set("siblings", String(siblings));
+    if (source.agreed) params.set("agreed", "1");
+    const utm = source.utm || {};
+    for (const key of ["utm_source", "utm_campaign", "utm_content"]) {
+      const value = campaignPart(utm[key]);
+      if (value) params.set(key, value);
+    }
+    return params.toString();
+  }
+
   function packageChoice(key, options) {
     const prices = options.prices || {};
     const stripe = options.stripe || {};
@@ -96,5 +135,9 @@
     offerPhase,
     twoChildrenFor,
     packageChoice,
+    clampSiblings,
+    campaignPart,
+    resumeOrder,
+    orderQuery,
   };
 });

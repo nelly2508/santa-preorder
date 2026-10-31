@@ -116,6 +116,7 @@
 
   if (!ordersClosed) setupCheckout();
   setupSampleVideo();
+  setupDeferredImages();
   setupEnlarge();
 
   function previewNow() {
@@ -139,9 +140,11 @@
     const chosenPrice = document.getElementById("chosen-price");
     if (!box || !continueLink || !choiceApi) return;
 
-    let selectedKey = "magicBundle";
-    let siblings = 0;
+    const resume = choiceApi.resumeOrder ? choiceApi.resumeOrder(window.location.search) : { packageKey: "", siblings: 0, agreed: false };
+    let selectedKey = resume.packageKey || "magicBundle";
+    let siblings = resume.siblings || 0;
     let attempted = false;
+    if (resume.agreed) box.checked = true;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const addSibling = document.getElementById("add-sibling");
     const removeSibling = document.getElementById("sibling-remove");
@@ -201,7 +204,15 @@
       box.setAttribute("aria-invalid", attempted && !ready ? "true" : "false");
       continueLink.setAttribute("aria-disabled", ready ? "false" : "true");
       if (ready) {
-        continueLink.href = `/order/pay?package=${encodeURIComponent(picked.key)}`;
+        const utm = {};
+        const current = new URLSearchParams(window.location.search);
+        ["utm_source", "utm_campaign", "utm_content"].forEach((key) => {
+          utm[key] = current.get(key) || "";
+        });
+        const query = choiceApi.orderQuery
+          ? choiceApi.orderQuery({ packageKey: picked.key, siblings, utm })
+          : `package=${encodeURIComponent(picked.key)}`;
+        continueLink.href = `/order/pay?${query}`;
         continueLink.setAttribute("data-pay", picked.key);
         continueLink.removeAttribute("tabindex");
         continueLink.setAttribute("aria-describedby", "chosen-package");
@@ -216,10 +227,12 @@
     }
 
     function scrollToCheckout() {
-      if (!checkout) return;
-      checkout.scrollIntoView({
+      const narrow = window.matchMedia("(max-width: 719px)").matches;
+      const target = narrow ? document.querySelector(".agree") || checkout : checkout;
+      if (!target) return;
+      target.scrollIntoView({
         behavior: motion.matches ? "auto" : "smooth",
-        block: "start",
+        block: narrow ? "center" : "start",
       });
     }
 
@@ -227,6 +240,7 @@
       if (link === continueLink) return;
       link.addEventListener("click", (event) => {
         event.preventDefault();
+        recordFunnel("order_tap");
         selectedKey = link.getAttribute("data-pay") === "singleVideo" ? "singleVideo" : "magicBundle";
         showSiblingExample(selectedKey);
         syncContinue(false);
@@ -242,7 +256,10 @@
     });
 
     continueLink.addEventListener("click", (event) => {
-      if (box.checked && continueLink.getAttribute("aria-disabled") !== "true") return;
+      if (box.checked && continueLink.getAttribute("aria-disabled") !== "true") {
+        recordFunnel("order_tap");
+        return;
+      }
       event.preventDefault();
       attempted = true;
       if (hint) hint.hidden = false;
@@ -256,6 +273,7 @@
         if (siblings >= 4) return;
         siblings += 1;
         renderSiblings();
+        syncContinue(false);
       });
     }
     if (removeSibling) {
@@ -263,29 +281,111 @@
         if (siblings <= 0) return;
         siblings -= 1;
         renderSiblings();
+        syncContinue(false);
       });
     }
 
     showSiblingExample(selectedKey);
     renderSiblings();
-    syncContinue(false);
+    syncContinue(resume.agreed);
+    if (resume.agreed) scrollToCheckout();
+  }
+
+  function recordFunnel(eventName) {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const body = JSON.stringify({
+        event: eventName,
+        utm_source: params.get("utm_source") || "",
+        utm_campaign: params.get("utm_campaign") || "",
+        utm_content: params.get("utm_content") || "",
+      });
+      fetch("/api/funnel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+        credentials: "omit",
+        cache: "no-store",
+      }).catch(() => {});
+    } catch (error) {
+      // Counting must not block the order.
+    }
   }
 
   function setupSampleVideo() {
     const video = document.getElementById("hear-santa");
     const button = document.getElementById("sample-play");
     if (!video || !button) return;
-    button.addEventListener("click", () => {
+    let armed = false;
+
+    function showPoster() {
+      const poster = video.getAttribute("data-poster");
+      if (poster && !video.getAttribute("poster")) video.setAttribute("poster", poster);
+    }
+
+    function attachSource() {
+      if (armed) return;
+      armed = true;
+      showPoster();
+      const src = video.getAttribute("data-src");
+      if (src && !video.querySelector("source")) {
+        const source = document.createElement("source");
+        source.src = src;
+        source.type = "video/mp4";
+        video.appendChild(source);
+      }
+      const track = video.querySelector("track");
+      const trackSrc = track && track.getAttribute("data-src");
+      if (track && trackSrc && !track.getAttribute("src")) track.src = trackSrc;
+      video.load();
+    }
+
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        showPoster();
+        observer.disconnect();
+      });
+      observer.observe(video);
+    } else {
+      showPoster();
+    }
+
+    function start() {
       button.hidden = true;
+      attachSource();
       const pending = video.play();
       if (pending && typeof pending.catch === "function") {
         pending.catch(() => {
           button.hidden = false;
         });
       }
-    });
+    }
+
+    button.addEventListener("click", start);
+    video.addEventListener("pointerdown", () => attachSource());
     video.addEventListener("play", () => {
       button.hidden = true;
+    });
+  }
+
+  function setupDeferredImages() {
+    document.querySelectorAll("img[data-src]").forEach((img) => {
+      const load = () => {
+        if (img.getAttribute("src")) return;
+        img.src = img.getAttribute("data-src");
+      };
+      if (!("IntersectionObserver" in window)) {
+        load();
+        return;
+      }
+      const observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        load();
+        observer.disconnect();
+      });
+      observer.observe(img);
     });
   }
 
