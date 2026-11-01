@@ -129,6 +129,20 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     const html = await home.text();
     assert.match(html, /data-price="bundle">£16\.99</);
     assert.ok(html.indexOf('id="hero-order"') < html.indexOf('id="hear-santa"'));
+    assert.ok(html.indexOf('src="js/funnel-beacon.js"') < html.indexOf('src="js/main.js"'));
+
+    const beacon = await fetch(`${origin}/api/funnel`, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8", Origin: origin },
+      body: JSON.stringify({
+        event: "order_tap",
+        utm_source: "meta",
+        utm_campaign: "xmas",
+        utm_content: "video",
+      }),
+    });
+    assert.strictEqual(beacon.status, 204);
+    assert.strictEqual(beacon.headers.get("set-cookie"), null);
 
     const tap = await fetch(`${origin}/api/funnel`, {
       method: "POST",
@@ -175,11 +189,11 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     });
     assert.strictEqual(report.status, 200);
     const body = await report.json();
-    assert.deepStrictEqual(body.total, { view: 1, order_tap: 1, checkout_start: 1, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total, { view: 1, order_tap: 2, checkout_start: 1, checkout_complete: 0 });
     const row = body.buckets.find((item) => item.utm_content === "video");
     assert.strictEqual(row.utm_source, "meta");
     assert.strictEqual(row.view, 1);
-    assert.strictEqual(row.order_tap, 1);
+    assert.strictEqual(row.order_tap, 2);
     assert.strictEqual(row.checkout_start, 1);
     assert.doesNotMatch(JSON.stringify(body), /parent@|ip|cookie|userAgent/i);
     assert.doesNotMatch(JSON.stringify(body), new RegExp(secret));

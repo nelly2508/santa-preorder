@@ -292,22 +292,15 @@
   }
 
   function recordFunnel(eventName) {
+    const funnel = window.SANTA_FUNNEL;
+    if (!funnel || typeof funnel.post !== "function") return;
     try {
-      const params = new URLSearchParams(window.location.search);
-      const body = JSON.stringify({
-        event: eventName,
-        utm_source: params.get("utm_source") || "",
-        utm_campaign: params.get("utm_campaign") || "",
-        utm_content: params.get("utm_content") || "",
+      const nav = window.navigator;
+      const beacon = nav && nav.sendBeacon;
+      funnel.post(eventName, window.location.search, {
+        sendBeacon: typeof beacon === "function" ? beacon.bind(nav) : null,
+        fetch: typeof window.fetch === "function" ? window.fetch.bind(window) : null,
       });
-      fetch("/api/funnel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-        credentials: "omit",
-        cache: "no-store",
-      }).catch(() => {});
     } catch (error) {
       // Counting must not block the order.
     }
