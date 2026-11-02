@@ -117,7 +117,7 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     now: "2026-10-31T12:00:00Z",
     visitsFile: null,
     funnelFile: filePath,
-    env: { VISITS_SECRET: secret },
+    env: { VISITS_SECRET: secret, PAYMENT_PROVIDER: "stripe" },
     stripe,
   });
   const port = await listen(server);
@@ -196,7 +196,7 @@ test("a non-GBP payment link stays a payment link and is not counted as a checko
     now: "2026-10-31T12:00:00Z",
     visitsFile: null,
     funnelFile: null,
-    env: { VISITS_SECRET: "funnel-test-secret" },
+    env: { VISITS_SECRET: "funnel-test-secret", PAYMENT_PROVIDER: "stripe" },
     stripe,
   });
   const port = await listen(server);

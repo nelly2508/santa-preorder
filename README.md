@@ -2,9 +2,32 @@
 
 Pre-order site for a personalised Santa video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
 
+## PayPal checkout
+
+Live payments use PayPal Checkout on the order page: the PayPal button and guest debit or credit card. The price is calculated on the server from `public/js/config.js`. The browser cannot set the amount. Currency is GBP.
+
+Set these on the Railway service (never commit them):
+
+- `PAYPAL_CLIENT_ID` — PayPal REST app client id
+- `PAYPAL_CLIENT_SECRET` — PayPal REST app secret
+- `PAYPAL_ENV` — `live` or `sandbox`
+- `PAYPAL_WEBHOOK_ID` — id of the webhook below
+
+`PAYMENT_PROVIDER` defaults to `paypal`. Set `PAYMENT_PROVIDER=stripe` only to use the old Stripe Checkout path. The public site URLs stay the same.
+
+In the PayPal app, add a webhook for `PAYMENT.CAPTURE.COMPLETED`:
+
+```
+https://santasaysmyname.com/paypal/webhook
+```
+
+If the PayPal variables are missing, the page shows a friendly message and the server answers 503. It does not crash. Optional: `PAYPAL_ORDERS_FILE` on a Railway volume so a paid order is still marked as emailed after a new deploy (same idea as `VISITS_FILE`).
+
 ## Swap the Stripe and Tally links
 
-The live URLs are in [`public/js/config.js`](public/js/config.js). There are five Payment Links. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order), and is an optional item on every link. The named sleigh video (£4.99, voice only) is an optional item on the single-video links only, because the Magic bundle already includes it. Rush is not an optional add-on. The page shows those prices and has no separate pay buttons for the extras. The order buttons on the page remember the package and continue to Stripe only after the “before you pay” box is ticked.
+This section applies when `PAYMENT_PROVIDER=stripe`. Live payments use PayPal, above.
+
+The live URLs are in [`public/js/config.js`](public/js/config.js). There are five Payment Links. A sibling is £11.99 per extra child, up to 4 siblings (5 children in one order), and is an optional item on every link. The named sleigh video (£4.99, voice only) is an optional item on the single-video links only, because the Magic bundle already includes it. Rush is not an optional add-on. The page shows those prices and has no separate pay buttons for the extras. With Stripe selected, the order buttons remember the package and continue to Stripe only after the “before you pay” box is ticked. With PayPal (the default), that tick shows the PayPal buttons on this page, and the sibling count and named-sleigh tick are part of the amount the server charges.
 
 ### Payment Links
 

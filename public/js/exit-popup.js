@@ -117,6 +117,9 @@
     const startedAt = window.performance && window.performance.now ? window.performance.now() : Date.now();
 
     doc.addEventListener("click", rememberBuy, true);
+    doc.addEventListener("santa-pay", () => {
+      writeItem(window.sessionStorage, BUY_KEY, "1");
+    });
 
     function rememberBuy(event) {
       const target = event.target && event.target.closest && event.target.closest("a");

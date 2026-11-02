@@ -867,8 +867,29 @@ p + p {
   box-shadow: 0 10px 24px rgba(31, 94, 59, 0.28);
 }
 
-.checkout .btn-pay + .fine {
+.checkout .btn-pay + .pay-label,
+#paypal-buttons {
+  margin-top: 0.85rem;
+}
+
+#paypal-buttons {
+  min-height: 7.5rem;
+}
+
+#pay-extra {
   font-weight: 700;
+}
+
+body[data-payment-provider="stripe"] #pay-extra-paypal,
+body[data-payment-provider="stripe"] #sleigh-add,
+body[data-payment-provider="stripe"] #pay-label,
+body[data-payment-provider="stripe"] #paypal-buttons,
+body[data-payment-provider="stripe"] #paypal-note {
+  display: none !important;
+}
+
+body[data-payment-provider="stripe"] #pay-extra-stripe {
+  display: inline !important;
 }
 
 .sibling-add {
@@ -1534,6 +1555,9 @@ body[data-orders-closed] #orders-closed {
 
 body[data-orders-closed] a[data-pay],
 body[data-orders-closed] #pay-continue,
+body[data-orders-closed] #paypal-buttons,
+body[data-orders-closed] #pay-label,
+body[data-orders-closed] #sleigh-add,
 body[data-orders-closed] #checkout,
 body[data-orders-closed] #sibling-add,
 body[data-orders-closed] .hero-price,

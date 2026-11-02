@@ -151,6 +151,16 @@
     const siblingCount = document.getElementById("sibling-count");
     const siblingNext = document.getElementById("sibling-next");
 
+    const paypalMode = document.body.getAttribute("data-payment-provider") !== "stripe";
+    const paypalNote = document.getElementById("paypal-note");
+    const paypalSlot = document.getElementById("paypal-buttons");
+    const payLabel = document.getElementById("pay-label");
+    const sleighBox = document.getElementById("named-sleigh");
+    const sleighAdd = document.getElementById("sleigh-add");
+    const paypalMessage = "Pay with PayPal or card is not available just now. Please email hello@santasaysmyname.com and we will help you order.";
+    let paypalRendered = false;
+    let paypalLoading = false;
+
     function showSiblingExample(key) {
       const want = key === "singleVideo" ? "singleVideo" : "magicBundle";
       document.querySelectorAll("[data-two-children]").forEach((el) => {
@@ -171,7 +181,16 @@
         else siblingCount.textContent = `${siblings} siblings added (${amount} each).`;
       }
       if (siblingNext) {
-        if (siblings === 0) {
+        const stripeMode = document.body.getAttribute("data-payment-provider") === "stripe";
+        if (!stripeMode) {
+          if (siblings === 0) {
+            siblingNext.hidden = true;
+            siblingNext.textContent = "";
+          } else {
+            siblingNext.hidden = false;
+            siblingNext.textContent = "Included in this payment.";
+          }
+        } else if (siblings === 0) {
           siblingNext.hidden = true;
           siblingNext.textContent = "";
         } else if (siblings === 1) {
@@ -196,28 +215,167 @@
       return picked;
     }
 
+    function showPaypalNote(message) {
+      if (!paypalNote) return;
+      paypalNote.hidden = !message;
+      paypalNote.textContent = message || "";
+    }
+
+    function hidePaypal() {
+      if (payLabel) payLabel.hidden = true;
+      if (paypalSlot) paypalSlot.hidden = true;
+      if (continueLink) continueLink.hidden = false;
+    }
+
+    function currentUtm() {
+      const utm = {};
+      const current = new URLSearchParams(window.location.search);
+      ["utm_source", "utm_campaign", "utm_content"].forEach((key) => {
+        utm[key] = current.get(key) || "";
+      });
+      return utm;
+    }
+
+    function loadPaypalSdk(clientId) {
+      if (window.paypal) return Promise.resolve(window.paypal);
+      return new Promise((resolve, reject) => {
+        const params = new URLSearchParams({
+          "client-id": clientId,
+          currency: "GBP",
+          intent: "capture",
+          components: "buttons",
+          "enable-funding": "card",
+          "disable-funding": "paylater,venmo,credit",
+        });
+        const script = document.createElement("script");
+        script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
+        script.async = true;
+        script.onload = () => (window.paypal ? resolve(window.paypal) : reject(new Error("sdk")));
+        script.onerror = () => reject(new Error("sdk"));
+        document.head.appendChild(script);
+      });
+    }
+
+    function showPaypal() {
+      if (!paypalMode || !box.checked) return;
+      const clientId = document.body.getAttribute("data-paypal-client-id") || "";
+      const ready = document.body.getAttribute("data-paypal-ready") === "1" && clientId;
+      if (!ready) {
+        showPaypalNote(paypalMessage);
+        return;
+      }
+      if (continueLink) continueLink.hidden = true;
+      if (payLabel) payLabel.hidden = false;
+      if (paypalSlot) paypalSlot.hidden = false;
+      if (paypalRendered || paypalLoading) return;
+      showPaypalNote("");
+      paypalLoading = true;
+      showPaypalNote("Loading PayPal…");
+      loadPaypalSdk(clientId).then((paypal) => {
+        paypalLoading = false;
+        if (!paypalSlot || paypalRendered) return;
+        showPaypalNote("");
+        paypalRendered = true;
+        paypal.Buttons({
+          style: { layout: "vertical", shape: "rect", label: "paypal" },
+          onClick: (data, actions) => {
+            if (!box.checked) {
+              attempted = true;
+              syncContinue(false);
+              return actions.reject();
+            }
+            recordFunnel("order_tap");
+            document.dispatchEvent(new Event("santa-pay"));
+            if (window.fbq) window.fbq("track", "InitiateCheckout", { currency: "GBP" });
+            return actions.resolve();
+          },
+          createOrder: () => {
+            const utm = currentUtm();
+            return fetch("/api/paypal/orders", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "omit",
+              cache: "no-store",
+              body: JSON.stringify({
+                package: selectedKey,
+                siblings,
+                sleigh: !!(sleighBox && sleighBox.checked && selectedKey === "singleVideo"),
+                utm_source: utm.utm_source,
+                utm_campaign: utm.utm_campaign,
+                utm_content: utm.utm_content,
+              }),
+            }).then(async (res) => {
+              const payload = await res.json().catch(() => ({}));
+              if (!res.ok || !payload.id) {
+                showPaypalNote(payload.error || paypalMessage);
+                throw new Error("create");
+              }
+              return payload.id;
+            });
+          },
+          onApprove: (data) => fetch(`/api/paypal/orders/${encodeURIComponent(data.orderID)}/capture`, {
+            method: "POST",
+            credentials: "omit",
+            cache: "no-store",
+          }).then(async (res) => {
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok || !payload.continueUrl || payload.continueUrl.indexOf("/order/continue?session_id=") !== 0) {
+              showPaypalNote(payload.error || "The payment did not complete. Please try again, or email hello@santasaysmyname.com.");
+              return;
+            }
+            window.location.assign(payload.continueUrl);
+          }),
+          onCancel: () => {
+            showPaypalNote("Payment cancelled. You can try again when you're ready.");
+          },
+          onError: () => {
+            showPaypalNote("The payment did not complete. Please try again, or email hello@santasaysmyname.com.");
+          },
+        }).render(paypalSlot).catch(() => {
+          paypalRendered = false;
+          paypalLoading = false;
+          hidePaypal();
+          showPaypalNote(paypalMessage);
+        });
+      }).catch(() => {
+        paypalLoading = false;
+        hidePaypal();
+        showPaypalNote(paypalMessage);
+      });
+    }
+
+    function syncSleigh() {
+      if (!sleighAdd) return;
+      sleighAdd.hidden = !(paypalMode && selectedKey === "singleVideo");
+    }
+
     function syncContinue(moveFocus) {
       const picked = renderChoice();
+      syncSleigh();
       const ready = box.checked;
       if (hint) hint.hidden = !attempted || ready;
       if (checkout) checkout.classList.toggle("is-ready", ready);
       box.setAttribute("aria-invalid", attempted && !ready ? "true" : "false");
       continueLink.setAttribute("aria-disabled", ready ? "false" : "true");
       if (ready) {
-        const utm = {};
-        const current = new URLSearchParams(window.location.search);
-        ["utm_source", "utm_campaign", "utm_content"].forEach((key) => {
-          utm[key] = current.get(key) || "";
-        });
+        const utm = currentUtm();
         const query = choiceApi.orderQuery
           ? choiceApi.orderQuery({ packageKey: picked.key, siblings, utm })
           : `package=${encodeURIComponent(picked.key)}`;
-        continueLink.href = `/order/pay?${query}`;
-        continueLink.setAttribute("data-pay", picked.key);
+        if (paypalMode) {
+          continueLink.href = "#checkout";
+          continueLink.removeAttribute("data-pay");
+          showPaypal();
+        } else {
+          continueLink.href = `/order/pay?${query}`;
+          continueLink.setAttribute("data-pay", picked.key);
+          if (moveFocus) continueLink.focus();
+        }
         continueLink.removeAttribute("tabindex");
         continueLink.setAttribute("aria-describedby", "chosen-package");
-        if (moveFocus) continueLink.focus();
       } else {
+        hidePaypal();
+        showPaypalNote("");
         continueLink.href = "#checkout";
         continueLink.removeAttribute("data-pay");
         continueLink.tabIndex = -1;
@@ -245,8 +403,8 @@
         showSiblingExample(selectedKey);
         syncContinue(false);
         scrollToCheckout();
-        if (box.checked) continueLink.focus();
-        else box.focus({ preventScroll: true });
+        if (box.checked && !paypalMode) continueLink.focus();
+        else if (!box.checked) box.focus({ preventScroll: true });
       });
     });
 
@@ -256,8 +414,10 @@
     });
 
     continueLink.addEventListener("click", (event) => {
+      if (paypalMode) event.preventDefault();
       if (box.checked && continueLink.getAttribute("aria-disabled") !== "true") {
-        recordFunnel("order_tap");
+        if (!paypalMode) recordFunnel("order_tap");
+        else showPaypal();
         return;
       }
       event.preventDefault();

@@ -215,7 +215,7 @@
             <p class="sibling-next" id="sibling-next" hidden></p>
           </div>
           <h3>Before you pay</h3>
-          <p>We collect your child's details on the order form after payment, never on the card page. We delete those details about 90 days after delivery.</p>
+          <p>We collect your child's details on the order form after payment, never on the payment page. We delete those details about 90 days after delivery.</p>
           <p class="chosen" id="chosen-package" role="status" aria-live="polite">You've chosen: <strong id="chosen-name">Magic bundle</strong> — <span id="chosen-price">£16.99 early bird</span></p>
           <label class="agree">
             <input type="checkbox" id="reg37" name="make-before-cancellation">
@@ -225,8 +225,15 @@
             </span>
           </label>
           <p id="agree-hint" class="agree-hint" hidden>Tick the box to continue</p>
-          <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Continue to secure payment</a>
-          <p class="fine">Named sleigh on the video only, <span data-price="namedSleigh">+£4.99</span>, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed there. <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
+          <label class="agree" id="sleigh-add" hidden>
+            <input type="checkbox" id="named-sleigh">
+            <span>Add the named sleigh video, <span data-price="namedSleigh">+£4.99</span>. Voice only.</span>
+          </label>
+          <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Pay with PayPal or card</a>
+          <p class="pay-label" id="pay-label" hidden>Pay with PayPal or card</p>
+          <div id="paypal-buttons" hidden></div>
+          <p id="paypal-note" class="agree-hint" role="status" hidden></p>
+          <p class="fine" id="pay-extra"><span id="pay-extra-paypal">The Magic bundle already includes the named sleigh. On the single video, tick it above if you want it. Voice only. Your child's name is never typed on the payment.</span><span id="pay-extra-stripe" hidden>Named sleigh on the video only, +£4.99, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed on the card page.</span> <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
         </div>
       </div>
     </section>
@@ -238,7 +245,7 @@
         <ol class="steps">
           <li>
             <h3>Pick and pay</h3>
-            <p>30 seconds. Tick any extras in the same checkout. Stripe takes the card. We never see it.</p>
+            <p>30 seconds. Tick any extras here. Pay with PayPal or card. We never see the card.</p>
           </li>
           <li>
             <h3>Tell us about your child</h3>
@@ -295,11 +302,11 @@
           </details>
           <details>
             <summary>Adding a brother or sister?</summary>
-            <p>Yes. Use Add a sibling before you pay. <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. Each extra child gets the full Magic bundle. On the card page, tap Add next to Sibling. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
+            <p>Yes. Use Add a sibling before you pay. <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. Each extra child gets the full Magic bundle. They are included when you pay. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
           </details>
           <details>
             <summary>What happens to my child's details?</summary>
-            <p>We use your child's details only to make the video, not for ads and not to train AI. We collect the details on the order form after payment, never on the card page. We delete the details and the video files about 90 days after we send the video, so download it to keep it. The full notice is in our <a href="/privacy">privacy policy</a>.</p>
+            <p>We use your child's details only to make the video, not for ads and not to train AI. We collect the details on the order form after payment, never on the payment page. We delete the details and the video files about 90 days after we send the video, so download it to keep it. The full notice is in our <a href="/privacy">privacy policy</a>.</p>
           </details>
           <details>
             <summary>Can grandparents order?</summary>
@@ -345,13 +352,13 @@
         <p><span data-trader="name">Neil Carroll trading as Santa Says My Name</span>, <a data-trader="email" href="mailto:hello@santasaysmyname.com">hello@santasaysmyname.com</a>. We are the data controller. The postal address is on the <a href="/privacy">privacy policy</a>.</p>
 
         <h3>What we collect</h3>
-        <p>From you, the buyer: your name, email and order details. Stripe handles card payments; we never see your card. About your child, only what you type on the order form: first name and how to say it, age or another detail you choose to give, one good deed, one wish, a short personal message, and who it's from and where they live (town or country only). We never ask for photos, surnames, schools or addresses.</p>
+        <p>From you, the buyer: your name, email and order details. PayPal handles the payment; we never see your card. About your child, only what you type on the order form: first name and how to say it, age or another detail you choose to give, one good deed, one wish, a short personal message, and who it's from and where they live (town or country only). We never ask for photos, surnames, schools or addresses.</p>
 
         <h3>Why</h3>
         <p>To make and deliver the video you've ordered. Lawful basis: contract with you. We also keep a basic sales record because tax law says so, and we only send optional news if you tick the box on the free-video form. The <a href="/privacy">privacy policy</a> lists every purpose and lawful basis.</p>
 
         <h3>Who helps us</h3>
-        <p>Stripe (payments), Tally (order form), Railway (this website), ElevenLabs and other AI voice and video tools, our email provider and our file host. They act for us under contract. Some are outside the UK, under the safeguards in the <a href="/privacy">privacy policy</a>. We run Meta ads, and we use Microsoft Clarity to see how this page is used. Both load only with your consent, and neither gets your child's details.</p>
+        <p>PayPal (payments), Tally (order form), Railway (this website), ElevenLabs and other AI voice and video tools, our email provider and our file host. They act for us under contract. Some are outside the UK, under the safeguards in the <a href="/privacy">privacy policy</a>. We run Meta ads, and we use Microsoft Clarity to see how this page is used. Both load only with your consent, and neither gets your child's details.</p>
 
         <h3>What we don't do</h3>
         <p>No ads from your child's details, no selling, no AI training on those details, and no tracking on the page where the finished video plays.</p>

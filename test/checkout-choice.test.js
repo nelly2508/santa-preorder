@@ -95,7 +95,7 @@ test("the continue link follows the package the customer chose", () => {
 
 test("the server refuses checkout after 19 December, including rush, and redirects before that", async () => {
   async function withServer(now, run) {
-    const server = createServer({ log() {}, now });
+    const server = createServer({ log() {}, now, env: { PAYMENT_PROVIDER: "stripe" } });
     const port = await new Promise((resolve) => {
       server.listen(0, "127.0.0.1", () => resolve(server.address().port));
     });
@@ -163,7 +163,7 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, /You've chosen:/);
     assert.match(html, /id="agree-hint"[^>]*hidden/);
     assert.match(html, /Tick the box to continue/);
-    assert.match(html, />Continue to secure payment</);
+    assert.match(html, />Pay with PayPal or card</);
     assert.match(html, /id="add-sibling"[^>]*>Add a sibling</);
     assert.match(html, /Nice List Promise: love it or your money back/);
     assert.match(
