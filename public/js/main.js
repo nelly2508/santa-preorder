@@ -132,24 +132,21 @@
   }
 
   function setupCheckout() {
-    const box = document.getElementById("reg37");
-    const hint = document.getElementById("agree-hint");
     const checkout = document.getElementById("checkout");
     const continueLink = document.getElementById("pay-continue");
     const chosenName = document.getElementById("chosen-name");
     const chosenPrice = document.getElementById("chosen-price");
-    if (!box || !continueLink || !choiceApi) return;
+    if (!continueLink || !choiceApi) return;
 
-    const resume = choiceApi.resumeOrder ? choiceApi.resumeOrder(window.location.search) : { packageKey: "", siblings: 0, agreed: false };
+    const resume = choiceApi.resumeOrder ? choiceApi.resumeOrder(window.location.search) : { packageKey: "", siblings: 0 };
     let selectedKey = resume.packageKey || "magicBundle";
     let siblings = resume.siblings || 0;
-    let attempted = false;
-    if (resume.agreed) box.checked = true;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const addSibling = document.getElementById("add-sibling");
     const removeSibling = document.getElementById("sibling-remove");
     const siblingCount = document.getElementById("sibling-count");
     const siblingNext = document.getElementById("sibling-next");
+    const siblingFaces = document.getElementById("sibling-faces");
 
     const paypalMode = document.body.getAttribute("data-payment-provider") !== "stripe";
     const paypalNote = document.getElementById("paypal-note");
@@ -166,6 +163,49 @@
       document.querySelectorAll("[data-two-children]").forEach((el) => {
         el.hidden = el.getAttribute("data-two-children") !== want;
       });
+    }
+
+    function siblingMark() {
+      const figure = document.createElement("span");
+      figure.className = "sibling-face";
+      figure.innerHTML = '<svg viewBox="0 0 64 80" focusable="false" aria-hidden="true"><g fill="currentColor"><circle cx="32" cy="20" r="12"/><path d="M8 76c1.6-16 10.2-28 24-28s22.4 12 24 28z"/></g></svg>';
+      return figure;
+    }
+
+    function dropFace(figure) {
+      if (!figure || !figure.parentNode) return;
+      if (motion.matches) {
+        figure.remove();
+        return;
+      }
+      figure.classList.remove("is-shown");
+      figure.classList.add("is-leaving");
+      const done = () => {
+        if (figure.parentNode) figure.remove();
+      };
+      figure.addEventListener("transitionend", done, { once: true });
+      setTimeout(done, 400);
+    }
+
+    function shownFaces() {
+      return [...siblingFaces.children].filter((figure) => !figure.classList.contains("is-leaving"));
+    }
+
+    function renderFaces(count, animate) {
+      if (!siblingFaces) return;
+      const next = Math.max(0, count);
+      const current = shownFaces();
+      while (current.length < next) {
+        const figure = siblingMark();
+        siblingFaces.appendChild(figure);
+        current.push(figure);
+        if (animate && !motion.matches) {
+          requestAnimationFrame(() => requestAnimationFrame(() => figure.classList.add("is-shown")));
+        } else {
+          figure.classList.add("is-shown");
+        }
+      }
+      while (current.length > next) dropFace(current.pop());
     }
 
     function renderSiblings() {
@@ -249,6 +289,11 @@
         });
         const script = document.createElement("script");
         script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
+        const nonce = document.body.getAttribute("data-csp-nonce");
+        if (nonce) {
+          script.setAttribute("data-csp-nonce", nonce);
+          script.nonce = nonce;
+        }
         script.async = true;
         script.onload = () => (window.paypal ? resolve(window.paypal) : reject(new Error("sdk")));
         script.onerror = () => reject(new Error("sdk"));
@@ -257,7 +302,7 @@
     }
 
     function showPaypal() {
-      if (!paypalMode || !box.checked) return;
+      if (!paypalMode) return;
       const clientId = document.body.getAttribute("data-paypal-client-id") || "";
       const ready = document.body.getAttribute("data-paypal-ready") === "1" && clientId;
       if (!ready) {
@@ -279,11 +324,6 @@
         paypal.Buttons({
           style: { layout: "vertical", shape: "rect", label: "paypal" },
           onClick: (data, actions) => {
-            if (!box.checked) {
-              attempted = true;
-              syncContinue(false);
-              return actions.reject();
-            }
             recordFunnel("order_tap");
             document.dispatchEvent(new Event("santa-pay"));
             if (window.fbq) window.fbq("track", "InitiateCheckout", { currency: "GBP" });
@@ -352,41 +392,28 @@
     function syncContinue(moveFocus) {
       const picked = renderChoice();
       syncSleigh();
-      const ready = box.checked;
-      if (hint) hint.hidden = !attempted || ready;
-      if (checkout) checkout.classList.toggle("is-ready", ready);
-      box.setAttribute("aria-invalid", attempted && !ready ? "true" : "false");
-      continueLink.setAttribute("aria-disabled", ready ? "false" : "true");
-      if (ready) {
-        const utm = currentUtm();
-        const query = choiceApi.orderQuery
-          ? choiceApi.orderQuery({ packageKey: picked.key, siblings, utm })
-          : `package=${encodeURIComponent(picked.key)}`;
-        if (paypalMode) {
-          continueLink.href = "#checkout";
-          continueLink.removeAttribute("data-pay");
-          showPaypal();
-        } else {
-          continueLink.href = `/order/pay?${query}`;
-          continueLink.setAttribute("data-pay", picked.key);
-          if (moveFocus) continueLink.focus();
-        }
-        continueLink.removeAttribute("tabindex");
-        continueLink.setAttribute("aria-describedby", "chosen-package");
-      } else {
-        hidePaypal();
-        showPaypalNote("");
+      if (checkout) checkout.classList.add("is-ready");
+      const utm = currentUtm();
+      const query = choiceApi.orderQuery
+        ? choiceApi.orderQuery({ packageKey: picked.key, siblings, utm })
+        : `package=${encodeURIComponent(picked.key)}`;
+      continueLink.setAttribute("aria-disabled", "false");
+      continueLink.removeAttribute("tabindex");
+      continueLink.setAttribute("aria-describedby", "chosen-package");
+      if (paypalMode) {
         continueLink.href = "#checkout";
         continueLink.removeAttribute("data-pay");
-        continueLink.tabIndex = -1;
-        if (attempted && hint) continueLink.setAttribute("aria-describedby", "agree-hint");
-        else continueLink.removeAttribute("aria-describedby");
+        showPaypal();
+      } else {
+        continueLink.href = `/order/pay?${query}`;
+        continueLink.setAttribute("data-pay", picked.key);
+        if (moveFocus) continueLink.focus();
       }
     }
 
     function scrollToCheckout() {
       const narrow = window.matchMedia("(max-width: 719px)").matches;
-      const target = narrow ? document.querySelector(".agree") || checkout : checkout;
+      const target = narrow ? document.querySelector(".delivery-line") || checkout : checkout;
       if (!target) return;
       target.scrollIntoView({
         behavior: motion.matches ? "auto" : "smooth",
@@ -403,29 +430,21 @@
         showSiblingExample(selectedKey);
         syncContinue(false);
         scrollToCheckout();
-        if (box.checked && !paypalMode) continueLink.focus();
-        else if (!box.checked) box.focus({ preventScroll: true });
+        if (!paypalMode) continueLink.focus();
       });
     });
 
-    box.addEventListener("change", () => {
-      if (box.checked) attempted = false;
-      syncContinue(box.checked);
-    });
-
     continueLink.addEventListener("click", (event) => {
-      if (paypalMode) event.preventDefault();
-      if (box.checked && continueLink.getAttribute("aria-disabled") !== "true") {
-        if (!paypalMode) recordFunnel("order_tap");
-        else showPaypal();
+      if (paypalMode) {
+        event.preventDefault();
+        showPaypal();
         return;
       }
-      event.preventDefault();
-      attempted = true;
-      if (hint) hint.hidden = false;
-      continueLink.setAttribute("aria-describedby", "agree-hint");
-      box.setAttribute("aria-invalid", "true");
-      box.focus();
+      if (continueLink.getAttribute("aria-disabled") === "true") {
+        event.preventDefault();
+        return;
+      }
+      recordFunnel("order_tap");
     });
 
     if (addSibling) {
@@ -433,6 +452,7 @@
         if (siblings >= 4) return;
         siblings += 1;
         renderSiblings();
+        renderFaces(siblings, true);
         syncContinue(false);
       });
     }
@@ -441,14 +461,16 @@
         if (siblings <= 0) return;
         siblings -= 1;
         renderSiblings();
+        renderFaces(siblings, true);
         syncContinue(false);
       });
     }
 
     showSiblingExample(selectedKey);
     renderSiblings();
-    syncContinue(resume.agreed);
-    if (resume.agreed) scrollToCheckout();
+    renderFaces(siblings, false);
+    syncContinue(false);
+    if (resume.packageKey || resume.siblings) scrollToCheckout();
   }
 
   function recordFunnel(eventName) {

@@ -101,8 +101,8 @@ test("smtp defaults are the workshop mailbox, and host, port and user can be ove
 });
 
 test("delivery wording follows the UK order date and the rush-fee boundary", () => {
-  const batch = "We'll start sending videos from 1 December. Pre-orders go out in batches, and your video is guaranteed by 15 December.";
-  const byFifteenth = "Your video is guaranteed by 15 December.";
+  const batch = "Your personalised video will be sent from the first week of December. Pre-orders go out in batches, and your video is guaranteed by 15 December.";
+  const byFifteenth = "Your personalised video will be sent from the first week of December. Your video is guaranteed by 15 December.";
   const within48 = "Your video is guaranteed within 48 hours.";
   const feeStarts = Date.parse(LATE_ORDERS_FROM);
 
@@ -147,7 +147,8 @@ test("the customer email is warm night-and-gold html plus text, with the tally l
   assert.match(message.text, /What happens next/);
   assert.match(message.text, /favourite little ones' names \(and how to say them\), their age, one lovely thing they did this year and their Christmas wish/);
   assert.ok(message.text.includes(location));
-  assert.match(message.text, /We'll start sending videos from 1 December/);
+  assert.match(message.text, /Your personalised video will be sent from the first week of December/);
+  assert.doesNotMatch(message.text, /in the first week of December/);
   assert.match(message.text, /Pre-orders go out in batches/);
   assert.match(message.text, /your video is guaranteed by 15 December/);
   assert.match(message.text, /Ready for that gasp when Santa says their name/);
@@ -213,7 +214,8 @@ test("the sale alert names the package, amount, children, add-ons, email, sessio
     session: paidSession(Date.parse("2026-11-02T10:00:00Z") / 1000, { amount_total: 1699 }),
   }));
   assert.strictEqual(early.subject, "🎄 New Santa order – £16.99 – Magic bundle (early bird)");
-  assert.match(early.text, /We'll start sending videos from 1 December/);
+  assert.match(early.text, /sent from the first week of December/);
+  assert.doesNotMatch(early.text, /in the first week of December/);
 });
 
 test("each paid order is emailed once, including a refresh and an overlapping visit", async () => {
@@ -540,7 +542,8 @@ test("the sample send can only address the workshop mailbox", async () => {
     assert.ok(!JSON.stringify(message).includes(PASS));
   }
   const bodies = messages.map((message) => message.text).join("\n");
-  assert.match(bodies, /from 1 December/);
+  assert.match(bodies, /from the first week of December/);
+  assert.doesNotMatch(bodies, /in the first week of December/);
   assert.match(bodies, /guaranteed by 15 December/);
   assert.match(bodies, /within 48 hours/);
   await assert.rejects(

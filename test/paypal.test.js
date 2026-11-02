@@ -474,7 +474,7 @@ test("PayPal keeps /order/pay on this site, and Stripe remains behind the flag",
   try {
     const pay = await fetch(`http://127.0.0.1:${paypalPort}/order/pay?package=singleVideo&siblings=9&utm_source=meta`, { redirect: "manual" });
     assert.strictEqual(pay.status, 302);
-    assert.strictEqual(pay.headers.get("location"), "/?package=singleVideo&siblings=4&agreed=1&utm_source=meta#checkout");
+    assert.strictEqual(pay.headers.get("location"), "/?package=singleVideo&siblings=4&utm_source=meta#checkout");
     assert.doesNotMatch(pay.headers.get("location"), /stripe/i);
   } finally {
     await close(paypal);
@@ -505,5 +505,58 @@ test("PayPal keeps /order/pay on this site, and Stripe remains behind the flag",
     assert.strictEqual(blocked.status, 404);
   } finally {
     await close(stripe);
+  }
+});
+
+function cspSources(csp, name) {
+  const found = String(csp || "").split(";").map((part) => part.trim()).find((part) => part.startsWith(`${name} `));
+  assert.ok(found, `${name} missing`);
+  return found.slice(name.length + 1).split(/\s+/);
+}
+
+test("the content security policy allows PayPal card styles, images, and hosts", async () => {
+  const server = createServer({
+    log() {},
+    now: "2026-10-24T12:00:00Z",
+    visitsFile: null,
+    funnelFile: null,
+    paypalOrdersFile: null,
+    env: paypalEnv(),
+  });
+  const port = await listen(server);
+  try {
+    const home = await fetch(`http://127.0.0.1:${port}/`);
+    const html = await home.text();
+    const nonceMatch = /data-csp-nonce="([^"]+)"/.exec(html);
+    assert.ok(nonceMatch, "sales page exposes the CSP nonce");
+    const nonce = nonceMatch[1];
+    assert.match(nonce, /^[A-Za-z0-9_-]{16,}$/);
+    const csp = home.headers.get("content-security-policy");
+    const style = cspSources(csp, "style-src");
+    const script = cspSources(csp, "script-src");
+    const img = cspSources(csp, "img-src");
+    const connect = cspSources(csp, "connect-src");
+    const frame = cspSources(csp, "frame-src");
+    assert.ok(style.includes(`'nonce-${nonce}'`));
+    assert.ok(script.includes(`'nonce-${nonce}'`));
+    assert.ok(img.includes("data:"));
+    for (const sources of [script, connect, frame, img]) {
+      assert.ok(sources.includes("https://*.paypal.com"));
+      assert.ok(sources.includes("https://*.paypalobjects.com"));
+    }
+    assert.doesNotMatch(csp, /unsafe-inline/);
+    assert.match(html, /data-payment-provider="paypal"/);
+
+    const again = await fetch(`http://127.0.0.1:${port}/`);
+    const againNonce = /data-csp-nonce="([^"]+)"/.exec(await again.text())[1];
+    assert.notStrictEqual(againNonce, nonce);
+    assert.ok(cspSources(again.headers.get("content-security-policy"), "style-src").includes(`'nonce-${againNonce}'`));
+
+    const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
+    assert.match(mainJs, /"enable-funding": "card"/);
+    assert.match(mainJs, /script\.setAttribute\("data-csp-nonce", nonce\)/);
+    assert.doesNotMatch(mainJs, /unsafe-inline/);
+  } finally {
+    await close(server);
   }
 });

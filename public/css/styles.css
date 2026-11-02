@@ -345,6 +345,10 @@ p + p {
   to { transform: translateY(78vh); }
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -843,6 +847,22 @@ p + p {
   font-weight: 600;
 }
 
+.delivery-line {
+  margin: 0.85rem 0 0;
+}
+
+.promise-line {
+  margin: 0.55rem 0 0;
+  color: #5c4a3a;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.promise-line a {
+  color: #174a2e;
+}
+
 .checkout .btn-pay {
   width: 100%;
   margin-top: 0.85rem;
@@ -913,6 +933,53 @@ body[data-payment-provider="stripe"] #pay-extra-stripe {
 
 .sibling-controls .btn {
   width: 100%;
+}
+
+.sibling-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.sibling-faces:empty {
+  display: none;
+}
+
+.sibling-face {
+  display: block;
+  width: 3.15rem;
+  height: 3.9rem;
+  color: #234233;
+  opacity: 0;
+  transform: translateY(8px);
+  filter: drop-shadow(0 7px 8px rgba(20, 40, 28, 0.28));
+}
+
+.sibling-face svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sibling-face.is-shown {
+  opacity: 0.78;
+  transform: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.sibling-face.is-leaving {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sibling-face,
+  .sibling-face.is-shown,
+  .sibling-face.is-leaving {
+    transition: none;
+  }
 }
 
 .sibling-count {
@@ -1529,7 +1596,12 @@ body.has-consent {
     padding-bottom: 9.5rem;
   }
 
-  .agree {
+  .sibling-face {
+    width: 2.7rem;
+    height: 3.35rem;
+  }
+
+  .delivery-line {
     scroll-margin-bottom: 9.5rem;
   }
 }

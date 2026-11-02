@@ -78,7 +78,6 @@
     return {
       packageKey,
       siblings: clampSiblings(params.get("siblings")),
-      agreed: params.get("agreed") === "1",
     };
   }
 
@@ -88,7 +87,6 @@
     params.set("package", source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle");
     const siblings = clampSiblings(source.siblings);
     if (siblings > 0) params.set("siblings", String(siblings));
-    if (source.agreed) params.set("agreed", "1");
     const utm = source.utm || {};
     for (const key of ["utm_source", "utm_campaign", "utm_content"]) {
       const value = campaignPart(utm[key]);

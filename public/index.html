@@ -211,28 +211,23 @@
               <button type="button" class="btn" id="add-sibling">Add a sibling</button>
               <button type="button" class="btn btn-line" id="sibling-remove" hidden>Remove a sibling</button>
             </div>
+            <div class="sibling-faces" id="sibling-faces" aria-hidden="true"></div>
             <p class="sibling-count" id="sibling-count" role="status" aria-live="polite">No siblings added yet.</p>
             <p class="sibling-next" id="sibling-next" hidden></p>
           </div>
           <h3>Before you pay</h3>
           <p>We collect your child's details on the order form after payment, never on the payment page. We delete those details about 90 days after delivery.</p>
           <p class="chosen" id="chosen-package" role="status" aria-live="polite">You've chosen: <strong id="chosen-name">Magic bundle</strong> — <span id="chosen-price">£16.99 early bird</span></p>
-          <label class="agree">
-            <input type="checkbox" id="reg37" name="make-before-cancellation">
-            <span class="agree-copy">
-              <span class="agree-promise">Nice List Promise: love it or your money back</span>
-              <span>I'd like my video made straight away, and understand that means I lose my 14-day right to cancel once it's started.</span>
-            </span>
-          </label>
-          <p id="agree-hint" class="agree-hint" hidden>Tick the box to continue</p>
+          <p class="delivery-line">Your personalised video will be sent from the first week of December.</p>
           <label class="agree" id="sleigh-add" hidden>
             <input type="checkbox" id="named-sleigh">
             <span>Add the named sleigh video, <span data-price="namedSleigh">+£4.99</span>. Voice only.</span>
           </label>
-          <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Pay with PayPal or card</a>
+          <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card</a>
           <p class="pay-label" id="pay-label" hidden>Pay with PayPal or card</p>
           <div id="paypal-buttons" hidden></div>
           <p id="paypal-note" class="agree-hint" role="status" hidden></p>
+          <p class="promise-line"><a href="#promise">Nice List Promise</a>: love it or your money back.</p>
           <p class="fine" id="pay-extra"><span id="pay-extra-paypal">The Magic bundle already includes the named sleigh. On the single video, tick it above if you want it. Voice only. Your child's name is never typed on the payment.</span><span id="pay-extra-stripe" hidden>Named sleigh on the video only, +£4.99, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed on the card page.</span> <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
         </div>
       </div>
@@ -385,7 +380,7 @@
       </nav>
       <div class="terms-blurb">
         <p>Prices in pounds sterling. No VAT is charged. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99 and the single video is £14.99. From Sun 13 Dec 2026 the Magic bundle is £24.98 and the single video is £19.98, with rush delivery included. A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. A named sleigh on the single video is +£4.99. Order by Sat 12 Dec for delivery by Tue 15 Dec, in good time for Christmas. From 13 Dec, rush delivery is included and arrives within 48 hours.</p>
-        <p>The tick box before payment is your request that we start making the video during the 14-day cancellation period. Once we start, that legal right to cancel ends. The Nice List Promise still applies. Videos are AI-generated. A human elf checks every one.</p>
+        <p>Your personalised video will be sent from the first week of December. We do not ask you to give up your right to cancel. The Nice List Promise still applies. Videos are AI-generated. A human elf checks every one.</p>
       </div>
     </div>
     <p class="footer-line">Made with AI · Checked by a human elf</p>
