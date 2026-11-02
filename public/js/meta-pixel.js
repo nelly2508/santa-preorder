@@ -68,6 +68,7 @@
   function onCheckoutClick(event) {
     var el = event.target && event.target.closest && event.target.closest('a[href*="buy.stripe.com"], a[data-pay], #pay-continue');
     if (!el || !window.fbq) return;
+    if (el.id === "pay-continue" && document.body && document.body.getAttribute("data-payment-provider") !== "stripe") return;
     var href = el.href || el.getAttribute("href") || "";
     var toStripe = href.indexOf("buy.stripe.com") !== -1;
     var orderButton = el.hasAttribute("data-pay");

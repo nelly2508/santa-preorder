@@ -6,8 +6,10 @@ const path = require("path");
 const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/order-continue");
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
 const { createFunnelCounter } = require("./lib/funnel-counts");
-const { offerPhase, ordersOpen, packageChoice, clampSiblings } = require("./public/js/checkout-choice");
+const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
+const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
+const { isPaypalOrderId, createOrderStore } = require("./lib/paypal-orders");
 const vm = require("vm");
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -18,7 +20,7 @@ const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
-    "default-src 'self' https://*.clarity.ms https://c.bing.com; img-src 'self' https://www.facebook.com https://*.clarity.ms https://c.bing.com; media-src 'self'; style-src 'self'; script-src 'self' https://connect.facebook.net https://*.clarity.ms https://c.bing.com; font-src 'self'; connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://*.clarity.ms https://c.bing.com; frame-src https://www.facebook.com; base-uri 'self'; frame-ancestors 'none'",
+    "default-src 'self' https://*.clarity.ms https://c.bing.com; img-src 'self' https://www.facebook.com https://*.clarity.ms https://c.bing.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com; media-src 'self'; style-src 'self'; script-src 'self' https://connect.facebook.net https://*.clarity.ms https://c.bing.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com; font-src 'self'; connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://*.clarity.ms https://c.bing.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com; frame-src https://www.facebook.com https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'",
 };
 
 const MIME = {
@@ -309,8 +311,27 @@ function closedOrderHtml() {
 
 function markOrdersClosed(html) {
   return html
-    .replace("<body data-sales-page>", "<body data-sales-page data-orders-closed>")
+    .replace("<body data-sales-page", "<body data-sales-page data-orders-closed")
     .replace('id="orders-closed" hidden', 'id="orders-closed"');
+}
+
+function paymentAttributes(env) {
+  if (paymentProvider(env) === "stripe") return ' data-payment-provider="stripe"';
+  const config = paypalEnv(env);
+  if (!config.ok) return ' data-payment-provider="paypal" data-paypal-ready="0"';
+  return ` data-payment-provider="paypal" data-paypal-ready="1" data-paypal-client-id="${escapeHtml(config.clientId)}"`;
+}
+
+function decorateSalesHtml(html, env, closed) {
+  let next = html.replace("<body data-sales-page>", `<body data-sales-page${paymentAttributes(env)}>`);
+  if (paymentProvider(env) === "stripe") {
+    next = next.replace(
+      'id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Pay with PayPal or card<',
+      'id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Continue to secure payment<'
+    );
+  }
+  if (closed) next = markOrdersClosed(next);
+  return next;
 }
 
 const WEBHOOK_MAX_BYTES = 1024 * 1024;
@@ -401,6 +422,13 @@ function funnelFilePath(options, env) {
   return path.join(__dirname, "data", "funnel-counts.json");
 }
 
+function paypalOrdersPath(options, env) {
+  if (options.paypalOrdersFile === null) return null;
+  if (typeof options.paypalOrdersFile === "string") return options.paypalOrdersFile;
+  if (env && env.PAYPAL_ORDERS_FILE) return String(env.PAYPAL_ORDERS_FILE);
+  return path.join(__dirname, "data", "paypal-orders.json");
+}
+
 function sendJson(res, status, body, method, extra) {
   send(res, status, JSON.stringify(body), {
     "Content-Type": "application/json; charset=utf-8",
@@ -410,8 +438,11 @@ function sendJson(res, status, body, method, extra) {
 }
 
 const FUNNEL_BODY_MAX = 2048;
+const PAYPAL_BODY_MAX = 8192;
 let funnelWindow = 0;
 let funnelPosts = 0;
+let paypalWindow = 0;
+let paypalPosts = 0;
 
 function allowFunnelPost() {
   const window = Math.floor(Date.now() / 1000);
@@ -421,6 +452,16 @@ function allowFunnelPost() {
   }
   funnelPosts += 1;
   return funnelPosts <= 40;
+}
+
+function allowPaypalPost() {
+  const window = Math.floor(Date.now() / 1000);
+  if (window !== paypalWindow) {
+    paypalWindow = window;
+    paypalPosts = 0;
+  }
+  paypalPosts += 1;
+  return paypalPosts <= 30;
 }
 
 function originAllowed(req) {
@@ -518,6 +559,27 @@ function createServer(options = {}) {
   const visits = options.visitCounter || createVisitCounter({ filePath: visitsFilePath(options, env) });
   const funnel = options.funnelCounter || createFunnelCounter({ filePath: funnelFilePath(options, env) });
   const linkCache = new Map();
+  const paypalOrders = options.paypalOrders || createOrderStore(paypalOrdersPath(options, env));
+  const paypalFetchImpl = options.paypalFetch || globalThis.fetch;
+  const paypalTokens = options.paypalTokens || new Map();
+
+  function paypalDeps(extra) {
+    return {
+      env,
+      store: paypalOrders,
+      fetchImpl: paypalFetchImpl,
+      cache: paypalTokens,
+      prices: siteConfig().prices,
+      log,
+      sendMail: options.sendMail,
+      claimId: options.claimId,
+      now: options.emailNow,
+      claimTtlMs: options.claimTtlMs,
+      flights: options.flights,
+      verify: options.verifyPaypalWebhook,
+      ...extra,
+    };
+  }
 
   async function markFunnel(sessionId, result) {
     const info = result && result.funnel;
@@ -529,6 +591,13 @@ function createServer(options = {}) {
       return;
     }
     const mark = async () => {
+      if (isPaypalOrderId(sessionId)) {
+        await paypalOrders.update(sessionId, (row) => {
+          row.metadata = { ...(row.metadata || {}), ssm_funnel: "1" };
+          return row;
+        });
+        return;
+      }
       if (typeof options.markFunnelCounted === "function") {
         await options.markFunnelCounted(sessionId, info);
         return;
@@ -601,6 +670,126 @@ function createServer(options = {}) {
       }
     }
 
+    if (url.pathname === "/api/paypal/config") {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        res.writeHead(405, { Allow: "GET, HEAD", "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+      const provider = paymentProvider(env);
+      const paypal = paypalEnv(env);
+      sendJson(res, 200, {
+        provider,
+        currency: "GBP",
+        ready: provider === "stripe" || paypal.ok,
+        clientId: provider === "paypal" && paypal.ok ? paypal.clientId : "",
+      }, req.method);
+      return;
+    }
+
+    const paypalCapture = /^\/api\/paypal\/orders\/([A-Z0-9]{17})\/capture$/.exec(url.pathname);
+    if (url.pathname === "/api/paypal/orders" || paypalCapture) {
+      if (req.method !== "POST") {
+        res.writeHead(405, { Allow: "POST", "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+      if (!originAllowed(req)) {
+        req.resume();
+        sendJson(res, 400, { error: "bad request" }, req.method);
+        return;
+      }
+      if (!allowPaypalPost()) {
+        req.resume();
+        sendJson(res, 429, { error: "busy" }, req.method);
+        return;
+      }
+      if (!paypalCapture && paymentProvider(env) === "stripe") {
+        req.resume();
+        sendJson(res, 404, { error: "Not found" }, req.method);
+        return;
+      }
+      const orderId = paypalCapture ? paypalCapture[1] : "";
+      readBody(req, paypalCapture ? 2048 : PAYPAL_BODY_MAX).then(async (raw) => {
+        try {
+          if (paypalCapture) {
+            const outcome = await capturePaypalOrder(paypalDeps({
+              orderId,
+              emailWaitMs: options.emailWaitMs,
+            }));
+            if (outcome.result) await markFunnel(orderId, outcome.result);
+            sendJson(res, outcome.status, outcome.body, req.method);
+            return;
+          }
+          let body = {};
+          if (raw) {
+            try {
+              body = JSON.parse(raw);
+            } catch {
+              sendJson(res, 400, { error: "Choose a video, then try again." }, req.method);
+              return;
+            }
+          }
+          const now = serverNow(options);
+          const config = siteConfig();
+          const outcome = await createPaypalOrder(paypalDeps({
+            body,
+            phase: offerPhase({
+              now,
+              earlyBird: config.earlyBird,
+              earlyBirdEnds: config.earlyBirdEnds,
+              lateOrders: config.lateOrders,
+              lateOrdersFrom: config.lateOrdersFrom,
+            }),
+            open: ordersOpen(now),
+            closedMessage: CLOSED_MESSAGE,
+            nowMs: now.getTime(),
+          }));
+          if (outcome.status === 201) {
+            try {
+              funnel.record("checkout_start", outcome.utm || {});
+            } catch {
+              // A missed count must not stop checkout.
+            }
+          }
+          sendJson(res, outcome.status, outcome.body, req.method);
+        } catch (error) {
+          log(`paypal: ${error && error.message ? "request failed" : "request failed"}`);
+          sendJson(res, 502, { error: "The payment did not complete. Please try again, or email hello@santasaysmyname.com." }, req.method);
+        }
+      }).catch((error) => {
+        const status = error && error.status === 413 ? 413 : 400;
+        sendJson(res, status, { error: "bad request" }, req.method);
+      });
+      return;
+    }
+
+    if (url.pathname === "/paypal/webhook") {
+      if (req.method !== "POST") {
+        res.writeHead(405, { Allow: "POST", "Cache-Control": "no-store" });
+        res.end();
+        return;
+      }
+      readBody(req, WEBHOOK_MAX_BYTES).then(async (raw) => {
+        try {
+          const outcome = await handlePaypalWebhook(paypalDeps({
+            raw,
+            headers: req.headers,
+            emailWaitMs: options.webhookEmailWaitMs == null ? 20000 : options.webhookEmailWaitMs,
+          }));
+          if (outcome.result && outcome.orderId) await markFunnel(outcome.orderId, outcome.result);
+          webhookReply(res, outcome.status, outcome.body);
+        } catch (error) {
+          log("paypal/webhook: order handling failed");
+          webhookReply(res, 500, { error: "order handling failed" });
+        }
+      }).catch((error) => {
+        const status = error && error.status === 413 ? 413 : 400;
+        webhookReply(res, status, { error: "bad request" });
+      });
+      return;
+    }
+
     if (url.pathname === "/stripe/webhook") {
       handleStripeWebhook(req, res, { env, log, options: { ...options, onPaid: markFunnel } });
       return;
@@ -613,28 +802,34 @@ function createServer(options = {}) {
         return;
       }
       const sessionId = url.searchParams.get("session_id") || "";
-      describeOrder({
-        sessionId,
-        env,
-        retrieveSession: options.retrieveSession,
-        log,
-        sendMail: options.sendMail,
-        readMetadata: options.readMetadata,
-        writeMetadata: options.writeMetadata,
-        stripe: options.stripe,
-        emailWaitMs: options.emailWaitMs,
-        claimId: options.claimId,
-        now: options.emailNow,
-        claimTtlMs: options.claimTtlMs,
-        flights: options.flights,
-      }).then(
+      const pending = isPaypalOrderId(sessionId)
+        ? fulfilStoredOrder(paypalDeps({
+          orderId: sessionId,
+          emailWaitMs: options.emailWaitMs,
+        }))
+        : describeOrder({
+          sessionId,
+          env,
+          retrieveSession: options.retrieveSession,
+          log,
+          sendMail: options.sendMail,
+          readMetadata: options.readMetadata,
+          writeMetadata: options.writeMetadata,
+          stripe: options.stripe,
+          emailWaitMs: options.emailWaitMs,
+          claimId: options.claimId,
+          now: options.emailNow,
+          claimTtlMs: options.claimTtlMs,
+          flights: options.flights,
+        });
+      pending.then(
         async (result) => {
           await markFunnel(sessionId, result);
           sendOrderPage(res, req.method, result);
         },
         (error) => {
           let message = error && error.message ? error.message : String(error);
-          for (const secret of [env && env.SMTP_PASS, env && env.BREVO_API_KEY]) {
+          for (const secret of [env && env.SMTP_PASS, env && env.BREVO_API_KEY, env && env.PAYPAL_CLIENT_SECRET, env && env.PAYPAL_WEBHOOK_ID]) {
             if (secret) message = message.split(String(secret)).join("[redacted]");
           }
           log(`order/continue ${sessionId || "(missing session)"}: ${message}`);
@@ -677,6 +872,21 @@ function createServer(options = {}) {
         stripe: config.stripe,
       });
       const utm = partsFromUrl(url);
+      if (paymentProvider(env) !== "stripe") {
+        const query = orderQuery({
+          packageKey: choice.key,
+          siblings: clampSiblings(url.searchParams.get("siblings")),
+          agreed: true,
+          utm,
+        });
+        res.writeHead(302, {
+          Location: `/?${query}#checkout`,
+          "Cache-Control": "no-store",
+          ...SECURITY_HEADERS,
+        });
+        res.end();
+        return;
+      }
       let location = choice.href;
       const canCreate = options.createCheckoutSession !== null && (options.stripe || options.createCheckoutSession || (env.STRIPE_SECRET_KEY && !options.retrieveSession));
       if (canCreate) {
@@ -716,15 +926,16 @@ function createServer(options = {}) {
       return;
     }
 
-    if ((url.pathname === "/" || url.pathname === "/index.html") && (req.method === "GET" || req.method === "HEAD") && !ordersOpen(serverNow(options))) {
+    if ((url.pathname === "/" || url.pathname === "/index.html") && (req.method === "GET" || req.method === "HEAD")) {
       fs.readFile(path.join(ROOT, "index.html"), (err, buf) => {
         if (err) {
           notFound(res, req.method);
           return;
         }
-        send(res, 200, markOrdersClosed(buf.toString("utf8")), {
+        const closed = !ordersOpen(serverNow(options));
+        send(res, 200, decorateSalesHtml(buf.toString("utf8"), env, closed), {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-store",
+          "Cache-Control": closed ? "no-store" : "no-cache",
         }, req.method);
       });
       return;

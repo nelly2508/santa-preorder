@@ -1,8 +1,9 @@
 /* =============================================================================
-   Santa Says My Name — live checkout links
+   Santa Says My Name — prices and, when PAYMENT_PROVIDER=stripe, checkout links
    -----------------------------------------------------------------------------
-   Five Stripe Payment Links. Sibling and named sleigh stay as optional items
-   inside a checkout. Rush is not an optional add-on.
+   Live payments use PayPal on the order page. These Payment Links are the
+   Stripe fallback only. Sibling and named sleigh stay as optional items
+   inside a Stripe checkout. Rush is not an optional add-on.
 
    Optional items
    - Sibling £11.99 per extra child, up to 4 siblings: on every Payment Link.
