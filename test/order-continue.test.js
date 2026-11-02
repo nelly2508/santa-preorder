@@ -443,7 +443,11 @@ test("GET /order/continue sends the customer on to Tally, and the homepage still
     assert.match(csp, /connect-src[^;]*https:\/\/\*\.clarity\.ms/);
     assert.match(csp, /img-src[^;]*https:\/\/\*\.clarity\.ms/);
     assert.match(csp, /https:\/\/c\.bing\.com/);
-    assert.doesNotMatch(csp, /unsafe-inline/);
+    const styleSrc = csp.split(";").map((part) => part.trim()).find((part) => part.startsWith("style-src "));
+    const scriptSrc = csp.split(";").map((part) => part.trim()).find((part) => part.startsWith("script-src "));
+    assert.doesNotMatch(styleSrc, /unsafe-inline/);
+    assert.doesNotMatch(scriptSrc, /unsafe-inline/);
+    assert.match(csp, /style-src-attr[^;]*'unsafe-inline'/);
   } finally {
     server.close();
   }
