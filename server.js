@@ -18,7 +18,8 @@ const HOST = "0.0.0.0";
 const ROOT = path.resolve(__dirname, "public");
 
 // One nonce per response. The sales page copies it onto the PayPal SDK script
-// as data-csp-nonce so the card form's style tags are allowed without 'unsafe-inline'.
+// as data-csp-nonce so PayPal's style tags are allowed. style-src-attr is separate
+// so the bank-approval overlay can still set position and z-index on its container.
 const CSP_NONCE = Symbol("cspNonce");
 const PAYPAL_HOSTS = "https://*.paypal.com https://*.paypalobjects.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com";
 
@@ -34,6 +35,7 @@ function contentSecurityPolicy(nonce) {
     `img-src 'self' data: https://www.facebook.com https://*.clarity.ms https://c.bing.com ${PAYPAL_HOSTS}`,
     "media-src 'self'",
     `style-src 'self' ${quotedNonce}`,
+    "style-src-attr 'unsafe-inline'",
     `script-src 'self' ${quotedNonce} https://connect.facebook.net https://*.clarity.ms https://c.bing.com ${PAYPAL_HOSTS}`,
     "font-src 'self'",
     `connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://*.clarity.ms https://c.bing.com ${PAYPAL_HOSTS}`,

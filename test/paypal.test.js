@@ -539,12 +539,18 @@ test("the content security policy allows PayPal card styles, images, and hosts",
     const frame = cspSources(csp, "frame-src");
     assert.ok(style.includes(`'nonce-${nonce}'`));
     assert.ok(script.includes(`'nonce-${nonce}'`));
+    assert.ok(!style.includes("'unsafe-inline'"));
+    assert.ok(!script.includes("'unsafe-inline'"));
+    assert.ok(cspSources(csp, "style-src-attr").includes("'unsafe-inline'"));
     assert.ok(img.includes("data:"));
     for (const sources of [script, connect, frame, img]) {
       assert.ok(sources.includes("https://*.paypal.com"));
       assert.ok(sources.includes("https://*.paypalobjects.com"));
     }
-    assert.doesNotMatch(csp, /unsafe-inline/);
+    const css = fs.readFileSync(path.join(__dirname, "../public/css/styles.css"), "utf8");
+    assert.match(css, /\.paypal-checkout-sandbox[\s\S]*position:\s*fixed !important/);
+    assert.match(css, /#Cardinal-Modal[\s\S]*z-index:\s*2147483647 !important/);
+    assert.match(css, /html:has\(\.paypal-checkout-sandbox\)[\s\S]*overflow:\s*hidden/);
     assert.match(html, /data-payment-provider="paypal"/);
 
     const again = await fetch(`http://127.0.0.1:${port}/`);

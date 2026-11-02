@@ -1723,6 +1723,43 @@ body[data-orders-closed] .reassurance {
   color: var(--ink);
 }
 
+/* PayPal appends the card and 3-D Secure shell to the end of the body.
+   If its own style tag does not apply, that shell sits in normal flow and the
+   page scrolls down to it. Keep it a fixed layer above the page instead. */
+html:has(.paypal-checkout-sandbox),
+html:has(.venmo-checkout-sandbox),
+html:has(#Cardinal-Modal),
+html:has(#Cardinal-ElementContainer) {
+  scroll-behavior: auto;
+  overflow: hidden;
+}
+
+.paypal-checkout-sandbox,
+.venmo-checkout-sandbox,
+#Cardinal-Modal,
+#Cardinal-ElementContainer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  width: 100% !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.paypal-checkout-sandbox .paypal-checkout-sandbox-iframe,
+.paypal-checkout-sandbox .paypal-checkout-sandbox-iframe-full,
+.venmo-checkout-sandbox .venmo-checkout-sandbox-iframe,
+#Cardinal-CCA-IFrame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  border: 0 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
