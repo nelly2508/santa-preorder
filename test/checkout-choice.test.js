@@ -161,18 +161,19 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, /2 children = £14\.99 \+ £11\.99/);
     assert.match(html, /2 children = your video \+ £11\.99/);
     assert.match(html, /You've chosen:/);
-    assert.match(html, /id="agree-hint"[^>]*hidden/);
-    assert.match(html, /Tick the box to continue/);
+    assert.match(html, /id="sibling-faces"/);
+    assert.match(html, /Your personalised video will be sent from the first week of December\./);
+    assert.doesNotMatch(html, /in the first week of December/);
+    assert.doesNotMatch(html, /Tick the box to continue/);
+    assert.doesNotMatch(html, /lose my 14-day right|lose the right to cancel|14-day cancellation period/);
     assert.match(html, />Pay with PayPal or card</);
     assert.match(html, /id="add-sibling"[^>]*>Add a sibling</);
-    assert.match(html, /Nice List Promise: love it or your money back/);
-    assert.match(
-      html,
-      /I'd like my video made straight away, and understand that means I lose my 14-day right to cancel once it's started\./
-    );
+    assert.match(html, /class="promise-line"/);
+    assert.match(html, /Nice List Promise<\/a>: love it or your money back/);
     assert.doesNotMatch(html, /tap ‘Details’|tap 'Details'|top right/);
     const pay = html.match(/<a[^>]*id="pay-continue"[^>]*>/)[0];
-    assert.match(pay, /aria-disabled="true"/);
+    assert.match(pay, /aria-disabled="false"/);
+    assert.doesNotMatch(html, /id="reg37"|make-before-cancellation/);
     assert.match(pay, /href="#checkout"/);
     assert.doesNotMatch(pay, /style=/);
     assert.doesNotMatch(html, /Father Christmas/);
@@ -193,6 +194,12 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.doesNotMatch(termsHtml, /Rush £4\.99|if you pay for it/);
     assert.doesNotMatch(termsHtml, /Father Christmas/);
     assert.match(termsHtml, /Saturday 19 December/);
+    assert.match(termsHtml, /sent from the first week of December/);
+    assert.doesNotMatch(termsHtml, /in the first week of December|tick the box to ask us|lose the right to cancel/i);
+    const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
+    assert.match(mainJs, /className = "sibling-face"/);
+    assert.match(mainJs, /is-leaving/);
+    assert.match(mainJs, /circle cx="32" cy="20" r="12"/);
     assert.match(html, /The last day is Sat 19 Dec/);
     assert.match(html, /id="orders-closed"/);
     assert.doesNotMatch(html, /data-orders-closed/);

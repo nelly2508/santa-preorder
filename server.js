@@ -10,18 +10,47 @@ const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = req
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { isPaypalOrderId, createOrderStore } = require("./lib/paypal-orders");
+const crypto = require("crypto");
 const vm = require("vm");
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = "0.0.0.0";
 const ROOT = path.resolve(__dirname, "public");
 
-const SECURITY_HEADERS = {
-  "X-Content-Type-Options": "nosniff",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Content-Security-Policy":
-    "default-src 'self' https://*.clarity.ms https://c.bing.com; img-src 'self' https://www.facebook.com https://*.clarity.ms https://c.bing.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com; media-src 'self'; style-src 'self'; script-src 'self' https://connect.facebook.net https://*.clarity.ms https://c.bing.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com; font-src 'self'; connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://*.clarity.ms https://c.bing.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com; frame-src https://www.facebook.com https://www.paypal.com https://www.sandbox.paypal.com https://www.paypalobjects.com; worker-src 'self' blob:; base-uri 'self'; frame-ancestors 'none'",
-};
+// One nonce per response. The sales page copies it onto the PayPal SDK script
+// as data-csp-nonce so the card form's style tags are allowed without 'unsafe-inline'.
+const CSP_NONCE = Symbol("cspNonce");
+const PAYPAL_HOSTS = "https://*.paypal.com https://*.paypalobjects.com https://www.paypal.com https://www.paypalobjects.com https://www.sandbox.paypal.com";
+
+function cspNonce(res) {
+  if (!res[CSP_NONCE]) res[CSP_NONCE] = crypto.randomBytes(16).toString("base64url");
+  return res[CSP_NONCE];
+}
+
+function contentSecurityPolicy(nonce) {
+  const quotedNonce = `'nonce-${nonce}'`;
+  return [
+    "default-src 'self' https://*.clarity.ms https://c.bing.com",
+    `img-src 'self' data: https://www.facebook.com https://*.clarity.ms https://c.bing.com ${PAYPAL_HOSTS}`,
+    "media-src 'self'",
+    `style-src 'self' ${quotedNonce}`,
+    `script-src 'self' ${quotedNonce} https://connect.facebook.net https://*.clarity.ms https://c.bing.com ${PAYPAL_HOSTS}`,
+    "font-src 'self'",
+    `connect-src 'self' https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://*.clarity.ms https://c.bing.com ${PAYPAL_HOSTS}`,
+    `frame-src https://www.facebook.com ${PAYPAL_HOSTS}`,
+    "worker-src 'self' blob:",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+}
+
+function securityHeaders(res) {
+  return {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Content-Security-Policy": contentSecurityPolicy(cspNonce(res)),
+  };
+}
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -47,7 +76,7 @@ function send(res, status, body, headers, method) {
   const payload = Buffer.from(body);
   res.writeHead(status, {
     "Content-Length": payload.length,
-    ...SECURITY_HEADERS,
+    ...securityHeaders(res),
     ...headers,
   });
   res.end(method === "HEAD" ? undefined : payload);
@@ -151,7 +180,7 @@ function serveFile(filePath, stat, res, method, rangeHeader) {
     "Content-Type": MIME[ext] || "application/octet-stream",
     "Accept-Ranges": "bytes",
     "Cache-Control": cache,
-    ...SECURITY_HEADERS,
+    ...securityHeaders(res),
   };
   const range = parseSingleRange(rangeHeader, stat.size);
 
@@ -322,12 +351,13 @@ function paymentAttributes(env) {
   return ` data-payment-provider="paypal" data-paypal-ready="1" data-paypal-client-id="${escapeHtml(config.clientId)}"`;
 }
 
-function decorateSalesHtml(html, env, closed) {
-  let next = html.replace("<body data-sales-page>", `<body data-sales-page${paymentAttributes(env)}>`);
+function decorateSalesHtml(html, env, closed, nonce) {
+  const nonceAttr = nonce ? ` data-csp-nonce="${escapeHtml(nonce)}"` : "";
+  let next = html.replace("<body data-sales-page>", `<body data-sales-page${paymentAttributes(env)}${nonceAttr}>`);
   if (paymentProvider(env) === "stripe") {
     next = next.replace(
-      'id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Pay with PayPal or card<',
-      'id="pay-continue" href="#checkout" aria-disabled="true" tabindex="-1">Continue to secure payment<'
+      'id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card<',
+      'id="pay-continue" href="#checkout" aria-disabled="false">Continue to secure payment<'
     );
   }
   if (closed) next = markOrdersClosed(next);
@@ -876,13 +906,12 @@ function createServer(options = {}) {
         const query = orderQuery({
           packageKey: choice.key,
           siblings: clampSiblings(url.searchParams.get("siblings")),
-          agreed: true,
           utm,
         });
         res.writeHead(302, {
           Location: `/?${query}#checkout`,
           "Cache-Control": "no-store",
-          ...SECURITY_HEADERS,
+          ...securityHeaders(res),
         });
         res.end();
         return;
@@ -920,7 +949,7 @@ function createServer(options = {}) {
       res.writeHead(302, {
         Location: location,
         "Cache-Control": "no-store",
-        ...SECURITY_HEADERS,
+        ...securityHeaders(res),
       });
       res.end();
       return;
@@ -933,7 +962,7 @@ function createServer(options = {}) {
           return;
         }
         const closed = !ordersOpen(serverNow(options));
-        send(res, 200, decorateSalesHtml(buf.toString("utf8"), env, closed), {
+        send(res, 200, decorateSalesHtml(buf.toString("utf8"), env, closed, cspNonce(res)), {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",
         }, req.method);

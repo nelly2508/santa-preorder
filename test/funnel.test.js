@@ -75,13 +75,13 @@ test("cancel url returns to the UK order page and keeps the form", () => {
   });
   assert.strictEqual(
     cancel,
-    "https://santasaysmyname.com/?package=singleVideo&siblings=4&agreed=1&utm_source=meta&utm_content=sao#checkout"
+    "https://santasaysmyname.com/?package=singleVideo&siblings=4&utm_source=meta&utm_content=sao#checkout"
   );
   assert.deepStrictEqual(resumeOrder(cancel.split("?")[1]), {
     packageKey: "singleVideo",
     siblings: 4,
-    agreed: true,
   });
+  assert.doesNotMatch(cancel, /agreed=/);
 });
 
 test("a checkout session copies the GBP payment link and leaves other currencies alone", () => {
@@ -99,7 +99,7 @@ test("a checkout session copies the GBP payment link and leaves other currencies
   assert.match(built.params.cancel_url, /^https:\/\/santasaysmyname\.com\/\?/);
   assert.match(built.params.cancel_url, /package=magicBundle/);
   assert.match(built.params.cancel_url, /siblings=2/);
-  assert.match(built.params.cancel_url, /agreed=1/);
+  assert.doesNotMatch(built.params.cancel_url, /agreed=/);
   assert.match(built.params.cancel_url, /#checkout$/);
   assert.strictEqual(built.params.metadata.package, "bundle_early_bird");
   assert.strictEqual(built.params.metadata.utm_source, "meta");
@@ -164,7 +164,7 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     assert.strictEqual(pay.status, 302);
     assert.strictEqual(pay.headers.get("location"), "https://checkout.stripe.com/c/pay/cs_test_created1");
     const params = stripe.created[0];
-    assert.strictEqual(params.cancel_url, `${origin}/?package=magicBundle&siblings=2&agreed=1&utm_source=meta&utm_campaign=xmas&utm_content=video#checkout`);
+    assert.strictEqual(params.cancel_url, `${origin}/?package=magicBundle&siblings=2&utm_source=meta&utm_campaign=xmas&utm_content=video#checkout`);
     assert.strictEqual(params.success_url, `${origin}/order/continue?session_id={CHECKOUT_SESSION_ID}`);
     assert.strictEqual(params.line_items[0].price, "price_bundle");
 
