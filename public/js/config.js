@@ -69,6 +69,23 @@ window.SANTA_CONFIG = {
     namedSleigh: "£4.99",
   },
 
+  // United States page (/us). Same early-bird and late-rush dates as the UK.
+  // Early bird is $19.99 through 15 Nov 2026 inclusive. The standard Magic
+  // bundle after that is magicBundleFull. Neil: confirm $24.99.
+  // Late totals must equal the standard price plus rush, or checkout refuses:
+  // $24.99 + $4.99 = $29.98, and the single video $19.99 + $4.99 = $24.98.
+  // Single, sibling, rush and sleigh are sensible USD equivalents to confirm.
+  usd: {
+    magicBundleEarly: "$19.99",
+    magicBundleFull: "$24.99",
+    magicBundleLate: "$29.98",
+    singleVideo: "$19.99",
+    singleVideoLate: "$24.98",
+    sibling: "$14.99",
+    rush: "$4.99",
+    namedSleigh: "$4.99",
+  },
+
   stripe: {
     magicBundleEarlyBird: "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00",
     magicBundleFullPrice: "https://buy.stripe.com/eVq5kE0ET2X0dR03nL1wY01",

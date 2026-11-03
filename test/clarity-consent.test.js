@@ -8,16 +8,34 @@ const vm = require("vm");
 
 const source = fs.readFileSync(path.join(__dirname, "../public/js/meta-pixel.js"), "utf8");
 
-function boot({ consent, sales, ordering }) {
+function boot({ consent, sales, ordering, market, gpc, usOptOut } = {}) {
   const scripts = [];
   const texts = [];
   const created = [];
   const store = {};
   if (consent) store.ssmn_consent = consent;
+  if (usOptOut) store.ssmn_us_optout = "yes";
   const attrs = new Set();
   if (sales) attrs.add("data-sales-page");
   if (ordering) attrs.add("data-order-continue");
   const replaced = [];
+  const cookieLink = {
+    listeners: {},
+    addEventListener(type, fn) {
+      this.listeners[type] = fn;
+    },
+  };
+  const optOut = {
+    textContent: "Do Not Sell or Share My Personal Information",
+    pressed: null,
+    listeners: {},
+    setAttribute(name, value) {
+      if (name === "aria-pressed") this.pressed = value;
+    },
+    addEventListener(type, fn) {
+      this.listeners[type] = fn;
+    },
+  };
 
   function anchor() {
     return {
@@ -35,9 +53,11 @@ function boot({ consent, sales, ordering }) {
       hasAttribute(name) {
         return attrs.has(name);
       },
-      getAttribute(name) {
-        return name === "data-continue" ? "https://tally.example/order" : null;
-      },
+    getAttribute(name) {
+      if (name === "data-continue") return "https://tally.example/order";
+      if (name === "data-market") return market || null;
+      return null;
+    },
       classList: { add() {}, remove() {} },
       appendChild() {},
     },
@@ -73,6 +93,8 @@ function boot({ consent, sales, ordering }) {
     },
     querySelector(selector) {
       if (selector === ".consent") return null;
+      if (selector === "#cookie-settings") return cookieLink;
+      if (selector === "#us-do-not-sell") return optOut;
       if (typeof selector === "string" && selector.indexOf("fbevents") !== -1) {
         return scripts.find((script) => String(script.src).indexOf("fbevents") !== -1) || null;
       }
@@ -83,6 +105,7 @@ function boot({ consent, sales, ordering }) {
 
   const window = {
     document,
+    navigator: { globalPrivacyControl: gpc === true },
     localStorage: {
       getItem(key) {
         return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null;
@@ -104,7 +127,7 @@ function boot({ consent, sales, ordering }) {
 
   const context = vm.createContext(window);
   vm.runInContext(source, context, { filename: "meta-pixel.js" });
-  return { scripts, texts, created, store, window, replaced };
+  return { scripts, texts, created, store, window, replaced, cookieLink, optOut };
 }
 
 function clarityTags(scripts) {
@@ -131,11 +154,14 @@ test("Clarity stays unloaded until the pre-order page has Accept", () => {
   assert.strictEqual(waiting.store.ssmn_consent, "yes");
 
   const declined = boot({ sales: true });
-  const no = declined.created.find((node) => node.textContent === "No thanks");
+  const no = declined.created.find((node) => node.textContent === "Reject");
   no.listeners.click();
   assert.deepStrictEqual(clarityTags(declined.scripts), []);
   assert.strictEqual(declined.window.clarity, undefined);
   assert.strictEqual(declined.store.ssmn_consent, "no");
+  const accept = waiting.created.find((node) => node.textContent === "Accept");
+  assert.strictEqual(accept.className, no.className);
+  assert.strictEqual(accept.className, "btn");
 });
 
 test("a remembered yes loads Clarity and sends consent on the pre-order page only", () => {
@@ -153,4 +179,45 @@ test("a remembered yes loads Clarity and sends consent on the pre-order page onl
   assert.deepStrictEqual(clarityTags(paid.scripts), []);
   assert.strictEqual(paid.window.clarity, undefined);
   assert.deepStrictEqual(paid.replaced, ["https://tally.example/order"]);
+});
+
+test("the Cookies footer link opens the choice again after Reject", () => {
+  const page = boot({ sales: true, consent: "no" });
+  assert.deepStrictEqual(clarityTags(page.scripts), []);
+  page.cookieLink.listeners.click({ preventDefault() {} });
+  const yes = page.created.find((node) => node.textContent === "Accept");
+  assert.ok(yes);
+  yes.listeners.click();
+  assert.strictEqual(clarityTags(page.scripts).length, 1);
+  assert.strictEqual(page.store.ssmn_consent, "yes");
+});
+
+test("the US page loads Clarity unless the visitor opts out", () => {
+  const open = boot({ sales: true, market: "us" });
+  assert.strictEqual(clarityTags(open.scripts).length, 1);
+  assert.deepStrictEqual(consentCalls(open.window), [["consent"]]);
+  assert.ok(!open.created.some((node) => node.textContent === "Accept" || node.textContent === "Reject"));
+  assert.strictEqual(open.store.ssmn_us_optout, undefined);
+
+  open.optOut.listeners.click({ preventDefault() {} });
+  assert.strictEqual(open.store.ssmn_us_optout, "yes");
+  assert.strictEqual(open.optOut.textContent, "Sale of personal information is off");
+  assert.ok(open.window.fbq.queue.some((call) => call[0] === "consent" && call[1] === "revoke"));
+  assert.ok(consentCalls(open.window).some((call) => call[0] === "consent" && call[1] === false));
+});
+
+test("Global Privacy Control and a remembered US opt-out keep Clarity and the pixel off", () => {
+  const gpc = boot({ sales: true, market: "us", gpc: true });
+  assert.deepStrictEqual(clarityTags(gpc.scripts), []);
+  assert.strictEqual(gpc.window.fbq, undefined);
+  assert.strictEqual(gpc.store.ssmn_us_optout, undefined);
+  assert.ok(!gpc.created.some((node) => node.className === "consent"));
+
+  const stored = boot({ sales: true, market: "us", usOptOut: true });
+  assert.deepStrictEqual(clarityTags(stored.scripts), []);
+  assert.strictEqual(stored.window.fbq, undefined);
+
+  const uk = boot({ sales: true, gpc: true });
+  assert.ok(uk.created.some((node) => node.textContent === "Accept"));
+  assert.deepStrictEqual(clarityTags(uk.scripts), []);
 });

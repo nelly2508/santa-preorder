@@ -1,30 +1,56 @@
-/* Meta Pixel and Microsoft Clarity — both load only after Accept.
-   The choice is remembered in localStorage under ssmn_consent.
-   No thanks leaves both unloaded. Clarity is added on the pre-order
-   page only (data-sales-page). Checkout pages that include this file
-   for the pixel do not get Clarity. UK ads, amounts in GBP. */
+/* Meta Pixel and Microsoft Clarity.
+   UK (default): both load only after Accept. The choice is remembered in
+   localStorage under ssmn_consent. Reject leaves both unloaded. A footer
+   Cookies link opens the choice again.
+   US (/us, data-market="us"): opt-out. Both run unless the visitor turns
+   them off, or the browser sends Global Privacy Control. The choice is
+   remembered under ssmn_us_optout. Clarity is added on the pre-order page
+   only (data-sales-page). First-party funnel counts do not use this file. */
 (function () {
   "use strict";
 
   var PIXEL = "898274206954064";
-  var CURRENCY = "GBP";
   var KEY = "ssmn_consent";
+  var US_KEY = "ssmn_us_optout";
   var listening = false;
 
-  function readConsent() {
+  function pageMarket() {
+    return document.body && document.body.getAttribute("data-market") === "us" ? "us" : "uk";
+  }
+
+  var CURRENCY = pageMarket() === "us" ? "USD" : "GBP";
+
+  function readKey(key) {
     try {
-      return localStorage.getItem(KEY);
+      return localStorage.getItem(key);
     } catch (error) {
       return null;
     }
   }
 
-  function storeConsent(value) {
+  function writeKey(key, value) {
     try {
-      localStorage.setItem(KEY, value);
+      localStorage.setItem(key, value);
     } catch (error) {
       /* Private browsing can refuse storage. The choice still applies to this page. */
     }
+  }
+
+  function readConsent() {
+    return readKey(KEY);
+  }
+
+  function gpcOptOut() {
+    try {
+      var nav = window.navigator;
+      return !!(nav && nav.globalPrivacyControl === true);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function usOptedOut() {
+    return gpcOptOut() || readKey(US_KEY) === "yes";
   }
 
   function once(fn) {
@@ -84,7 +110,9 @@
   }
 
   function trackCustom(name) {
-    if (readConsent() !== "yes") return;
+    if (pageMarket() === "us") {
+      if (usOptedOut()) return;
+    } else if (readConsent() !== "yes") return;
     if (typeof fbq !== "function") return;
     if (!name) return;
     fbq("trackCustom", name);
@@ -150,12 +178,30 @@
     window.setTimeout(finish, 2500);
   }
 
+  function stopTracking() {
+    if (typeof window.fbq === "function") {
+      try { window.fbq("consent", "revoke"); } catch (error) { /* already gone */ }
+    }
+    if (typeof window.clarity === "function") {
+      try { window.clarity("consent", false); } catch (error) { /* already gone */ }
+    }
+  }
+
   function hideBanner(banner) {
     banner.remove();
     document.body.classList.remove("has-consent");
   }
 
+  function choiceButton(label) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn";
+    button.textContent = label;
+    return button;
+  }
+
   function showBanner() {
+    if (pageMarket() === "us") return;
     if (document.querySelector(".consent")) return;
     var bar = document.createElement("div");
     bar.className = "consent";
@@ -163,7 +209,7 @@
     bar.setAttribute("aria-label", "Cookies");
 
     var copy = document.createElement("p");
-    copy.appendChild(document.createTextNode("We\u2019d like to use a Meta cookie to measure our ads, and Microsoft Clarity to see how the pre-order page is used. They stay off unless you accept. "));
+    copy.appendChild(document.createTextNode("We use a Meta cookie to measure ads, and Microsoft Clarity on this page. They stay off unless you accept. "));
     var privacy = document.createElement("a");
     privacy.href = "/privacy#cookies";
     privacy.textContent = "Privacy";
@@ -172,24 +218,18 @@
     var actions = document.createElement("div");
     actions.className = "consent-actions";
 
-    var yes = document.createElement("button");
-    yes.type = "button";
-    yes.className = "btn";
-    yes.textContent = "Accept";
-
-    var no = document.createElement("button");
-    no.type = "button";
-    no.className = "btn consent-decline";
-    no.textContent = "No thanks";
+    var yes = choiceButton("Accept");
+    var no = choiceButton("Reject");
 
     yes.addEventListener("click", function () {
-      storeConsent("yes");
+      writeKey(KEY, "yes");
       hideBanner(bar);
       load();
     });
     no.addEventListener("click", function () {
-      storeConsent("no");
+      writeKey(KEY, "no");
       hideBanner(bar);
+      stopTracking();
     });
 
     actions.appendChild(yes);
@@ -200,9 +240,48 @@
     document.body.appendChild(bar);
   }
 
-  var consent = readConsent();
+  function markOptOut(button) {
+    if (!button) return;
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "Sale of personal information is off";
+  }
+
+  function bindControls() {
+    var cookies = document.querySelector("#cookie-settings");
+    if (cookies && !cookies.__bound) {
+      cookies.__bound = true;
+      cookies.addEventListener("click", function (event) {
+        if (pageMarket() === "us") return;
+        if (event && event.preventDefault) event.preventDefault();
+        showBanner();
+      });
+    }
+    var opt = document.querySelector("#us-do-not-sell");
+    if (opt && !opt.__bound) {
+      opt.__bound = true;
+      if (pageMarket() === "us" && usOptedOut()) markOptOut(opt);
+      opt.addEventListener("click", function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        writeKey(US_KEY, "yes");
+        stopTracking();
+        markOptOut(opt);
+      });
+    }
+  }
+
+  whenReady(bindControls);
+
   var ordering = document.body && document.body.hasAttribute("data-order-continue");
-  if (consent === "yes") load(ordering ? continueOrder : null);
-  else if (ordering) continueOrder();
-  else if (consent !== "no") whenReady(showBanner);
+  if (pageMarket() === "us") {
+    if (usOptedOut()) {
+      if (ordering) continueOrder();
+    } else {
+      load(ordering ? continueOrder : null);
+    }
+  } else {
+    var consent = readConsent();
+    if (consent === "yes") load(ordering ? continueOrder : null);
+    else if (ordering) continueOrder();
+    else if (consent !== "no") whenReady(showBanner);
+  }
 })();

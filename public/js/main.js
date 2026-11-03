@@ -22,7 +22,9 @@
     const note = document.getElementById("orders-closed");
     if (note) note.hidden = false;
   }
-  const prices = config.prices;
+  const marketUs = document.body.getAttribute("data-market") === "us";
+  const prices = marketUs && config.usd ? config.usd : config.prices;
+  const payCurrency = document.body.getAttribute("data-currency") || (marketUs ? "USD" : "GBP");
   const bundlePrice = late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull;
   const singlePrice = late ? prices.singleVideoLate : prices.singleVideo;
 
@@ -156,7 +158,7 @@
     const siblingNext = document.getElementById("sibling-next");
     const siblingFaces = document.getElementById("sibling-faces");
 
-    const paypalMode = document.body.getAttribute("data-payment-provider") !== "stripe";
+    const paypalMode = marketUs || document.body.getAttribute("data-payment-provider") !== "stripe";
     const paypalNote = document.getElementById("paypal-note");
     const paypalSlot = document.getElementById("paypal-buttons");
     const payLabel = document.getElementById("pay-label");
@@ -289,7 +291,7 @@
       return new Promise((resolve, reject) => {
         const params = new URLSearchParams({
           "client-id": clientId,
-          currency: "GBP",
+          currency: payCurrency,
           intent: "capture",
           components: "buttons",
           "enable-funding": "card",
@@ -334,7 +336,7 @@
           onClick: (data, actions) => {
             recordFunnel("order_tap");
             document.dispatchEvent(new Event("santa-pay"));
-            if (window.fbq) window.fbq("track", "InitiateCheckout", { currency: "GBP" });
+            if (window.fbq) window.fbq("track", "InitiateCheckout", { currency: payCurrency });
             return actions.resolve();
           },
           createOrder: () => {
@@ -351,6 +353,7 @@
                 utm_source: utm.utm_source,
                 utm_campaign: utm.utm_campaign,
                 utm_content: utm.utm_content,
+                market: marketUs ? "us" : "uk",
               }),
             }).then(async (res) => {
               const payload = await res.json().catch(() => ({}));
@@ -489,6 +492,7 @@
         utm_source: params.get("utm_source") || "",
         utm_campaign: params.get("utm_campaign") || "",
         utm_content: params.get("utm_content") || "",
+        market: document.body.getAttribute("data-market") === "us" ? "us" : "uk",
       });
       fetch("/api/funnel", {
         method: "POST",
