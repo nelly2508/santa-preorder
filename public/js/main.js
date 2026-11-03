@@ -370,7 +370,15 @@
             cache: "no-store",
           }).then(async (res) => {
             const payload = await res.json().catch(() => ({}));
-            if (!res.ok || !payload.continueUrl || payload.continueUrl.indexOf("/order/continue?session_id=") !== 0) {
+            if (!res.ok || payload.status === "PAYER_ACTION_REQUIRED") {
+              if (payload.payerAction) {
+                window.location.assign(payload.payerAction);
+                return;
+              }
+              showPaypalNote(payload.error || "Your bank still needs to approve this payment. If it goes through, we will email you.");
+              return;
+            }
+            if (!payload.continueUrl || payload.continueUrl.indexOf("/order/continue?session_id=") !== 0) {
               showPaypalNote(payload.error || "The payment did not complete. Please try again, or email hello@santasaysmyname.com.");
               return;
             }

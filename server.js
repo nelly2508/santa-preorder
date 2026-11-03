@@ -460,6 +460,13 @@ function funnelFilePath(options, env) {
   if (options.funnelFile === null) return null;
   if (typeof options.funnelFile === "string") return options.funnelFile;
   if (env && env.FUNNEL_FILE) return String(env.FUNNEL_FILE);
+  // A volume path already used for visits or PayPal orders is the durable
+  // disk. The default data/ file is inside the container and disappears
+  // on a Railway redeploy.
+  const anchored = String((env && (env.VISITS_FILE || env.PAYPAL_ORDERS_FILE)) || "").trim();
+  if (anchored.includes("/") || anchored.includes("\\")) {
+    return path.join(path.dirname(anchored), "funnel-counts.json");
+  }
   return path.join(__dirname, "data", "funnel-counts.json");
 }
 
@@ -639,12 +646,34 @@ function createServer(options = {}) {
     };
   }
 
+  async function ensureCheckoutStart(orderId) {
+    if (!isPaypalOrderId(orderId)) return;
+    const row = await paypalOrders.get(orderId);
+    if (!row || (row.metadata && row.metadata.funnel_start === "1")) return;
+    try {
+      funnel.record("checkout_start", {
+        ...(row.utm || {}),
+        country: row.country,
+        market: row.quote && row.quote.market,
+      });
+      await funnel.flush();
+    } catch {
+      return;
+    }
+    await paypalOrders.update(orderId, (current) => {
+      current.metadata = { ...(current.metadata || {}), funnel_start: "1" };
+      return current;
+    });
+  }
+
   async function markFunnel(sessionId, result) {
+    if (isPaypalOrderId(sessionId)) await ensureCheckoutStart(sessionId);
     const info = result && result.funnel;
     if (!info || info.alreadyCounted) return;
     if (!funnel.claimCompletion(sessionId)) return;
     try {
       funnel.record("checkout_complete", info);
+      await funnel.flush();
     } catch {
       return;
     }
@@ -810,9 +839,14 @@ function createServer(options = {}) {
             closedMessage: CLOSED_MESSAGE,
             nowMs: now.getTime(),
           }));
-          if (outcome.status === 201) {
+          if (outcome.status === 201 && outcome.body && isPaypalOrderId(outcome.body.id)) {
             try {
               funnel.record("checkout_start", { ...(outcome.utm || {}), country: outcome.country || country });
+              await funnel.flush();
+              await paypalOrders.update(outcome.body.id, (row) => {
+                row.metadata = { ...(row.metadata || {}), funnel_start: "1" };
+                return row;
+              });
             } catch {
               // A missed count must not stop checkout.
             }
