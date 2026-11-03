@@ -205,12 +205,22 @@ test("US funnel counts stay out of the UK totals", async () => {
 
     const report = await fetch(`${origin}/admin/funnel`, { headers: { Authorization: `Bearer ${secret}` } });
     const body = await report.json();
-    assert.deepStrictEqual(body.total, { view: 1, order_tap: 1, checkout_start: 0, checkout_complete: 0 });
-    assert.deepStrictEqual(body.total_uk, body.total);
-    assert.deepStrictEqual(body.countries.uk, body.total);
-    assert.deepStrictEqual(body.countries.us, { view: 1, order_tap: 1, checkout_start: 1, checkout_complete: 1 });
+    const ukPage = { view: 1, order_tap: 1, checkout_start: 0, checkout_complete: 0 };
+    const usPage = { view: 1, order_tap: 1, checkout_start: 1, checkout_complete: 1 };
+    assert.deepStrictEqual(body.markets.uk, ukPage);
+    assert.deepStrictEqual(body.markets.us, usPage);
+    assert.deepStrictEqual(body.total, { view: 2, order_tap: 2, checkout_start: 1, checkout_complete: 1 });
+    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.ok(Array.isArray(body.countries));
+    assert.strictEqual(body.countries.find((row) => row.country === "GB"), undefined);
+    const unknown = body.countries.find((row) => row.country === "XX");
+    assert.deepStrictEqual(
+      { view: unknown.view, order_tap: unknown.order_tap, checkout_start: unknown.checkout_start, checkout_complete: unknown.checkout_complete },
+      body.total
+    );
     const usRow = body.buckets.find((item) => item.utm_content === "usa");
     assert.strictEqual(usRow.market, "us");
+    assert.strictEqual(usRow.country, "XX");
     assert.strictEqual(usRow.checkout_complete, 1);
     assert.doesNotMatch(JSON.stringify(body), /parent@|cookie|userAgent/i);
   } finally {

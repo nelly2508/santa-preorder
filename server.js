@@ -5,7 +5,8 @@ const fs = require("fs");
 const path = require("path");
 const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/order-continue");
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
-const { createFunnelCounter } = require("./lib/funnel-counts");
+const { UNKNOWN_COUNTRY, createFunnelCounter } = require("./lib/funnel-counts");
+const { countryFromRequest } = require("./lib/client-country");
 const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
@@ -535,7 +536,7 @@ function readBody(req, limit) {
   });
 }
 
-function handleFunnelEvent(req, res, funnel) {
+function handleFunnelEvent(req, res, funnel, countryOf) {
   if (req.method !== "POST") {
     res.writeHead(405, { Allow: "POST", "Cache-Control": "no-store" });
     res.end();
@@ -564,7 +565,15 @@ function handleFunnelEvent(req, res, funnel) {
       return;
     }
     try {
-      funnel.record("order_tap", body);
+      // Country comes from the visitor address, never from the posted body.
+      // Market is only which page the button was on.
+      funnel.record("order_tap", {
+        utm_source: body.utm_source,
+        utm_campaign: body.utm_campaign,
+        utm_content: body.utm_content,
+        country: countryOf(req),
+        market: body.market === "us" ? "us" : "uk",
+      });
     } catch {
       // A missed count must not fail the tap.
     }
@@ -598,6 +607,14 @@ function createServer(options = {}) {
   const log = options.log || ((message) => console.error(message));
   const visits = options.visitCounter || createVisitCounter({ filePath: visitsFilePath(options, env) });
   const funnel = options.funnelCounter || createFunnelCounter({ filePath: funnelFilePath(options, env) });
+
+  function visitorCountry(req) {
+    try {
+      return countryFromRequest(req, options.countryLookup);
+    } catch {
+      return UNKNOWN_COUNTRY;
+    }
+  }
   const linkCache = new Map();
   const paypalOrders = options.paypalOrders || createOrderStore(paypalOrdersPath(options, env));
   const paypalFetchImpl = options.paypalFetch || globalThis.fetch;
@@ -695,7 +712,7 @@ function createServer(options = {}) {
     }
 
     if (url.pathname === "/api/funnel") {
-      handleFunnelEvent(req, res, funnel);
+      handleFunnelEvent(req, res, funnel, visitorCountry);
       return;
     }
 
@@ -705,7 +722,11 @@ function createServer(options = {}) {
       if (!/prefetch/i.test(purpose)) {
         try {
           if (pageMarket === "uk") visits.record(url);
-          funnel.record("view", { ...partsFromUrl(url), market: pageMarket });
+          funnel.record("view", {
+            ...partsFromUrl(url),
+            country: visitorCountry(req),
+            market: pageMarket,
+          });
         } catch {
           // A missed count must not stop the page.
         }
@@ -774,8 +795,10 @@ function createServer(options = {}) {
           }
           const now = serverNow(options);
           const config = siteConfig();
+          const country = visitorCountry(req);
           const outcome = await createPaypalOrder(paypalDeps({
             body,
+            country,
             phase: offerPhase({
               now,
               earlyBird: config.earlyBird,
@@ -789,7 +812,7 @@ function createServer(options = {}) {
           }));
           if (outcome.status === 201) {
             try {
-              funnel.record("checkout_start", outcome.utm || {});
+              funnel.record("checkout_start", { ...(outcome.utm || {}), country: outcome.country || country });
             } catch {
               // A missed count must not stop checkout.
             }
@@ -931,6 +954,7 @@ function createServer(options = {}) {
       let location = choice.href;
       const canCreate = options.createCheckoutSession !== null && (options.stripe || options.createCheckoutSession || (env.STRIPE_SECRET_KEY && !options.retrieveSession));
       if (canCreate) {
+        const country = visitorCountry(req);
         try {
           const origin = publicOrigin(env, req.headers.host);
           const creator = options.createCheckoutSession || ((args) => createCheckoutSession({
@@ -941,6 +965,7 @@ function createServer(options = {}) {
           const created = await creator({
             origin,
             utm,
+            country,
             siblings: clampSiblings(url.searchParams.get("siblings")),
             packageKey: choice.key,
             paymentLinkUrl: choice.href,
@@ -949,7 +974,7 @@ function createServer(options = {}) {
           if (created && created.created && created.url) {
             location = created.url;
             try {
-              funnel.record("checkout_start", utm);
+              funnel.record("checkout_start", { ...utm, country });
             } catch {
               // A missed count must not stop checkout.
             }
