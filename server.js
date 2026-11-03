@@ -1004,7 +1004,6 @@ function createServer(options = {}) {
         send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res)), {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",
-          ...(pageMarket === "us" ? { "X-Robots-Tag": "noindex, nofollow" } : {}),
         }, req.method);
       });
       return;
