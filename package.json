@@ -12,6 +12,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "geoip-lite": "^1.4.10",
     "nodemailer": "^6.10.1",
     "stripe": "^23.0.0"
   }
