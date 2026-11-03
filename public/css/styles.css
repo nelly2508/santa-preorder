@@ -237,10 +237,19 @@ p + p {
   position: relative;
   overflow: hidden;
   color: var(--ink);
-  background:
-    radial-gradient(ellipse at 85% 30%, rgba(232, 183, 90, 0.35), transparent 50%),
-    radial-gradient(ellipse at 0% 100%, rgba(200, 16, 46, 0.1), transparent 45%),
-    linear-gradient(180deg, #ffffff, #fbf3e6);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(180deg, rgba(255, 250, 243, 0.45) 0%, rgba(255, 250, 243, 0.65) 100%),
+    url("../assets/hero-forest.jpg");
+  background-image:
+    linear-gradient(180deg, rgba(255, 250, 243, 0.45) 0%, rgba(255, 250, 243, 0.65) 100%),
+    image-set(
+      url("../assets/hero-forest.webp") type("image/webp"),
+      url("../assets/hero-forest.jpg") type("image/jpeg")
+    );
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
   padding: 1.15rem 0 2.4rem;
 }
 
@@ -508,6 +517,16 @@ p + p {
 @media (max-width: 719px) {
   .hero {
     padding: 0.85rem 0 1.4rem;
+    background-image:
+      linear-gradient(180deg, rgba(255, 250, 243, 0.35) 0%, rgba(255, 250, 243, 0.5) 100%),
+      url("../assets/hero-forest-mobile.jpg");
+    background-image:
+      linear-gradient(180deg, rgba(255, 250, 243, 0.35) 0%, rgba(255, 250, 243, 0.5) 100%),
+      image-set(
+        url("../assets/hero-forest-mobile.webp") type("image/webp"),
+        url("../assets/hero-forest-mobile.jpg") type("image/jpeg")
+      );
+    background-position: left center;
   }
 
   .hero h1 {

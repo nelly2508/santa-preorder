@@ -87,18 +87,30 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     const ukHtml = await uk.text();
     assert.match(ukHtml, /lang="en-GB"/);
     assert.match(ukHtml, /£16\.99/);
-    assert.doesNotMatch(ukHtml, /href="\/us"/);
+    assert.doesNotMatch(ukHtml, /<a\b[^>]*href="[^"]*\/us"/);
     assert.doesNotMatch(ukHtml, /noindex/);
     assert.doesNotMatch(ukHtml, /data-market="us"/);
+    assert.match(ukHtml, /hreflang="en-GB" href="https:\/\/santasaysmyname\.com\/"/);
+    assert.match(ukHtml, /hreflang="en-US" href="https:\/\/santasaysmyname\.com\/us"/);
+    assert.match(ukHtml, /hreflang="x-default" href="https:\/\/santasaysmyname\.com\/"/);
     assert.match(ukHtml, /id="cookie-settings"/);
     assert.match(ukHtml, /id="us-do-not-sell"/);
 
     const us = await fetch(`http://127.0.0.1:${port}/us`);
     assert.strictEqual(us.status, 200);
-    assert.match(us.headers.get("x-robots-tag") || "", /noindex/);
+    assert.strictEqual(us.headers.get("x-robots-tag"), null);
     const html = await us.text();
     assert.match(html, /lang="en-US"/);
-    assert.match(html, /noindex, nofollow/);
+    assert.doesNotMatch(html, /noindex/);
+    assert.match(html, /hreflang="en-GB" href="https:\/\/santasaysmyname\.com\/"/);
+    assert.match(html, /hreflang="en-US" href="https:\/\/santasaysmyname\.com\/us"/);
+    assert.match(html, /hreflang="x-default" href="https:\/\/santasaysmyname\.com\/"/);
+    const robots = await fetch(`http://127.0.0.1:${port}/robots.txt`);
+    if (robots.status === 200) {
+      const rules = await robots.text();
+      assert.doesNotMatch(rules, /Disallow:\s*\/us\b/i);
+      assert.doesNotMatch(rules, /Disallow:\s*\/\s*$/m);
+    }
     assert.match(html, /data-market="us"/);
     assert.match(html, /data-currency="USD"/);
     assert.match(html, /\$19\.99/);

@@ -76,7 +76,7 @@ From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the swi
 
 ## United States page
 
-`/us` is a separate page. The UK homepage does not link to it, and nothing redirects a visitor by country. The page is `noindex`. It uses the same film, including the British Santa voice.
+`/us` is a separate page. The UK homepage does not link to it, and nothing redirects a visitor by country. Search engines may index it. Both pages advertise `en-GB` for `/`, `en-US` for `/us`, and `x-default` for `/`. It uses the same film, including the British Santa voice.
 
 Prices are the `usd` block in [`public/js/config.js`](public/js/config.js). PayPal charges those amounts in USD. The browser cannot set the amount. No new Railway variable is required, and `PUBLIC_APP_URL` stays as it is.
 

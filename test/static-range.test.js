@@ -34,6 +34,21 @@ async function withServer(fn, options) {
   }
 }
 
+test("the hero forest is a self-hosted WebP with a JPEG fallback", () => {
+  const css = fs.readFileSync(path.join(PUBLIC, "css/styles.css"), "utf8");
+  for (const name of ["hero-forest.webp", "hero-forest.jpg", "hero-forest-mobile.webp", "hero-forest-mobile.jpg"]) {
+    const file = path.join(PUBLIC, "assets", name);
+    const bytes = fs.statSync(file).size;
+    assert.ok(bytes > 1000 && bytes < 250 * 1024, `${name} is ${bytes} bytes`);
+    assert.match(css, new RegExp(name.replace(".", "\\.")));
+  }
+  assert.match(css, /rgba\(255, 250, 243, 0\.45\)/);
+  assert.match(css, /rgba\(255, 250, 243, 0\.65\)/);
+  assert.match(css, /rgba\(255, 250, 243, 0\.35\)/);
+  assert.match(css, /rgba\(255, 250, 243, 0\.5\)/);
+  assert.match(css, /background-position:\s*left center/);
+});
+
 test("preview assets are the original files, with a smaller webp poster", () => {
   assert.strictEqual(
     sha256(path.join(PUBLIC, "assets/santa-preview-v3.mp4")),
