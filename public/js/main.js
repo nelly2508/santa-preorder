@@ -37,7 +37,15 @@
 
   document.querySelectorAll("[data-pay]").forEach((link) => {
     const label = link.getAttribute("data-label");
-    if (label && bundleLabels[label]) link.textContent = bundleLabels[label];
+    if (!label || !bundleLabels[label]) return;
+    if (link.id === "hero-order") {
+      const short = link.querySelector(".hero-cta-short");
+      if (short) short.textContent = `Pre-order ${bundlePrice}`;
+      const detail = document.getElementById("hero-order-detail");
+      if (detail) detail.textContent = bundleLabels.bundle;
+      return;
+    }
+    link.textContent = bundleLabels[label];
   });
 
   document.querySelectorAll("[data-link='tally']").forEach((link) => {

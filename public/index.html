@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Santa Says My Name — Santa says your child's name</title>
   <meta name="description" content="A personalised Santa video by the fire. He says your child's name, a good deed and a wish. Order by 12 December for delivery by 15 December. From 13 December, rush delivery is included.">
-  <meta name="theme-color" content="#140e0c">
+  <meta name="theme-color" content="#fffdf8">
   <meta property="og:title" content="Santa Says My Name">
   <meta property="og:description" content="Santa. By the fire. Saying your child's name. Order by 12 December for delivery by 15 December.">
   <meta property="og:image" content="assets/fireside.webp">
@@ -40,18 +40,28 @@
           <p class="kicker" data-before-late>Pre-order · delivered by 15 December</p>
           <p class="kicker" data-late-only hidden>Pre-order · rush delivery included</p>
           <h1>Santa. By the fire. Saying your child's name.</h1>
+          <p class="lede">A personal video. Santa says your child's name, a good deed and a wish.</p>
         </div>
         <div class="hero-offer">
           <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
-          <p class="lede">A personal video. Santa says your child's name, a good deed and a wish.</p>
-          <p class="hero-price">
-            <strong data-price="bundle">£16.99</strong>
-            <span data-early-only>early bird</span>
-            <span data-late-only hidden>rush included</span>
-          </p>
-          <a class="btn hero-cta" id="hero-order" data-pay="magicBundle" data-label="bundle" href="#checkout">Pre-order the Magic bundle — £16.99 early bird</a>
+          <div class="hero-price-line">
+            <p class="hero-price">
+              <strong data-price="bundle">£16.99</strong>
+              <span data-early-only>early bird</span>
+              <span data-late-only hidden>rush included</span>
+            </p>
+            <p class="reassurance deadline-badge js-early-note" data-early-only>Early bird ends Sun 15 Nov</p>
+          </div>
+          <a class="btn hero-cta" id="hero-order" data-pay="magicBundle" data-label="bundle" href="#checkout" aria-describedby="hero-order-detail"><span class="hero-cta-short">Pre-order £16.99</span></a>
+          <p class="hero-cta-detail" id="hero-order-detail">Pre-order the Magic bundle — £16.99 early bird</p>
+          <p class="trust-line">Secure checkout with PayPal or card</p>
+          <figure class="parent-quote">
+            <blockquote>
+              <p>“My two little ones both ask if Santa will remember them. When he says their name, they’ll be so excited.”</p>
+            </blockquote>
+            <figcaption>— Emily, Pontefract</figcaption>
+          </figure>
           <p class="hero-next"><a href="#pricing">See pricing</a></p>
-          <p class="reassurance js-early-note" data-early-only>Early bird ends Sun 15 Nov</p>
         </div>
         <figure class="player hear-player hero-sample" id="hear">
           <div class="player-frame hear-frame">
