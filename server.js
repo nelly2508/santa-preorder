@@ -10,6 +10,7 @@ const { countryFromRequest } = require("./lib/client-country");
 const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
+const { applyUsHtml } = require("./lib/us-page");
 const { isPaypalOrderId, createOrderStore } = require("./lib/paypal-orders");
 const crypto = require("crypto");
 const vm = require("vm");
@@ -256,8 +257,9 @@ function escapeHtml(value) {
 function orderContinueHtml(location, purchase) {
   const safeUrl = escapeHtml(location);
   const hasAmount = purchase && Number.isFinite(purchase.value);
+  const purchaseCurrency = hasAmount ? String(purchase.currency || "GBP").toUpperCase() : "";
   const purchaseAttrs = hasAmount
-    ? ` data-purchase-value="${escapeHtml(purchase.value.toFixed(2))}" data-purchase-currency="GBP"`
+    ? ` data-purchase-value="${escapeHtml(purchase.value.toFixed(2))}" data-purchase-currency="${escapeHtml(purchaseCurrency)}"`
     : "";
   return `<!DOCTYPE html>
 <html lang="en-GB">
@@ -354,9 +356,15 @@ function paymentAttributes(env) {
   return ` data-payment-provider="paypal" data-paypal-ready="1" data-paypal-client-id="${escapeHtml(config.clientId)}"`;
 }
 
+function salesMarket(pathname) {
+  if (pathname === "/us" || pathname === "/us/") return "us";
+  if (pathname === "/" || pathname === "/index.html") return "uk";
+  return "";
+}
+
 function decorateSalesHtml(html, env, closed, nonce) {
   const nonceAttr = nonce ? ` data-csp-nonce="${escapeHtml(nonce)}"` : "";
-  let next = html.replace("<body data-sales-page>", `<body data-sales-page${paymentAttributes(env)}${nonceAttr}>`);
+  let next = html.replace("<body data-sales-page", `<body data-sales-page${paymentAttributes(env)}${nonceAttr}`);
   if (paymentProvider(env) === "stripe") {
     next = next.replace(
       'id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card<',
@@ -558,11 +566,13 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
     }
     try {
       // Country comes from the visitor address, never from the posted body.
+      // Market is only which page the button was on.
       funnel.record("order_tap", {
         utm_source: body.utm_source,
         utm_campaign: body.utm_campaign,
         utm_content: body.utm_content,
         country: countryOf(req),
+        market: body.market === "us" ? "us" : "uk",
       });
     } catch {
       // A missed count must not fail the tap.
@@ -617,6 +627,7 @@ function createServer(options = {}) {
       fetchImpl: paypalFetchImpl,
       cache: paypalTokens,
       prices: siteConfig().prices,
+      usdPrices: siteConfig().usd,
       log,
       sendMail: options.sendMail,
       claimId: options.claimId,
@@ -705,12 +716,17 @@ function createServer(options = {}) {
       return;
     }
 
-    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+    const pageMarket = salesMarket(url.pathname);
+    if (req.method === "GET" && pageMarket) {
       const purpose = String(req.headers["sec-purpose"] || req.headers.purpose || "");
       if (!/prefetch/i.test(purpose)) {
         try {
-          visits.record(url);
-          funnel.record("view", { ...partsFromUrl(url), country: visitorCountry(req) });
+          if (pageMarket === "uk") visits.record(url);
+          funnel.record("view", {
+            ...partsFromUrl(url),
+            country: visitorCountry(req),
+            market: pageMarket,
+          });
         } catch {
           // A missed count must not stop the page.
         }
@@ -976,16 +992,19 @@ function createServer(options = {}) {
       return;
     }
 
-    if ((url.pathname === "/" || url.pathname === "/index.html") && (req.method === "GET" || req.method === "HEAD")) {
+    if (pageMarket && (req.method === "GET" || req.method === "HEAD")) {
       fs.readFile(path.join(ROOT, "index.html"), (err, buf) => {
         if (err) {
           notFound(res, req.method);
           return;
         }
         const closed = !ordersOpen(serverNow(options));
-        send(res, 200, decorateSalesHtml(buf.toString("utf8"), env, closed, cspNonce(res)), {
+        let html = buf.toString("utf8");
+        if (pageMarket === "us") html = applyUsHtml(html, siteConfig().usd);
+        send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res)), {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",
+          ...(pageMarket === "us" ? { "X-Robots-Tag": "noindex, nofollow" } : {}),
         }, req.method);
       });
       return;
