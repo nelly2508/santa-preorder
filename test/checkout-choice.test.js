@@ -40,7 +40,7 @@ test("sibling price says it is per extra child, up to 4 siblings", () => {
   assert.strictEqual(twoChildrenFor("singleVideo", { late: true, prices }), "2 children = £19.98 + £11.99");
 });
 
-test("the offer follows early bird, then full price, then late rush", () => {
+test("the offer follows early bird, then full price, then the Christmas week price", () => {
   assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-10-18T12:00:00Z" }), "early");
   assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-11-15T23:59:59Z" }), "early");
   assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-11-16T00:00:00Z" }), "standard");
@@ -53,7 +53,7 @@ test("the offer follows early bird, then full price, then late rush", () => {
   assert.strictEqual(offerPhase({ ...phaseOptions, now: "not-a-date" }), "standard");
 });
 
-test("orders stay open through 19 December UK, including the rush fee, and close at midnight", () => {
+test("orders stay open through 19 December UK, including the Christmas week price, and close at midnight", () => {
   assert.strictEqual(LATE_ORDERS_FROM, "2026-12-13T00:00:00Z");
   assert.strictEqual(ORDERS_CLOSE_AT, "2026-12-20T00:00:00Z");
   assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-12-19T23:59:00Z" }), "late");
@@ -85,11 +85,11 @@ test("the continue link follows the package the customer chose", () => {
   assert.strictEqual(unknown.href, stripe.magicBundleFullPrice);
   assert.deepStrictEqual(
     { name: lateBundle.name, detail: lateBundle.detail, href: lateBundle.href },
-    { name: "Magic bundle", detail: "£24.98, rush included", href: stripe.lateBundle }
+    { name: "Magic bundle", detail: "£24.98, Christmas week price", href: stripe.lateBundle }
   );
   assert.deepStrictEqual(
     { name: lateSingle.name, detail: lateSingle.detail, href: lateSingle.href },
-    { name: "Single video", detail: "£19.98, rush included", href: stripe.lateSingle }
+    { name: "Single video", detail: "£19.98, Christmas week price", href: stripe.lateSingle }
   );
 });
 
@@ -162,8 +162,8 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, /2 children = your video \+ £11\.99/);
     assert.match(html, /You've chosen:/);
     assert.match(html, /id="sibling-faces"/);
-    assert.match(html, /Your personalised video will be sent from the first week of December\./);
-    assert.doesNotMatch(html, /in the first week of December/);
+    assert.match(html, /Delivered within 48 hours of your order, whatever the date\./);
+    assert.doesNotMatch(html, /first week of December|by 15 December|12 December|batches from 1 December|in good time for Christmas/);
     assert.doesNotMatch(html, /Tick the box to continue/);
     assert.doesNotMatch(html, /lose my 14-day right|lose the right to cancel|14-day cancellation period/);
     assert.match(html, />Pay with PayPal or card</);
@@ -177,9 +177,10 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(pay, /href="#checkout"/);
     assert.doesNotMatch(pay, /style=/);
     assert.doesNotMatch(html, /Father Christmas/);
-    assert.doesNotMatch(html, /<h3>Rush|Rush £4\.99|data-price="rush"|add rush/);
-    assert.match(html, /in good time for Christmas/);
-    assert.match(html, /data-late-only hidden>Ordering late\? Rush delivery is included so your video arrives in time\./);
+    assert.doesNotMatch(html, /<h3>Rush|Rush £4\.99|data-price="rush"|add rush|\brush\b/i);
+    assert.match(html, /data-late-only hidden>Delivered within 48 hours of your order, whatever the date\. The Christmas week price applies from Sun 13 Dec\. It is the same delivery, not a faster one\./);
+    assert.match(html, /Order the Magic bundle/);
+    assert.doesNotMatch(html, /Pre-order/);
     assert.match(config, /lateOrdersFrom:\s*"2026-12-13T00:00:00Z"/);
     assert.match(config, /lateBundle:\s*"https:\/\/buy\.stripe\.com\/4gMaEYevJfJM7sCf6t1wY03"/);
     assert.match(config, /lateSingle:\s*"https:\/\/buy\.stripe\.com\/dRmcN6aft69cfZ87E11wY04"/);
@@ -189,14 +190,20 @@ test("the page copy uses the configured sibling price and the pay step", async (
     const termsHtml = await terms.text();
     assert.match(termsHtml, /£11\.99 per extra child \(up to 4 siblings\)/);
     assert.match(termsHtml, /Magic bundle £24\.98, single video £19\.98/);
-    assert.match(termsHtml, /in good time for Christmas/);
-    assert.match(termsHtml, /the price includes rush delivery/);
-    assert.doesNotMatch(termsHtml, /Rush £4\.99|if you pay for it/);
+    assert.match(termsHtml, /Christmas week price/);
+    assert.match(termsHtml, /not a faster delivery/);
+    assert.match(termsHtml, /If the video is not with you within 48 hours, we refund you in full/);
+    assert.doesNotMatch(termsHtml, /Rush £4\.99|if you pay for it|\brush\b/i);
     assert.doesNotMatch(termsHtml, /Father Christmas/);
     assert.match(termsHtml, /Saturday 19 December/);
-    assert.match(termsHtml, /sent from the first week of December/);
-    assert.doesNotMatch(termsHtml, /in the first week of December|tick the box to ask us|lose the right to cancel/i);
+    assert.match(termsHtml, /Delivered within 48 hours of your order, whatever the date/);
+    assert.doesNotMatch(termsHtml, /first week of December|15 December|12 December|1 December|in good time for Christmas|tick the box to ask us|lose the right to cancel/i);
     const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
+    assert.match(mainJs, /Order the Magic bundle/);
+    assert.match(mainJs, /Order now/);
+    assert.match(mainJs, /Order the single video/);
+    assert.match(mainJs, /Pay now\. Christmas week price\./);
+    assert.doesNotMatch(mainJs, /Pre-order|Rush delivery|15 December/);
     assert.match(mainJs, /className = "sibling-face"/);
     assert.match(mainJs, /is-leaving/);
     assert.match(mainJs, /circle cx="32" cy="20" r="12"/);

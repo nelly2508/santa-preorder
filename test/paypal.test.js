@@ -427,6 +427,9 @@ test("the webhook refuses a missing id or a bad signature, and a late order incl
       assert.strictEqual(created.status, 201);
       const items = state.created.purchase_units[0].items;
       assert.deepStrictEqual(items.map((item) => item.sku), ["single", "addon_rush", "addon_sleigh", "addon_sibling"]);
+      const christmasWeek = items.find((item) => item.sku === "addon_rush");
+      assert.strictEqual(christmasWeek.name, "Christmas week price");
+      assert.strictEqual(christmasWeek.unit_amount.value, "4.99");
       assert.strictEqual(state.created.purchase_units[0].amount.value, "36.96");
       assert.strictEqual(state.created.purchase_units[0].amount.currency_code, "GBP");
     } finally {

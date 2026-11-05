@@ -17,9 +17,11 @@
       Optional items: Sibling.
    3. singleVideo — Single video £14.99
       Optional items: Sibling, Named sleigh video.
-   4. lateBundle — Magic bundle £19.99 with rush £4.99 included (£24.98)
+   4. lateBundle — Magic bundle Christmas week price £24.98
+      (standard £19.99 plus the rush amount £4.99). Not a faster delivery.
       Optional items: Sibling. Used from Sun 13 Dec 2026.
-   5. lateSingle — Single video £14.99 with rush £4.99 included (£19.98)
+   5. lateSingle — Single video Christmas week price £19.98
+      (standard £14.99 plus the rush amount £4.99). Not a faster delivery.
       Optional items: Sibling, Named sleigh video. Used from Sun 13 Dec 2026.
 
    After-payment redirect, set on each Payment Link:
@@ -69,10 +71,10 @@ window.SANTA_CONFIG = {
     namedSleigh: "£4.99",
   },
 
-  // United States page (/us). Same early-bird and late-rush dates as the UK.
+  // United States page (/us). Same early-bird and Christmas week dates as the UK.
   // Early bird is $19.99 through 15 Nov 2026 inclusive. The standard Magic
   // bundle after that is magicBundleFull. Neil: confirm $24.99.
-  // Late totals must equal the standard price plus rush, or checkout refuses:
+  // Late totals must equal the standard price plus the rush amount, or checkout refuses:
   // $24.99 + $4.99 = $29.98, and the single video $19.99 + $4.99 = $24.98.
   // Single, sibling, rush and sleigh are sensible USD equivalents to confirm.
   usd: {

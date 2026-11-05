@@ -9,7 +9,8 @@
 })(typeof window === "undefined" ? null : window, function () {
   const LATE_ORDERS_FROM = "2026-12-13T00:00:00Z";
   // After 23:59 UK on 19 December 2026. GMT that week, so this is midnight
-  // at the start of 20 December. Rush orders close at this same instant.
+  // at the start of 20 December. Orders close at this same instant, including
+  // orders at the Christmas week price.
   const ORDERS_CLOSE_AT = "2026-12-20T00:00:00Z";
 
   function siblingRate(amount) {
@@ -103,7 +104,7 @@
       return {
         key: "singleVideo",
         name: "Single video",
-        detail: late ? `${prices.singleVideoLate}, rush included` : prices.singleVideo,
+        detail: late ? `${prices.singleVideoLate}, Christmas week price` : prices.singleVideo,
         href: late ? stripe.lateSingle : stripe.singleVideo,
       };
     }
@@ -111,7 +112,7 @@
       return {
         key: "magicBundle",
         name: "Magic bundle",
-        detail: `${prices.magicBundleLate}, rush included`,
+        detail: `${prices.magicBundleLate}, Christmas week price`,
         href: stripe.lateBundle,
       };
     }
