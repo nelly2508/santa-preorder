@@ -30,11 +30,11 @@
 
   const bundleLabels = {
     bundle: early
-      ? `Pre-order the Magic bundle — ${bundlePrice} early bird`
-      : `Pre-order the Magic bundle — ${bundlePrice}`,
+      ? `Order the Magic bundle — ${bundlePrice} early bird`
+      : `Order the Magic bundle — ${bundlePrice}`,
     final: early
-      ? `Pre-order now — ${bundlePrice} early bird`
-      : `Pre-order now — ${bundlePrice}`,
+      ? `Order now — ${bundlePrice} early bird`
+      : `Order now — ${bundlePrice}`,
   };
 
   document.querySelectorAll("[data-pay]").forEach((link) => {
@@ -42,7 +42,7 @@
     if (!label || !bundleLabels[label]) return;
     if (link.id === "hero-order") {
       const short = link.querySelector(".hero-cta-short");
-      if (short) short.textContent = `Pre-order ${bundlePrice}`;
+      if (short) short.textContent = `Order ${bundlePrice}`;
       const detail = document.getElementById("hero-order-detail");
       if (detail) detail.textContent = bundleLabels.bundle;
       return;
@@ -60,7 +60,7 @@
 
   document.querySelectorAll("[data-pay='singleVideo']").forEach((link) => {
     if (link.id === "pay-continue") return;
-    link.textContent = `Pre-order the single video — ${singlePrice}`;
+    link.textContent = `Order the single video — ${singlePrice}`;
   });
 
   document.querySelectorAll("[data-price='bundle']").forEach((el) => {
@@ -103,7 +103,7 @@
       el.hidden = false;
     });
     const pricingHeading = document.getElementById("pricing-heading");
-    if (pricingHeading) pricingHeading.textContent = "Pay now. Rush delivery included.";
+    if (pricingHeading) pricingHeading.textContent = "Pay now. Christmas week price.";
   }
 
   const trader = config.trader || {};

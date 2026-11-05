@@ -80,6 +80,10 @@ test("rush and sleigh come from sku or name, and both bundles include the sleigh
     line({ description: "Single video", unitAmount: 1499 }),
     line({ description: "Rush", quantity: 1 }),
   ]));
+  const byName = summariseCheckout(paid([
+    line({ description: "Single video", unitAmount: 1499 }),
+    line({ description: "Christmas week price", quantity: 1 }),
+  ]));
   assert.deepStrictEqual(
     { rush: early.rush, sleigh: early.sleigh, packageType: early.packageType },
     { rush: true, sleigh: true, packageType: "bundle_early_bird" }
@@ -92,6 +96,10 @@ test("rush and sleigh come from sku or name, and both bundles include the sleigh
   );
   assert.deepStrictEqual(
     { rush: singlePlain.rush, sleigh: singlePlain.sleigh, packageType: singlePlain.packageType },
+    { rush: true, sleigh: false, packageType: "single" }
+  );
+  assert.deepStrictEqual(
+    { rush: byName.rush, sleigh: byName.sleigh, packageType: byName.packageType },
     { rush: true, sleigh: false, packageType: "single" }
   );
 });

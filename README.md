@@ -1,6 +1,6 @@
 # Santa Says My Name
 
-Pre-order site for a personalised Santa video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
+Order site for a personalised Santa video. Plain HTML, CSS and JavaScript, served by a tiny Node server so Railway can deploy it with no extra config.
 
 ## PayPal checkout
 
@@ -70,7 +70,7 @@ The footer links to both. A trailing slash works too (`/privacy/`, `/terms/`). C
 
 The page charges £16.99 for the Magic bundle until the end of Sunday 15 November 2026, then switches the bundle buttons to the £19.99 link. The single video stays at £14.99. Set `earlyBird` to `false` to end the £16.99 offer sooner.
 
-From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the switch is `2026-12-13T00:00:00Z`. From that moment the Magic bundle buttons use `lateBundle` (£24.98) and the single-video buttons use `lateSingle` (£19.98). Rush delivery is included in those prices. Between 16 November and 12 December the bundle uses the full-price link. A late date wins over early bird.
+From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the switch is `2026-12-13T00:00:00Z`. From that moment the Magic bundle buttons use `lateBundle` (£24.98) and the single-video buttons use `lateSingle` (£19.98). Customers see that as the Christmas week price. It is not a faster delivery. Every order is delivered within 48 hours of payment and the completed order form, whatever the date. Between 16 November and 12 December the bundle uses the full-price link. A late date wins over early bird.
 
 `lateOrders` controls the switch. `true` forces the late links. `false` keeps the earlier links even after 13 December. `null` follows `lateOrdersFrom`. To preview a date without editing the config, open the page with `?asof=2026-12-13T00:00:00Z` (or any other ISO date). An invalid `asof` is ignored. `lateOrders` set to `true` or `false` still wins over `asof` for whether the late prices are on. `asof` only changes what this page shows. It does not change Stripe.
 
@@ -80,7 +80,7 @@ From 00:00 Europe/London on Sunday 13 December 2026 the UK is on GMT, so the swi
 
 Prices are the `usd` block in [`public/js/config.js`](public/js/config.js). PayPal charges those amounts in USD. The browser cannot set the amount. No new Railway variable is required, and `PUBLIC_APP_URL` stays as it is.
 
-The early-bird clock is the same as the UK (`earlyBirdEnds`, through 15 November 2026 inclusive). Until then the Magic bundle is `usd.magicBundleEarly` ($19.99). After that it is `usd.magicBundleFull` ($24.99). Confirm $24.99 before relying on it. From 13 December the late totals must equal that standard price plus rush, and the single video plus rush, or checkout refuses the order. The other defaults to confirm alongside $24.99 are: single video $19.99, sibling $14.99, rush and named sleigh $4.99, late bundle $29.98, late single $24.98.
+The early-bird clock is the same as the UK (`earlyBirdEnds`, through 15 November 2026 inclusive). Until then the Magic bundle is `usd.magicBundleEarly` ($19.99). After that it is `usd.magicBundleFull` ($24.99). Confirm $24.99 before relying on it. From 13 December the Christmas week price applies. The late totals must equal that standard price plus the `rush` amount, and the single video plus the `rush` amount, or checkout refuses the order. The higher price is not a faster delivery. The other defaults to confirm alongside $24.99 are: single video $19.99, sibling $14.99, rush and named sleigh $4.99, late bundle $29.98, late single $24.98.
 
 Clarity and the Meta pixel run on `/us` unless the visitor uses Do Not Sell or Share My Personal Information, or the browser sends Global Privacy Control. The UK page still waits for Accept. `/admin/funnel` still reports `total` for everyone and `total_uk` for geo country `GB`. The US page is a separate `market` (`markets.us`), not a change to those country totals.
 
@@ -121,11 +121,7 @@ When `/order/continue` has confirmed the Checkout Session is paid, the server se
 From and Reply-To are `Santa's Elves <elvesworkshop@santasaysmyname.com>` (the address follows `SMTP_USER`).
 
 1. A sale alert to `ORDER_ALERT_TO`, with a copy to the workshop mailbox. The subject looks like `🎄 New Santa order – £19.99 – Magic bundle`. It includes the package, amount, children, rush, sleigh, customer email, Stripe session id, the UK time, and the delivery window.
-2. A confirmation to the buyer. The Tally link is built by `tallyOrderUrl`, the same helper as the redirect, so it carries `order`, `children`, `rush`, `sleigh`, `package`, and `email` when Stripe has an address. The message keeps the existing wording and adds a line for anyone who paid and did not submit the form, plus a “Finish your order details” button. The delivery sentence depends on the UK date of the payment:
-   - On or before 1 December: the video will be sent from the first week of December, in batches, and is guaranteed by 15 December.
-   - From 2 December until the rush fee starts: sent from the first week of December, and guaranteed by 15 December.
-   - 14–15 December: within 48 hours, so the mail never promises 15 December when that date cannot be kept.
-   - From the rush fee onward, through 19 December: within 48 hours. The fee starts at 00:00 UK on 13 December 2026 (`LATE_ORDERS_FROM`, `2026-12-13T00:00:00Z` in `public/js/checkout-choice.js`). The email calls that same check. It does not keep a second copy of the timestamp.
+2. A confirmation to the buyer. The Tally link is built by `tallyOrderUrl`, the same helper as the redirect, so it carries `order`, `children`, `rush`, `sleigh`, `package`, and `email` when Stripe has an address. The message keeps the existing wording and adds a line for anyone who paid and did not submit the form, plus a “Finish your order details” button. The delivery sentence is the same whatever the UK date of the payment: delivered within 48 hours of the order, once both the payment and the completed order form are in. The line shown to the buyer calls the late price the Christmas week price. The sale alert still says rush, which is the internal add-on flag.
 
 The once-only mark is metadata on the PaymentIntent (`ssm_email_alert` and `ssm_email_buyer`). The route writes it with the Stripe key it already uses. A second visit sees the mark and does not send. If a send fails, the mark is left unset for that message so the next visit can try again. Two overlapping visits share one claim, and the one that does not win the claim does not send.
 

@@ -116,9 +116,14 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /\$19\.99/);
     assert.match(html, /\$24\.99/);
     assert.match(html, /personalized/);
-    assert.match(html, /December 15/);
+    assert.match(html, /Delivered within 48 hours of your order, whatever the date/);
     assert.match(html, /Sun Nov 15/);
+    assert.match(html, /Sun Dec 13/);
+    assert.match(html, /Sat Dec 19/);
     assert.match(html, /6:59pm Eastern/);
+    assert.match(html, /Christmas week price/);
+    assert.match(html, /Order the Magic bundle/);
+    assert.doesNotMatch(html, /Pre-order|December 15|December 12|December 1|rush/i);
     assert.match(html, /same British Santa/);
     assert.match(html, /santa-preview-v3\.mp4/);
     assert.match(html, /Do Not Sell or Share My Personal Information/);

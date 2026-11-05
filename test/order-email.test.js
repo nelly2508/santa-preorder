@@ -5,13 +5,11 @@ const test = require("node:test");
 const { createServer } = require("../server");
 const { describeOrder } = require("../lib/order-continue");
 const { tallyOrderUrl } = require("../lib/tally-order-url");
-const { LATE_ORDERS_FROM, offerPhase } = require("../public/js/checkout-choice");
 const {
   WORKSHOP,
   MARK,
   smtpSettings,
   deliveryLine,
-  deliveryWindow,
   orderFacts,
   renderCustomerEmail,
   renderSaleAlert,
@@ -100,36 +98,24 @@ test("smtp defaults are the workshop mailbox, and host, port and user can be ove
   assert.strictEqual(smtpSettings({ SMTP_PORT: "nope" }).port, 465);
 });
 
-test("delivery wording follows the UK order date and the rush-fee boundary", () => {
-  const batch = "Your personalised video will be sent from the first week of December. Pre-orders go out in batches, and your video is guaranteed by 15 December.";
-  const byFifteenth = "Your personalised video will be sent from the first week of December. Your video is guaranteed by 15 December.";
-  const within48 = "Your video is guaranteed within 48 hours.";
-  const feeStarts = Date.parse(LATE_ORDERS_FROM);
-
-  assert.strictEqual(deliveryLine(Date.parse("2026-11-20T15:04:00Z")), batch);
-  assert.strictEqual(deliveryWindow(Date.parse("2026-12-01T23:59:00Z")), "batches");
-  assert.strictEqual(deliveryLine(Date.parse("2026-12-01T23:59:00Z")), batch);
-  assert.strictEqual(deliveryWindow(Date.parse("2026-12-02T00:00:00Z")), "by-15-december");
-  assert.strictEqual(deliveryLine(Date.parse("2026-12-10T12:00:00Z")), byFifteenth);
-  assert.doesNotMatch(deliveryLine(Date.parse("2026-12-10T12:00:00Z")), /48 hours|from 1 December/);
-
-  assert.notStrictEqual(offerPhase({ now: feeStarts - 1 }), "late");
-  assert.strictEqual(offerPhase({ now: feeStarts }), "late");
-  assert.strictEqual(deliveryWindow(feeStarts - 1), "by-15-december");
-  assert.strictEqual(deliveryWindow(feeStarts), "rush");
-  assert.strictEqual(deliveryLine(feeStarts), within48);
-  assert.doesNotMatch(deliveryLine(feeStarts), /by 15 December/);
-
-  assert.strictEqual(deliveryWindow(Date.parse("2026-12-14T12:00:00Z")), "tight");
-  assert.strictEqual(deliveryWindow(Date.parse("2026-12-15T22:00:00Z")), "tight");
-  assert.strictEqual(deliveryLine(Date.parse("2026-12-15T22:00:00Z")), within48);
-  assert.doesNotMatch(deliveryLine(Date.parse("2026-12-15T22:00:00Z")), /by 15 December/);
-
-  assert.strictEqual(deliveryWindow(Date.parse("2026-12-19T23:59:00Z")), "rush");
-  assert.strictEqual(deliveryLine(Date.parse("2026-12-19T23:59:00Z")), within48);
-  assert.strictEqual(deliveryWindow(Date.parse("2026-12-20T00:00:00Z")), "closed");
-  assert.doesNotMatch(deliveryLine(Date.parse("2026-11-20T15:04:00Z")), /recording/i);
-  assert.doesNotMatch(deliveryLine(feeStarts), /recording/i);
+test("delivery wording is 48 hours on every order date", () => {
+  const within48 = "Delivered within 48 hours of your order, whatever the date. The 48 hours start when we have both your payment and the completed order form.";
+  const dates = [
+    "2026-11-20T15:04:00Z",
+    "2026-12-01T23:59:00Z",
+    "2026-12-02T00:00:00Z",
+    "2026-12-10T12:00:00Z",
+    "2026-12-12T23:59:59Z",
+    "2026-12-13T00:00:00Z",
+    "2026-12-14T12:00:00Z",
+    "2026-12-15T22:00:00Z",
+    "2026-12-19T23:59:00Z",
+    "2026-12-20T00:00:00Z",
+  ];
+  for (const date of dates) {
+    assert.strictEqual(deliveryLine(Date.parse(date)), within48);
+    assert.doesNotMatch(deliveryLine(Date.parse(date)), /15 December|first week|batches|recording|rush/i);
+  }
 });
 
 test("the customer email is warm night-and-gold html plus text, with the tally link", () => {
@@ -147,10 +133,10 @@ test("the customer email is warm night-and-gold html plus text, with the tally l
   assert.match(message.text, /What happens next/);
   assert.match(message.text, /favourite little ones' names \(and how to say them\), their age, one lovely thing they did this year and their Christmas wish/);
   assert.ok(message.text.includes(location));
-  assert.match(message.text, /Your personalised video will be sent from the first week of December/);
-  assert.doesNotMatch(message.text, /in the first week of December/);
-  assert.match(message.text, /Pre-orders go out in batches/);
-  assert.match(message.text, /your video is guaranteed by 15 December/);
+  assert.match(message.text, /Delivered within 48 hours of your order, whatever the date/);
+  assert.match(message.text, /The 48 hours start when we have both your payment and the completed order form/);
+  assert.match(message.text, /Christmas week price: no/);
+  assert.doesNotMatch(message.text, /first week of December|Pre-orders go out in batches|by 15 December|Rush delivery/);
   assert.match(message.text, /Ready for that gasp when Santa says their name/);
   assert.match(message.text, /Nice List certificate and letter from Santa/);
   assert.match(message.text, /Amount paid: £16\.99/);
@@ -170,7 +156,7 @@ test("the customer email is warm night-and-gold html plus text, with the tally l
   assert.match(message.html, new RegExp(escapeHtml(location).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(`${message.text}\n${message.html}`, /recording/i);
   assert.doesNotMatch(`${message.text}\n${message.html}`, /money back|money-back|refund/i);
-  assert.doesNotMatch(message.text, /within 48 hours/);
+  assert.match(message.text, /within 48 hours/);
 
   const single = renderCustomerEmail(orderFacts({
     sessionId: "cs_live_single",
@@ -178,8 +164,9 @@ test("the customer email is warm night-and-gold html plus text, with the tally l
     summary: { children: 1, rush: false, sleigh: true, packageType: "single" },
     session: paidSession(Date.parse("2026-12-16T12:00:00Z") / 1000, { amount_total: 1998 }),
   }));
-  assert.match(single.text, /Your video is guaranteed within 48 hours/);
-  assert.doesNotMatch(single.text, /Nice List|certificate|by 15 December/);
+  assert.match(single.text, /Delivered within 48 hours of your order, whatever the date/);
+  assert.match(single.text, /Christmas week price: no/);
+  assert.doesNotMatch(single.text, /Nice List|certificate|by 15 December|Rush delivery/);
   assert.match(single.text, /Amount paid: £19\.98/);
 });
 
@@ -204,7 +191,7 @@ test("the sale alert names the package, amount, children, add-ons, email, sessio
   assert.match(alert.text, /20 December 2026|16 December 2026/);
   assert.match(alert.text, /15:04/);
   assert.match(alert.text, /UK/);
-  assert.match(alert.text, /Your video is guaranteed within 48 hours/);
+  assert.match(alert.text, /Delivered within 48 hours of your order, whatever the date/);
   assert.match(alert.text, /Order form: https:\/\/tally\.so\/r\/Dq25LE\?order=cs_live_alert1/);
 
   const early = renderSaleAlert(orderFacts({
@@ -214,8 +201,8 @@ test("the sale alert names the package, amount, children, add-ons, email, sessio
     session: paidSession(Date.parse("2026-11-02T10:00:00Z") / 1000, { amount_total: 1699 }),
   }));
   assert.strictEqual(early.subject, "🎄 New Santa order – £16.99 – Magic bundle (early bird)");
-  assert.match(early.text, /sent from the first week of December/);
-  assert.doesNotMatch(early.text, /in the first week of December/);
+  assert.match(early.text, /Delivered within 48 hours of your order, whatever the date/);
+  assert.doesNotMatch(early.text, /first week of December|15 December/);
 });
 
 test("each paid order is emailed once, including a refresh and an overlapping visit", async () => {
@@ -542,10 +529,11 @@ test("the sample send can only address the workshop mailbox", async () => {
     assert.ok(!JSON.stringify(message).includes(PASS));
   }
   const bodies = messages.map((message) => message.text).join("\n");
-  assert.match(bodies, /from the first week of December/);
-  assert.doesNotMatch(bodies, /in the first week of December/);
-  assert.match(bodies, /guaranteed by 15 December/);
-  assert.match(bodies, /within 48 hours/);
+  assert.match(bodies, /Delivered within 48 hours of your order, whatever the date/);
+  assert.doesNotMatch(bodies, /first week of December|15 December|batches/);
+  assert.match(bodies, /Christmas week price: yes/);
+  assert.match(bodies, /Christmas week price: no/);
+  assert.doesNotMatch(bodies, /Rush delivery/);
   await assert.rejects(
     () => sendSampleOrderEmails({ env: {}, sendMail: async () => {} }),
     /SMTP_PASS is set/

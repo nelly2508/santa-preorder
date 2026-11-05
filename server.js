@@ -99,7 +99,7 @@ function notFound(res, method) {
   <main class="missing-main">
     <p class="kicker">404</p>
     <h1>That page has gone up the chimney.</h1>
-    <p><a class="btn" href="/">Back to the pre-order page</a></p>
+    <p><a class="btn" href="/">Back to the order page</a></p>
   </main>
 </body>
 </html>`;
