@@ -668,6 +668,10 @@ p + p {
   overflow: hidden;
 }
 
+.doc-open picture {
+  display: block;
+}
+
 .doc-open img {
   display: block;
   width: 100%;
