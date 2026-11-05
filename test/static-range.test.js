@@ -24,6 +24,32 @@ function sha256(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
+function imageSize(buf) {
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i + 8 < buf.length) {
+      if (buf[i] !== 0xff) break;
+      const marker = buf[i + 1];
+      if (marker === 0xd8 || marker === 0xd9 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
+        i += 2;
+        continue;
+      }
+      const len = buf.readUInt16BE(i + 2);
+      if (marker >= 0xc0 && marker <= 0xc3) {
+        return { width: buf.readUInt16BE(i + 7), height: buf.readUInt16BE(i + 5) };
+      }
+      i += 2 + len;
+    }
+  }
+  if (buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP" && buf.toString("ascii", 12, 16) === "VP8 ") {
+    return {
+      width: buf.readUInt16LE(26) & 0x3fff,
+      height: buf.readUInt16LE(28) & 0x3fff,
+    };
+  }
+  throw new Error("unknown image");
+}
+
 async function withServer(fn, options) {
   const server = createServer(options || { log() {} });
   const port = await listen(server);
@@ -47,6 +73,40 @@ test("the hero forest is a self-hosted WebP with a JPEG fallback", () => {
   assert.match(css, /rgba\(255, 250, 243, 0\.35\)/);
   assert.match(css, /rgba\(255, 250, 243, 0\.5\)/);
   assert.match(css, /background-position:\s*left center/);
+});
+
+test("the letter and certificate samples are William and Ole, WebP with a JPEG fallback", async () => {
+  for (const name of ["letter-william", "certificate-ole"]) {
+    const jpg = fs.readFileSync(path.join(PUBLIC, "assets", `${name}.jpg`));
+    const webp = fs.readFileSync(path.join(PUBLIC, "assets", `${name}.webp`));
+    assert.ok(webp.length < jpg.length, `${name} webp should be smaller than the jpg`);
+    assert.ok(jpg.length < 250 * 1024, `${name} jpg is ${jpg.length} bytes`);
+    assert.deepStrictEqual(imageSize(jpg), { width: 720, height: 1040 });
+    assert.deepStrictEqual(imageSize(webp), { width: 720, height: 1040 });
+  }
+  assert.strictEqual(fs.existsSync(path.join(PUBLIC, "assets/letter-lily.png")), false);
+  assert.strictEqual(fs.existsSync(path.join(PUBLIC, "assets/certificate-lily.png")), false);
+
+  await withServer(async (port) => {
+    const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+    assert.match(html, /<source srcset="assets\/letter-william\.webp" type="image\/webp">/);
+    assert.match(html, /src="assets\/letter-william\.jpg" width="720" height="1040" alt="Sample letter from Santa to William, with a candy-cane border, a North Pole stamp and Santa in his sleigh"/);
+    assert.match(html, /<source srcset="assets\/certificate-ole\.webp" type="image\/webp">/);
+    assert.match(html, /src="assets\/certificate-ole\.jpg" width="720" height="1040" alt="Sample Nice List certificate for Ole, with a candy-cane border, a ticked Nice box and Santa in his sleigh"/);
+    assert.match(html, /The letter is made out to William, and the certificate to Ole/);
+    assert.doesNotMatch(html, /letter-lily|certificate-lily|made out to Lily|SAMPLE marked/);
+    const us = await (await fetch(`http://127.0.0.1:${port}/us`)).text();
+    assert.match(us, /letter-william\.webp/);
+    assert.match(us, /certificate-ole\.jpg/);
+    assert.match(us, /made out to William, and the certificate to Ole/);
+    assert.doesNotMatch(us, /letter-lily|certificate-lily/);
+    for (const file of ["letter-william.webp", "letter-william.jpg", "certificate-ole.webp", "certificate-ole.jpg"]) {
+      const res = await fetch(`http://127.0.0.1:${port}/assets/${file}`);
+      assert.strictEqual(res.status, 200, file);
+      const type = file.endsWith(".webp") ? "image/webp" : "image/jpeg";
+      assert.strictEqual(res.headers.get("content-type"), type);
+    }
+  });
 });
 
 test("preview assets are the original files, with a smaller webp poster", () => {
