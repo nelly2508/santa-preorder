@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
+const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
 
 const prices = {
   magicBundleFull: "£19.99",
@@ -29,6 +29,14 @@ const phaseOptions = {
   earlyBirdEnds: "2026-11-15T23:59:59+00:00",
   lateOrdersFrom: "2026-12-13T00:00:00Z",
 };
+
+test("the pay link carries market only for the US page", () => {
+  assert.strictEqual(orderQuery({ packageKey: "singleVideo", market: "uk" }), "package=singleVideo");
+  assert.strictEqual(
+    orderQuery({ packageKey: "magicBundle", market: "us", utm: { utm_source: "meta" } }),
+    "package=magicBundle&utm_source=meta&market=us"
+  );
+});
 
 test("sibling price says it is per extra child, up to 4 siblings", () => {
   assert.strictEqual(siblingRate("£11.99"), "+£11.99 per extra child (up to 4 siblings)");

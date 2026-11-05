@@ -111,6 +111,13 @@ test("a checkout session copies the GBP payment link and leaves other currencies
   assert.match(built.params.cancel_url, /#checkout$/);
   assert.strictEqual(built.params.metadata.package, "bundle_early_bird");
   assert.strictEqual(built.params.metadata.utm_source, "meta");
+  assert.strictEqual(built.params.metadata.ssm_market, "uk");
+  const fromUs = sessionParamsFromPaymentLink(ukLink("gbp"), {
+    origin: "https://santasaysmyname.com",
+    market: "us",
+    utm: { utm_source: "meta" },
+  });
+  assert.strictEqual(fromUs.params.metadata.ssm_market, "us");
   assert.strictEqual(built.params.line_items[0].price_data, undefined);
   assert.strictEqual(sessionParamsFromPaymentLink(ukLink("usd"), { origin: "https://santasaysmyname.com" }).skip, "not-gbp");
 });
@@ -253,14 +260,21 @@ test("a paid GBP checkout is counted once", async () => {
     assert.strictEqual(second.status, 200);
     const foreign = await fetch(`http://127.0.0.1:${port}/order/continue?session_id=cs_test_usd123`);
     assert.strictEqual(foreign.status, 200);
+    const foreignAgain = await fetch(`http://127.0.0.1:${port}/order/continue?session_id=cs_test_usd123`);
+    assert.strictEqual(foreignAgain.status, 200);
     const report = await fetch(`http://127.0.0.1:${port}/admin/funnel`, {
       headers: { Authorization: `Bearer ${secret}` },
     });
     const body = await report.json();
-    assert.strictEqual(body.total.checkout_complete, 1);
-    assert.strictEqual(body.buckets[0].utm_source, "meta");
-    assert.strictEqual(body.buckets[0].checkout_complete, 1);
-    assert.strictEqual(body.buckets[0].country, "XX");
+    assert.strictEqual(body.total.checkout_complete, 2);
+    assert.strictEqual(body.markets.uk.checkout_complete, 1);
+    assert.strictEqual(body.markets.us.checkout_complete, 1);
+    const uk = body.buckets.find((row) => row.market === "uk");
+    const us = body.buckets.find((row) => row.market === "us");
+    assert.strictEqual(uk.utm_source, "meta");
+    assert.strictEqual(uk.checkout_complete, 1);
+    assert.strictEqual(uk.country, "XX");
+    assert.strictEqual(us.checkout_complete, 1);
     assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, checkout_start: 0, checkout_complete: 0 });
   } finally {
     await close(server);

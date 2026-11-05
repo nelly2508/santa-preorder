@@ -414,7 +414,12 @@
       if (checkout) checkout.classList.add("is-ready");
       const utm = currentUtm();
       const query = choiceApi.orderQuery
-        ? choiceApi.orderQuery({ packageKey: picked.key, siblings, utm })
+        ? choiceApi.orderQuery({
+          packageKey: picked.key,
+          siblings,
+          utm,
+          market: marketUs ? "us" : "uk",
+        })
         : `package=${encodeURIComponent(picked.key)}`;
       continueLink.setAttribute("aria-disabled", "false");
       continueLink.removeAttribute("tabindex");

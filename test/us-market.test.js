@@ -75,7 +75,8 @@ test("US prices follow the UK early-bird clock and the standard bundle is $24.99
   assert.strictEqual(session.currency, "usd");
   assert.strictEqual(session.metadata.ssm_market, "us");
   assert.strictEqual(funnelFromSession(session).market, "us");
-  assert.strictEqual(funnelFromSession({ ...session, id: "cs_test_usd123", metadata: {} }), null);
+  assert.strictEqual(funnelFromSession({ ...session, id: "cs_test_usd123", metadata: {} }).market, "us");
+  assert.strictEqual(funnelFromSession({ ...session, payment_status: "unpaid", metadata: {} }), null);
 });
 
 test("the US page is reachable, quiet, and does not steal the UK homepage", async () => {

@@ -93,6 +93,7 @@
       const value = campaignPart(utm[key]);
       if (value) params.set(key, value);
     }
+    if (source.market === "us") params.set("market", "us");
     return params.toString();
   }
 
