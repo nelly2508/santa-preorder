@@ -5,13 +5,14 @@ const fs = require("fs");
 const path = require("path");
 const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/order-continue");
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
-const { UNKNOWN_COUNTRY, createFunnelCounter } = require("./lib/funnel-counts");
+const { UNKNOWN_COUNTRY, createFunnelCounter, funnelFromSession } = require("./lib/funnel-counts");
 const { countryFromRequest } = require("./lib/client-country");
 const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
 const { isPaypalOrderId, createOrderStore } = require("./lib/paypal-orders");
+const { sessionForPaidOrder } = require("./lib/quote");
 const crypto = require("crypto");
 const vm = require("vm");
 
@@ -666,9 +667,27 @@ function createServer(options = {}) {
     });
   }
 
+  function funnelFromPaypalRow(orderId, row) {
+    if (!row || row.status !== "COMPLETED" || !row.quote) return null;
+    const session = sessionForPaidOrder({
+      orderId,
+      captureId: row.captureId,
+      quote: row.quote,
+      email: row.email,
+      createdSeconds: Math.floor(Number(row.createdMs || Date.now()) / 1000),
+      utm: row.utm,
+      country: row.country,
+      metadata: row.metadata,
+    });
+    return funnelFromSession(session);
+  }
+
   async function markFunnel(sessionId, result) {
     if (isPaypalOrderId(sessionId)) await ensureCheckoutStart(sessionId);
-    const info = result && result.funnel;
+    let info = result && result.funnel;
+    if (!info && isPaypalOrderId(sessionId)) {
+      info = funnelFromPaypalRow(sessionId, await paypalOrders.get(sessionId));
+    }
     if (!info || info.alreadyCounted) return;
     if (!funnel.claimCompletion(sessionId)) return;
     try {
@@ -963,6 +982,7 @@ function createServer(options = {}) {
         lateOrders: config.lateOrders,
         lateOrdersFrom: config.lateOrdersFrom,
       });
+      const market = url.searchParams.get("market") === "us" ? "us" : "uk";
       const packageKey = url.searchParams.get("package") === "singleVideo" ? "singleVideo" : "magicBundle";
       const choice = packageChoice(packageKey, {
         early: phase === "early",
@@ -1000,6 +1020,7 @@ function createServer(options = {}) {
             origin,
             utm,
             country,
+            market,
             siblings: clampSiblings(url.searchParams.get("siblings")),
             packageKey: choice.key,
             paymentLinkUrl: choice.href,
@@ -1008,7 +1029,7 @@ function createServer(options = {}) {
           if (created && created.created && created.url) {
             location = created.url;
             try {
-              funnel.record("checkout_start", { ...utm, country });
+              funnel.record("checkout_start", { ...utm, country, market });
             } catch {
               // A missed count must not stop checkout.
             }
