@@ -608,7 +608,104 @@ p + p {
     padding-top: 0.55rem;
     padding-bottom: 0.55rem;
   }
+
+  /* US phones: the sample film is the first thing, with the price and
+     Order button beside it. The UK hero above is left as it is. */
+  body[data-market="us"] .hero {
+    padding-top: 0.2rem;
+    padding-bottom: 0.8rem;
+  }
+
+  body[data-market="us"] .hero-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(8.4rem, 0.82fr);
+    grid-template-areas:
+      "video price"
+      "video cta"
+      "trust trust"
+      "intro intro"
+      "quote quote"
+      "next next"
+      "caption caption"
+      "figure figure";
+    align-items: center;
+    gap: 0.35rem 0.6rem;
+  }
+
+  body[data-market="us"] .hero-offer { display: contents; }
+
+  body[data-market="us"] .hero-sample .hear-frame {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  body[data-market="us"] .hero-price-line {
+    grid-area: price;
+    align-self: end;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    margin: 0;
+  }
+
+  body[data-market="us"] .hero-price strong {
+    font-size: 1.85rem;
+  }
+
+  body[data-market="us"] .deadline-badge { display: none; }
+
+  body[data-market="us"] #hero-order {
+    grid-area: cta;
+    align-self: start;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.55rem 0.45rem;
+    font-size: 1rem;
+  }
+
+  body[data-market="us"] #hero-order .hero-cta-short {
+    white-space: normal;
+  }
+
+  body[data-market="us"] .hero-cta-detail { display: none; }
+
+  body[data-market="us"] .trust-line {
+    grid-area: trust;
+    margin: 0.15rem 0 0;
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+
+  body[data-market="us"] .parent-quote { grid-area: quote; }
+  body[data-market="us"] .hero-next { grid-area: next; }
+  body[data-market="us"] #orders-closed { grid-area: trust; }
+
+  body[data-market="us"] .us-order-bar {
+    position: fixed;
+    z-index: 6;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    padding: 0.55rem 0.85rem calc(0.55rem + env(safe-area-inset-bottom));
+    background: rgba(255, 253, 248, 0.96);
+    border-top: 3px solid var(--berry);
+    box-shadow: 0 -8px 24px rgba(36, 22, 15, 0.12);
+  }
+
+  body[data-market="us"] .us-order-bar .btn {
+    min-height: 48px;
+    font-size: 1.05rem;
+  }
+
+  body[data-market="us"] {
+    padding-bottom: calc(4.4rem + env(safe-area-inset-bottom));
+  }
 }
+
+.us-order-bar { display: none; }
+
+body[data-orders-closed] .us-order-bar { display: none !important; }
 
 .hero-sample figcaption {
   margin-top: 0.45rem;
