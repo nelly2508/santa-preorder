@@ -50,6 +50,10 @@
     link.textContent = bundleLabels[label];
   });
 
+  document.querySelectorAll(".us-order-bar .hero-cta-short").forEach((short) => {
+    short.textContent = `Order ${bundlePrice}`;
+  });
+
   document.querySelectorAll("[data-link='tally']").forEach((link) => {
     link.href = config.tallyOrderForm;
   });

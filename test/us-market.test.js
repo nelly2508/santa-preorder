@@ -94,6 +94,8 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(ukHtml, /hreflang="en-GB" href="https:\/\/santasaysmyname\.com\/"/);
     assert.match(ukHtml, /hreflang="en-US" href="https:\/\/santasaysmyname\.com\/us"/);
     assert.match(ukHtml, /hreflang="x-default" href="https:\/\/santasaysmyname\.com\/"/);
+    assert.match(ukHtml, /Secure checkout with PayPal or card/);
+    assert.doesNotMatch(ukHtml, /us-order-bar|Personalized with your child's name/);
     assert.match(ukHtml, /id="cookie-settings"/);
     assert.match(ukHtml, /id="us-do-not-sell"/);
 
@@ -127,6 +129,11 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.doesNotMatch(html, /Pre-order|December 15|December 12|December 1|rush/i);
     assert.match(html, /same British Santa/);
     assert.match(html, /santa-preview-v3\.mp4/);
+    assert.match(html, /poster="\/assets\/santa-preview-poster-lite\.webp"/);
+    assert.match(html, /class="us-order-bar"/);
+    assert.match(html, /us-order-bar[\s\S]*data-pay="magicBundle"/);
+    assert.match(html, /Delivered within 48 hours of your order\. Personalized with your child's name\. Secure checkout\./);
+    assert.doesNotMatch(html, /<video[^>]*\bmuted\b/);
     assert.match(html, /Do Not Sell or Share My Personal Information/);
     assert.match(html, /do not collect personal information from children/);
     assert.doesNotMatch(html, /£/);
