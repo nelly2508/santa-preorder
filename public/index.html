@@ -56,6 +56,8 @@
             <p class="reassurance deadline-badge js-early-note" data-early-only>Early bird ends Sun 15 Nov</p>
           </div>
           <a class="btn hero-cta" id="hero-order" data-pay="magicBundle" data-label="bundle" href="#checkout" aria-describedby="hero-order-detail"><span class="hero-cta-short">Order £16.99</span></a>
+          <p class="delivery-promise" id="hero-delivery">Delivered within 48 hours of your order, whatever the&nbsp;date.</p>
+          <button type="button" class="btn btn-see" id="see-example">See an example</button>
           <p class="hero-cta-detail" id="hero-order-detail">Order the Magic bundle — £16.99 early bird</p>
           <p class="trust-line">Secure checkout with PayPal or card</p>
           <figure class="parent-quote">
@@ -66,8 +68,31 @@
           </figure>
           <p class="hero-next"><a href="#pricing">See pricing</a></p>
         </div>
-        <figure class="player hear-player hero-sample">
-          <div class="player-frame hear-frame" id="hear">
+        <figure class="player hear-player hero-sample hero-film">
+          <div class="player-frame hear-frame">
+            <video id="hero-film" data-hero-film controls playsinline preload="none" width="1080" height="1350">
+              A short film about the personalised video.
+            </video>
+            <button type="button" class="sample-play" id="hero-play" aria-controls="hero-film" aria-label="Play the film">
+              <span class="sample-play-icon" aria-hidden="true"></span>
+              Play
+            </button>
+          </div>
+        </figure>
+        <figure class="hero-figure">
+          <div class="hero-frame">
+            <img data-src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" decoding="async">
+          </div>
+          <figcaption>By the fire · about a minute · no photos of your child</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section sample-block" id="hear">
+      <div class="wrap">
+        <h2>Hear Santa</h2>
+        <figure class="player hear-player">
+          <div class="player-frame hear-frame">
             <video
               id="hear-santa"
               controls
@@ -88,16 +113,9 @@
             </button>
           </div>
           <figcaption>
-            <h2>Hear Santa</h2>
             <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
             <p>A quick hello from Santa. The film you order says your child's name, a good deed and a wish.</p>
           </figcaption>
-        </figure>
-        <figure class="hero-figure">
-          <div class="hero-frame">
-            <img data-src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" decoding="async">
-          </div>
-          <figcaption>By the fire · about a minute · no photos of your child</figcaption>
         </figure>
       </div>
     </section>

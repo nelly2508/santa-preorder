@@ -473,6 +473,40 @@ p + p {
   filter: none;
 }
 
+.btn.btn-see {
+  margin-top: 0.45rem;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid rgba(36, 22, 15, 0.28);
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.btn.btn-see:hover,
+.btn.btn-see:focus-visible {
+  filter: none;
+  background: transparent;
+  color: var(--ink);
+  border-color: rgba(36, 22, 15, 0.45);
+}
+
+.delivery-promise {
+  margin: 0.4rem 0 0;
+  color: var(--pine);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.sample-block {
+  padding-top: 1.35rem;
+  padding-bottom: 2.4rem;
+}
+
+.sample-block .hear-player {
+  margin-top: 0.85rem;
+}
+
 .player-frame {
   position: relative;
   background: #fff;
@@ -621,6 +655,8 @@ p + p {
     grid-template-areas:
       "video price"
       "video cta"
+      "promise promise"
+      "example example"
       "trust trust"
       "intro intro"
       "quote quote"
@@ -668,6 +704,16 @@ p + p {
   }
 
   body[data-market="us"] .hero-cta-detail { display: none; }
+
+  body[data-market="us"] .delivery-promise {
+    grid-area: promise;
+    margin: 0.2rem 0 0;
+  }
+
+  body[data-market="us"] #see-example {
+    grid-area: example;
+    margin-top: 0.35rem;
+  }
 
   body[data-market="us"] .trust-line {
     grid-area: trust;
@@ -1942,6 +1988,7 @@ body[data-orders-closed] .hero-price-line,
 body[data-orders-closed] .hero-price,
 body[data-orders-closed] .hero-next,
 body[data-orders-closed] .hero-cta-detail,
+body[data-orders-closed] .delivery-promise,
 body[data-orders-closed] .trust-line,
 body[data-orders-closed] .parent-quote,
 body[data-orders-closed] .reassurance {

@@ -15,7 +15,7 @@ const { sessionForPaidOrder } = require("../lib/quote");
 const IP_GB = "81.2.69.142";
 const IP_US = "8.8.8.8";
 const IP_GB6 = "2a00:1450:4009:815::200e";
-const COUNTS = ["view", "order_tap", "checkout_start", "checkout_complete"];
+const COUNTS = ["view", "order_tap", "example_tap", "checkout_start", "checkout_complete"];
 
 const EARLY_BUNDLE = "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00";
 
@@ -138,9 +138,10 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
   const port = await listen(server);
   const origin = `http://127.0.0.1:${port}`;
   try {
-    const home = await fetch(`${origin}/?utm_source=meta&utm_campaign=xmas&utm_content=video`);
+    const home = await fetch(`${origin}/?utm_source=meta&utm_campaign=xmas&utm_content=video&variant=explainer`);
     assert.strictEqual(home.status, 200);
-    assert.strictEqual(home.headers.get("set-cookie"), null);
+    assert.match(home.headers.get("set-cookie") || "", /^ssmn_variant=explainer;/);
+    assert.doesNotMatch(home.headers.get("set-cookie") || "", /parent@|utm_source/);
     const html = await home.text();
     assert.match(html, /data-price="bundle">£16\.99</);
     assert.ok(html.indexOf('id="hero-order"') < html.indexOf('id="hear-santa"'));
@@ -153,6 +154,7 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
         utm_source: "meta",
         utm_campaign: "xmas",
         utm_content: "video",
+        variant: "explainer",
         email: "parent@example.com",
       }),
     });
@@ -173,13 +175,14 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     });
     assert.strictEqual(foreign.status, 400);
 
-    const pay = await fetch(`${origin}/order/pay?package=magicBundle&siblings=2&utm_source=meta&utm_campaign=xmas&utm_content=video`, {
+    const pay = await fetch(`${origin}/order/pay?package=magicBundle&siblings=2&utm_source=meta&utm_campaign=xmas&utm_content=video&variant=explainer`, {
       redirect: "manual",
     });
     assert.strictEqual(pay.status, 302);
     assert.strictEqual(pay.headers.get("location"), "https://checkout.stripe.com/c/pay/cs_test_created1");
     const params = stripe.created[0];
-    assert.strictEqual(params.cancel_url, `${origin}/?package=magicBundle&siblings=2&utm_source=meta&utm_campaign=xmas&utm_content=video#checkout`);
+    assert.strictEqual(params.cancel_url, `${origin}/?package=magicBundle&siblings=2&utm_source=meta&utm_campaign=xmas&utm_content=video&variant=explainer#checkout`);
+    assert.strictEqual(params.metadata.variant, "explainer");
     assert.strictEqual(params.success_url, `${origin}/order/continue?session_id={CHECKOUT_SESSION_ID}`);
     assert.strictEqual(params.line_items[0].price, "price_bundle");
 
@@ -190,7 +193,10 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     });
     assert.strictEqual(report.status, 200);
     const body = await report.json();
-    assert.deepStrictEqual(body.total, { view: 1, order_tap: 1, checkout_start: 1, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total, { view: 1, order_tap: 1, example_tap: 0, checkout_start: 1, checkout_complete: 0 });
+    assert.strictEqual(body.variants.explainer.view, 1);
+    assert.strictEqual(body.variants.explainer.order_tap, 1);
+    assert.strictEqual(body.variants.parents.view, 0);
     const row = body.buckets.find((item) => item.utm_content === "video");
     assert.strictEqual(row.utm_source, "meta");
     assert.strictEqual(row.view, 1);
@@ -275,7 +281,7 @@ test("a paid GBP checkout is counted once", async () => {
     assert.strictEqual(uk.checkout_complete, 1);
     assert.strictEqual(uk.country, "XX");
     assert.strictEqual(us.checkout_complete, 1);
-    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 });
   } finally {
     await close(server);
   }
@@ -286,7 +292,7 @@ function forwarded(ip, extra) {
 }
 
 function sumCounts(rows) {
-  const total = { view: 0, order_tap: 0, checkout_start: 0, checkout_complete: 0 };
+  const total = { view: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 };
   for (const row of rows) {
     for (const event of COUNTS) total[event] += row[event];
   }
@@ -340,8 +346,8 @@ test("old funnel files stay in the total and count as country unknown", async ()
     funnel.record("view", { utm_source: "meta", utm_campaign: "xmas", utm_content: "video", country: " gb " });
     funnel.record("order_tap", { utm_source: "meta", utm_campaign: "xmas", utm_content: "video", country: "UK" });
     const body = funnel.snapshot();
-    assert.deepStrictEqual(body.total, { view: 6, order_tap: 2, checkout_start: 1, checkout_complete: 0 });
-    assert.deepStrictEqual(body.total_uk, { view: 1, order_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total, { view: 6, order_tap: 2, example_tap: 0, checkout_start: 1, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total_uk, { view: 1, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 });
     const legacy = body.buckets.find((row) => row.country === "XX" && row.utm_content === "video");
     assert.strictEqual(legacy.view, 5);
     assert.strictEqual(legacy.order_tap, 1);
@@ -438,7 +444,7 @@ test("the report shows UK totals beside the overall total and does not keep the 
   });
   const port = await listen(server);
   const origin = `http://127.0.0.1:${port}`;
-  const page = `${origin}/?utm_source=meta&utm_campaign=xmas&utm_content=video&country=GB`;
+  const page = `${origin}/?utm_source=meta&utm_campaign=xmas&utm_content=video&country=GB&variant=explainer`;
   try {
     const home = await fetch(page, { headers: forwarded(IP_GB) });
     assert.strictEqual(home.status, 200);
@@ -475,6 +481,7 @@ test("the report shows UK totals beside the overall total and does not keep the 
         utm_source: "meta",
         utm_campaign: "xmas",
         utm_content: "video",
+        variant: "explainer",
         country: "US",
         email: "parent@example.com",
       }),
@@ -489,17 +496,21 @@ test("the report shows UK totals beside the overall total and does not keep the 
     assert.deepStrictEqual(body.total_uk, {
       view: gb.view,
       order_tap: gb.order_tap,
+      example_tap: gb.example_tap,
       checkout_start: gb.checkout_start,
       checkout_complete: gb.checkout_complete,
     });
     const videoGb = body.buckets.find((row) => row.utm_content === "video" && row.country === "GB");
     const videoUs = body.buckets.find((row) => row.utm_content === "video" && row.country === "US");
-    const videoXx = body.buckets.find((row) => row.utm_content === "video" && row.country === "XX");
+    const videoXxViews = body.buckets
+      .filter((row) => row.utm_content === "video" && row.country === "XX")
+      .reduce((sum, row) => sum + row.view, 0);
     assert.strictEqual(videoGb.view, 1);
     assert.strictEqual(videoGb.order_tap, 1);
+    assert.strictEqual(videoGb.variant, "explainer");
     assert.strictEqual(videoUs.view, 1);
     assert.strictEqual(videoUs.order_tap, 0);
-    assert.strictEqual(videoXx.view, 5);
+    assert.strictEqual(videoXxViews, 5);
     assert.strictEqual(body.buckets.find((row) => row.utm_content === "first").country, "GB");
     assert.strictEqual(body.buckets.find((row) => row.utm_content === "real").country, "GB");
     assert.strictEqual(body.buckets.find((row) => row.utm_content === "fallback").country, "US");
