@@ -133,7 +133,9 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /class="us-order-bar"/);
     assert.match(html, /us-order-bar[\s\S]*data-pay="magicBundle"/);
     assert.match(html, /Delivered within 48 hours of your order\. Personalized with your child's name\. Secure checkout\./);
-    assert.doesNotMatch(html, /<video[^>]*\bmuted\b/);
+    assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bmuted\b/);
+    assert.match(html, /id="hero-film"[^>]*\bmuted\b/);
+    assert.match(html, /us-explainer-4x5-v7\.mp4|exit-sales-v4\.mp4/);
     assert.match(html, /Do Not Sell or Share My Personal Information/);
     assert.match(html, /do not collect personal information from children/);
     assert.doesNotMatch(html, /£/);
@@ -191,28 +193,28 @@ test("US funnel counts stay out of the UK totals", async () => {
   const port = await listen(server);
   const origin = `http://127.0.0.1:${port}`;
   try {
-    assert.strictEqual((await fetch(`${origin}/?utm_source=meta&utm_campaign=xmas&utm_content=uk`)).status, 200);
-    assert.strictEqual((await fetch(`${origin}/us?utm_source=meta&utm_campaign=xmas&utm_content=usa`)).status, 200);
+    assert.strictEqual((await fetch(`${origin}/?utm_source=meta&utm_campaign=xmas&utm_content=uk&variant=explainer`)).status, 200);
+    assert.strictEqual((await fetch(`${origin}/us?utm_source=meta&utm_campaign=xmas&utm_content=usa&variant=parents`)).status, 200);
     const prefetch = await fetch(`${origin}/us?utm_source=pre`, { headers: { Purpose: "prefetch" } });
     assert.strictEqual(prefetch.status, 200);
 
     const ukTap = await fetch(`${origin}/api/funnel`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: origin },
-      body: JSON.stringify({ event: "order_tap", utm_source: "meta", utm_content: "uk", market: "uk" }),
+      body: JSON.stringify({ event: "order_tap", utm_source: "meta", utm_content: "uk", market: "uk", variant: "explainer" }),
     });
     assert.strictEqual(ukTap.status, 204);
     const usTap = await fetch(`${origin}/api/funnel`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: origin },
-      body: JSON.stringify({ event: "order_tap", utm_source: "meta", utm_content: "usa", market: "us", email: "parent@example.com" }),
+      body: JSON.stringify({ event: "order_tap", utm_source: "meta", utm_content: "usa", market: "us", variant: "parents", email: "parent@example.com" }),
     });
     assert.strictEqual(usTap.status, 204);
 
     const created = await fetch(`${origin}/api/paypal/orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: origin },
-      body: JSON.stringify({ package: "magicBundle", market: "us", utm_source: "meta", utm_content: "usa", amount: "0.01" }),
+      body: JSON.stringify({ package: "magicBundle", market: "us", utm_source: "meta", utm_content: "usa", variant: "parents", amount: "0.01" }),
     });
     assert.strictEqual(created.status, 201);
     assert.strictEqual(state.created.purchase_units[0].amount.currency_code, "USD");
@@ -230,17 +232,18 @@ test("US funnel counts stay out of the UK totals", async () => {
 
     const report = await fetch(`${origin}/admin/funnel`, { headers: { Authorization: `Bearer ${secret}` } });
     const body = await report.json();
-    const ukPage = { view: 1, order_tap: 1, checkout_start: 0, checkout_complete: 0 };
-    const usPage = { view: 1, order_tap: 1, checkout_start: 1, checkout_complete: 1 };
+    const ukPage = { view: 1, order_tap: 1, example_tap: 0, checkout_start: 0, checkout_complete: 0 };
+    const usPage = { view: 1, order_tap: 1, example_tap: 0, checkout_start: 1, checkout_complete: 1 };
     assert.deepStrictEqual(body.markets.uk, ukPage);
     assert.deepStrictEqual(body.markets.us, usPage);
-    assert.deepStrictEqual(body.total, { view: 2, order_tap: 2, checkout_start: 1, checkout_complete: 1 });
-    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.deepStrictEqual(body.variants.parents, usPage);
+    assert.deepStrictEqual(body.total, { view: 2, order_tap: 2, example_tap: 0, checkout_start: 1, checkout_complete: 1 });
+    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 });
     assert.ok(Array.isArray(body.countries));
     assert.strictEqual(body.countries.find((row) => row.country === "GB"), undefined);
     const unknown = body.countries.find((row) => row.country === "XX");
     assert.deepStrictEqual(
-      { view: unknown.view, order_tap: unknown.order_tap, checkout_start: unknown.checkout_start, checkout_complete: unknown.checkout_complete },
+      { view: unknown.view, order_tap: unknown.order_tap, example_tap: unknown.example_tap, checkout_start: unknown.checkout_start, checkout_complete: unknown.checkout_complete },
       body.total
     );
     const usRow = body.buckets.find((item) => item.utm_content === "usa");

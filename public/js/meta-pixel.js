@@ -133,6 +133,10 @@
       })(window, document, "clarity", "script", "z5hnjy7wjx");
     }
     window.clarity("consent");
+    var shown = document.body && document.body.getAttribute("data-variant");
+    if (shown === "explainer" || shown === "parents") {
+      try { window.clarity("set", "variant", shown); } catch (error) { /* optional */ }
+    }
   }
 
   function load(done) {

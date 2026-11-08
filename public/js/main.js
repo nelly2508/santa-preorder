@@ -129,7 +129,7 @@
   });
 
   if (!ordersClosed) setupCheckout();
-  setupSampleVideo();
+  setupFilms();
   setupDeferredImages();
   setupEnlarge();
 
@@ -358,6 +358,7 @@
                 utm_campaign: utm.utm_campaign,
                 utm_content: utm.utm_content,
                 market: marketUs ? "us" : "uk",
+                variant: pageVariant(),
               }),
             }).then(async (res) => {
               const payload = await res.json().catch(() => ({}));
@@ -423,6 +424,7 @@
           siblings,
           utm,
           market: marketUs ? "us" : "uk",
+          variant: pageVariant(),
         })
         : `package=${encodeURIComponent(picked.key)}`;
       continueLink.setAttribute("aria-disabled", "false");
@@ -501,6 +503,21 @@
     if (resume.packageKey || resume.siblings) scrollToCheckout();
   }
 
+  function pageVariant() {
+    const name = document.body.getAttribute("data-variant") || "";
+    return name === "explainer" || name === "parents" ? name : "";
+  }
+
+  function tagClarity() {
+    const variant = pageVariant();
+    if (!variant || typeof window.clarity !== "function") return;
+    try {
+      window.clarity("set", "variant", variant);
+    } catch (error) {
+      // Clarity is optional. The film still plays.
+    }
+  }
+
   function recordFunnel(eventName) {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -510,6 +527,7 @@
         utm_campaign: params.get("utm_campaign") || "",
         utm_content: params.get("utm_content") || "",
         market: document.body.getAttribute("data-market") === "us" ? "us" : "uk",
+        variant: pageVariant(),
       });
       fetch("/api/funnel", {
         method: "POST",
@@ -524,10 +542,8 @@
     }
   }
 
-  function setupSampleVideo() {
-    const video = document.getElementById("hear-santa");
-    const button = document.getElementById("sample-play");
-    if (!video || !button) return;
+  function armPlayer(video, button) {
+    if (!video || !button) return { start() {} };
     let armed = false;
 
     function showPoster() {
@@ -579,6 +595,48 @@
     video.addEventListener("play", () => {
       button.hidden = true;
     });
+    return { start };
+  }
+
+  function armHero(video, button) {
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    function start() {
+      if (button) button.hidden = true;
+      const pending = video.play();
+      if (pending && typeof pending.catch === "function") {
+        pending.catch(() => {
+          if (button) button.hidden = false;
+        });
+      }
+    }
+    if (button) {
+      button.addEventListener("click", start);
+      video.addEventListener("play", () => {
+        button.hidden = true;
+      });
+    }
+    if (video.autoplay || video.hasAttribute("autoplay")) start();
+  }
+
+  function setupFilms() {
+    const sample = armPlayer(document.getElementById("hear-santa"), document.getElementById("sample-play"));
+    armHero(document.getElementById("hero-film"), document.getElementById("hero-play"));
+    const see = document.getElementById("see-example");
+    if (see) {
+      see.addEventListener("click", () => {
+        recordFunnel("example_tap");
+        const hear = document.getElementById("hear");
+        if (hear && typeof hear.scrollIntoView === "function") {
+          const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          hear.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+        }
+        sample.start();
+      });
+    }
+    tagClarity();
   }
 
   function setupDeferredImages() {

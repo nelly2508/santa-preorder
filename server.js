@@ -11,6 +11,7 @@ const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = req
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
+const { COOKIE, applyHeroFilm, normaliseVariant, readCookie, resolveVariant, variantCookie } = require("./lib/hero-variant");
 const { isPaypalOrderId, createOrderStore } = require("./lib/paypal-orders");
 const { sessionForPaidOrder } = require("./lib/quote");
 const crypto = require("crypto");
@@ -363,9 +364,17 @@ function salesMarket(pathname) {
   return "";
 }
 
-function decorateSalesHtml(html, env, closed, nonce) {
+function cookieIsSecure(req) {
+  const proto = String((req && req.headers && req.headers["x-forwarded-proto"]) || "").split(",")[0].trim().toLowerCase();
+  return proto === "https";
+}
+
+function decorateSalesHtml(html, env, closed, nonce, variant, market) {
   const nonceAttr = nonce ? ` data-csp-nonce="${escapeHtml(nonce)}"` : "";
-  let next = html.replace("<body data-sales-page", `<body data-sales-page${paymentAttributes(env)}${nonceAttr}`);
+  const shown = normaliseVariant(variant);
+  const variantAttr = shown ? ` data-variant="${shown}"` : "";
+  let next = applyHeroFilm(html, shown || "explainer", market);
+  next = next.replace("<body data-sales-page", `<body data-sales-page${variantAttr}${paymentAttributes(env)}${nonceAttr}`);
   if (paymentProvider(env) === "stripe") {
     next = next.replace(
       'id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card<',
@@ -568,19 +577,21 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
       sendJson(res, 400, { error: "bad request" }, req.method);
       return;
     }
-    if (!body || body.event !== "order_tap") {
+    const event = body && (body.event === "order_tap" || body.event === "example_tap") ? body.event : "";
+    if (!event) {
       sendJson(res, 400, { error: "bad request" }, req.method);
       return;
     }
     try {
       // Country comes from the visitor address, never from the posted body.
-      // Market is only which page the button was on.
-      funnel.record("order_tap", {
+      // Market is only which page the button was on. Variant is only the film shown.
+      funnel.record(event, {
         utm_source: body.utm_source,
         utm_campaign: body.utm_campaign,
         utm_content: body.utm_content,
         country: countryOf(req),
         market: body.market === "us" ? "us" : "uk",
+        variant: body.variant,
       });
     } catch {
       // A missed count must not fail the tap.
@@ -654,6 +665,7 @@ function createServer(options = {}) {
     try {
       funnel.record("checkout_start", {
         ...(row.utm || {}),
+        variant: row.variant,
         country: row.country,
         market: row.quote && row.quote.market,
       });
@@ -677,6 +689,7 @@ function createServer(options = {}) {
       createdSeconds: Math.floor(Number(row.createdMs || Date.now()) / 1000),
       utm: row.utm,
       country: row.country,
+      variant: row.variant,
       metadata: row.metadata,
     });
     return funnelFromSession(session);
@@ -765,15 +778,22 @@ function createServer(options = {}) {
     }
 
     const pageMarket = salesMarket(url.pathname);
-    if (req.method === "GET" && pageMarket) {
+    let pageVariant = "";
+    if ((req.method === "GET" || req.method === "HEAD") && pageMarket) {
       const purpose = String(req.headers["sec-purpose"] || req.headers.purpose || "");
-      if (!/prefetch/i.test(purpose)) {
+      const prefetch = /prefetch/i.test(purpose);
+      pageVariant = resolveVariant({
+        query: url.searchParams.get("variant"),
+        cookie: readCookie(req.headers.cookie, COOKIE),
+      });
+      if (!prefetch) {
         try {
           if (pageMarket === "uk") visits.record(url);
           funnel.record("view", {
             ...partsFromUrl(url),
             country: visitorCountry(req),
             market: pageMarket,
+            variant: pageVariant,
           });
         } catch {
           // A missed count must not stop the page.
@@ -983,6 +1003,7 @@ function createServer(options = {}) {
         lateOrdersFrom: config.lateOrdersFrom,
       });
       const market = url.searchParams.get("market") === "us" ? "us" : "uk";
+      const variant = normaliseVariant(url.searchParams.get("variant"));
       const packageKey = url.searchParams.get("package") === "singleVideo" ? "singleVideo" : "magicBundle";
       const choice = packageChoice(packageKey, {
         early: phase === "early",
@@ -1021,6 +1042,7 @@ function createServer(options = {}) {
             utm,
             country,
             market,
+            variant,
             siblings: clampSiblings(url.searchParams.get("siblings")),
             packageKey: choice.key,
             paymentLinkUrl: choice.href,
@@ -1029,7 +1051,7 @@ function createServer(options = {}) {
           if (created && created.created && created.url) {
             location = created.url;
             try {
-              funnel.record("checkout_start", { ...utm, country, market });
+              funnel.record("checkout_start", { ...utm, country, market, variant });
             } catch {
               // A missed count must not stop checkout.
             }
@@ -1056,10 +1078,13 @@ function createServer(options = {}) {
         const closed = !ordersOpen(serverNow(options));
         let html = buf.toString("utf8");
         if (pageMarket === "us") html = applyUsHtml(html, siteConfig().usd);
-        send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res)), {
+        const headers = {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",
-        }, req.method);
+        };
+        const baked = variantCookie(pageVariant, cookieIsSecure(req));
+        if (baked) headers["Set-Cookie"] = baked;
+        send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res), pageVariant, pageMarket), headers, req.method);
       });
       return;
     }

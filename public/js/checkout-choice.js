@@ -94,6 +94,7 @@
       if (value) params.set(key, value);
     }
     if (source.market === "us") params.set("market", "us");
+    if (source.variant === "explainer" || source.variant === "parents") params.set("variant", source.variant);
     return params.toString();
   }
 
