@@ -48,8 +48,17 @@ test("both sales pages keep the assigned film and move the sample below the orde
       const explainerHtml = await explainer.text();
       assert.match(explainer.headers.get("set-cookie") || "", /^ssmn_variant=explainer;/);
       assert.match(explainerHtml, /data-variant="explainer"/);
-      assert.match(explainerHtml, /id="hero-film"[\s\S]*?data-src="\/assets\/santa-preview-v3\.mp4"/);
-      assert.doesNotMatch(explainerHtml, /id="hero-film"[\s\S]*?exit-sales-v4/);
+      const explainerSrc = pathName === "/us"
+        ? "/assets/us-explainer-4x5-v7.mp4"
+        : "/assets/uk-explainer-4x5-v7.mp4";
+      const hero = explainerHtml.slice(explainerHtml.indexOf("<video id=\"hero-film\""), explainerHtml.indexOf("id=\"hero-play\""));
+      assert.match(hero, /autoplay/);
+      assert.match(hero, /\bmuted\b/);
+      assert.match(hero, /\bloop\b/);
+      assert.match(hero, /playsinline/);
+      assert.match(hero, new RegExp(`src="${explainerSrc.replace(/\./g, "\\.")}"`));
+      assert.match(hero, /poster="\/assets\/(?:uk|us)-explainer-4x5-v7-poster\.jpg"/);
+      assert.doesNotMatch(hero, /santa-preview|exit-sales/);
       assert.match(explainerHtml, new RegExp(DELIVERY.replace(/[.]/g, "\\.")));
       assert.match(explainerHtml, /id="see-example"[^>]*>See an example</);
       assert.ok(explainerHtml.indexOf('id="hero-order"') < explainerHtml.indexOf('id="hero-delivery"'));
@@ -65,7 +74,9 @@ test("both sales pages keep the assigned film and move the sample below the orde
       const parentsHtml = await parents.text();
       assert.match(parents.headers.get("set-cookie") || "", /^ssmn_variant=parents;/);
       assert.match(parentsHtml, /data-variant="parents"/);
-      assert.match(parentsHtml, /id="hero-film"[\s\S]*?data-src="\/assets\/exit-sales-v4\.mp4"/);
+      const parentsHero = parentsHtml.slice(parentsHtml.indexOf("<video id=\"hero-film\""), parentsHtml.indexOf("id=\"hero-play\""));
+      assert.match(parentsHero, /src="\/assets\/exit-sales-v4\.mp4"/);
+      assert.doesNotMatch(parentsHero, /explainer-4x5/);
       assert.match(parentsHtml, /id="hear-santa"[\s\S]*?data-src="\/assets\/santa-preview-v3\.mp4"/);
       assert.match(parentsHtml, /id="see-example"/);
     }
@@ -75,7 +86,7 @@ test("both sales pages keep the assigned film and move the sample below the orde
     });
     const stickyHtml = await sticky.text();
     assert.match(stickyHtml, /data-variant="parents"/);
-    assert.match(stickyHtml, /id="hero-film"[\s\S]*?exit-sales-v4\.mp4/);
+    assert.match(stickyHtml, /<video id="hero-film"[\s\S]*?src="\/assets\/exit-sales-v4\.mp4"/);
   } finally {
     await close(server);
   }

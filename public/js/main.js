@@ -598,9 +598,32 @@
     return { start };
   }
 
+  function armHero(video, button) {
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    function start() {
+      if (button) button.hidden = true;
+      const pending = video.play();
+      if (pending && typeof pending.catch === "function") {
+        pending.catch(() => {
+          if (button) button.hidden = false;
+        });
+      }
+    }
+    if (button) {
+      button.addEventListener("click", start);
+      video.addEventListener("play", () => {
+        button.hidden = true;
+      });
+    }
+    if (video.autoplay || video.hasAttribute("autoplay")) start();
+  }
+
   function setupFilms() {
     const sample = armPlayer(document.getElementById("hear-santa"), document.getElementById("sample-play"));
-    armPlayer(document.getElementById("hero-film"), document.getElementById("hero-play"));
+    armHero(document.getElementById("hero-film"), document.getElementById("hero-play"));
     const see = document.getElementById("see-example");
     if (see) {
       see.addEventListener("click", () => {

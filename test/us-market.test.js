@@ -133,7 +133,9 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /class="us-order-bar"/);
     assert.match(html, /us-order-bar[\s\S]*data-pay="magicBundle"/);
     assert.match(html, /Delivered within 48 hours of your order\. Personalized with your child's name\. Secure checkout\./);
-    assert.doesNotMatch(html, /<video[^>]*\bmuted\b/);
+    assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bmuted\b/);
+    assert.match(html, /id="hero-film"[^>]*\bmuted\b/);
+    assert.match(html, /us-explainer-4x5-v7\.mp4|exit-sales-v4\.mp4/);
     assert.match(html, /Do Not Sell or Share My Personal Information/);
     assert.match(html, /do not collect personal information from children/);
     assert.doesNotMatch(html, /£/);

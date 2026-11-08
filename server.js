@@ -369,11 +369,11 @@ function cookieIsSecure(req) {
   return proto === "https";
 }
 
-function decorateSalesHtml(html, env, closed, nonce, variant) {
+function decorateSalesHtml(html, env, closed, nonce, variant, market) {
   const nonceAttr = nonce ? ` data-csp-nonce="${escapeHtml(nonce)}"` : "";
   const shown = normaliseVariant(variant);
   const variantAttr = shown ? ` data-variant="${shown}"` : "";
-  let next = applyHeroFilm(html, shown || "explainer");
+  let next = applyHeroFilm(html, shown || "explainer", market);
   next = next.replace("<body data-sales-page", `<body data-sales-page${variantAttr}${paymentAttributes(env)}${nonceAttr}`);
   if (paymentProvider(env) === "stripe") {
     next = next.replace(
@@ -1084,7 +1084,7 @@ function createServer(options = {}) {
         };
         const baked = variantCookie(pageVariant, cookieIsSecure(req));
         if (baked) headers["Set-Cookie"] = baked;
-        send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res), pageVariant), headers, req.method);
+        send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res), pageVariant, pageMarket), headers, req.method);
       });
       return;
     }

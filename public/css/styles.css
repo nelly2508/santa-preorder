@@ -829,6 +829,19 @@ body[data-orders-closed] .us-order-bar { display: none !important; }
   object-fit: contain;
 }
 
+.hero-film .hear-frame {
+  aspect-ratio: 4 / 5;
+}
+
+.hero-film .hear-frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: #1a0e0a;
+}
+
 .gifts {
   list-style: none;
   margin: 1.5rem 0 0;
