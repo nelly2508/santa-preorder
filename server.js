@@ -577,7 +577,10 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
       sendJson(res, 400, { error: "bad request" }, req.method);
       return;
     }
-    const event = body && (body.event === "order_tap" || body.event === "example_tap") ? body.event : "";
+    // choice_open is the gift sheet. order_tap stays "they picked a product".
+    // view, checkout_start and checkout_complete are recorded on the server.
+    const clientEvents = new Set(["choice_open", "order_tap", "example_tap"]);
+    const event = body && clientEvents.has(body.event) ? body.event : "";
     if (!event) {
       sendJson(res, 400, { error: "bad request" }, req.method);
       return;
@@ -585,6 +588,7 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
     try {
       // Country comes from the visitor address, never from the posted body.
       // Market is only which page the button was on. Variant is only the film shown.
+      // package is only singleVideo or magicBundle, and only meaningful on order_tap.
       funnel.record(event, {
         utm_source: body.utm_source,
         utm_campaign: body.utm_campaign,
@@ -592,6 +596,7 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
         country: countryOf(req),
         market: body.market === "us" ? "us" : "uk",
         variant: body.variant,
+        package: body.package,
       });
     } catch {
       // A missed count must not fail the tap.

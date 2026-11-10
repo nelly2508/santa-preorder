@@ -15,7 +15,8 @@ const { sessionForPaidOrder } = require("../lib/quote");
 const IP_GB = "81.2.69.142";
 const IP_US = "8.8.8.8";
 const IP_GB6 = "2a00:1450:4009:815::200e";
-const COUNTS = ["view", "order_tap", "example_tap", "checkout_start", "checkout_complete"];
+const COUNTS = ["view", "choice_open", "order_tap", "example_tap", "checkout_start", "checkout_complete"];
+const EMPTY_PACKAGES = { singleVideo: 0, magicBundle: 0 };
 
 const EARLY_BUNDLE = "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00";
 
@@ -193,7 +194,15 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     });
     assert.strictEqual(report.status, 200);
     const body = await report.json();
-    assert.deepStrictEqual(body.total, { view: 1, order_tap: 1, example_tap: 0, checkout_start: 1, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total, {
+      view: 1,
+      choice_open: 0,
+      order_tap: 1,
+      example_tap: 0,
+      checkout_start: 1,
+      checkout_complete: 0,
+      packages: EMPTY_PACKAGES,
+    });
     assert.strictEqual(body.variants.explainer.view, 1);
     assert.strictEqual(body.variants.explainer.order_tap, 1);
     assert.strictEqual(body.variants.parents.view, 0);
@@ -281,7 +290,15 @@ test("a paid GBP checkout is counted once", async () => {
     assert.strictEqual(uk.checkout_complete, 1);
     assert.strictEqual(uk.country, "XX");
     assert.strictEqual(us.checkout_complete, 1);
-    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total_uk, {
+      view: 0,
+      choice_open: 0,
+      order_tap: 0,
+      example_tap: 0,
+      checkout_start: 0,
+      checkout_complete: 0,
+      packages: EMPTY_PACKAGES,
+    });
   } finally {
     await close(server);
   }
@@ -292,9 +309,20 @@ function forwarded(ip, extra) {
 }
 
 function sumCounts(rows) {
-  const total = { view: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 };
+  const total = {
+    view: 0,
+    choice_open: 0,
+    order_tap: 0,
+    example_tap: 0,
+    checkout_start: 0,
+    checkout_complete: 0,
+    packages: { singleVideo: 0, magicBundle: 0 },
+  };
   for (const row of rows) {
-    for (const event of COUNTS) total[event] += row[event];
+    for (const event of COUNTS) total[event] += row[event] || 0;
+    const packages = row.packages || {};
+    total.packages.singleVideo += packages.singleVideo || 0;
+    total.packages.magicBundle += packages.magicBundle || 0;
   }
   return total;
 }
@@ -346,8 +374,24 @@ test("old funnel files stay in the total and count as country unknown", async ()
     funnel.record("view", { utm_source: "meta", utm_campaign: "xmas", utm_content: "video", country: " gb " });
     funnel.record("order_tap", { utm_source: "meta", utm_campaign: "xmas", utm_content: "video", country: "UK" });
     const body = funnel.snapshot();
-    assert.deepStrictEqual(body.total, { view: 6, order_tap: 2, example_tap: 0, checkout_start: 1, checkout_complete: 0 });
-    assert.deepStrictEqual(body.total_uk, { view: 1, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total, {
+      view: 6,
+      choice_open: 0,
+      order_tap: 2,
+      example_tap: 0,
+      checkout_start: 1,
+      checkout_complete: 0,
+      packages: EMPTY_PACKAGES,
+    });
+    assert.deepStrictEqual(body.total_uk, {
+      view: 1,
+      choice_open: 0,
+      order_tap: 0,
+      example_tap: 0,
+      checkout_start: 0,
+      checkout_complete: 0,
+      packages: EMPTY_PACKAGES,
+    });
     const legacy = body.buckets.find((row) => row.country === "XX" && row.utm_content === "video");
     assert.strictEqual(legacy.view, 5);
     assert.strictEqual(legacy.order_tap, 1);
@@ -495,10 +539,12 @@ test("the report shows UK totals beside the overall total and does not keep the 
     const gb = body.countries.find((row) => row.country === "GB");
     assert.deepStrictEqual(body.total_uk, {
       view: gb.view,
+      choice_open: gb.choice_open,
       order_tap: gb.order_tap,
       example_tap: gb.example_tap,
       checkout_start: gb.checkout_start,
       checkout_complete: gb.checkout_complete,
+      packages: gb.packages,
     });
     const videoGb = body.buckets.find((row) => row.utm_content === "video" && row.country === "GB");
     const videoUs = body.buckets.find((row) => row.utm_content === "video" && row.country === "US");
@@ -817,6 +863,78 @@ test("paypal checkout stores the country on the order and completion reuses it",
     assert.ok(!logs.join("\n").includes(IP_GB));
     assert.ok(!logs.join("\n").includes(IP_US));
     assert.ok(!logs.join("\n").includes("paypal-secret"));
+  } finally {
+    await close(server);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("choice_open is counted separately, and order_tap keeps the package", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "santa-funnel-choice-"));
+  const filePath = path.join(dir, "funnel-counts.json");
+  const secret = "funnel-test-secret";
+  const server = createServer({
+    log() {},
+    now: "2026-11-10T12:00:00Z",
+    visitsFile: null,
+    funnelFile: filePath,
+    env: { VISITS_SECRET: secret },
+  });
+  const port = await listen(server);
+  const origin = `http://127.0.0.1:${port}`;
+  try {
+    const home = await fetch(`${origin}/?utm_source=meta&utm_content=choice&variant=parents`);
+    assert.strictEqual(home.status, 200);
+    const post = (body) => fetch(`${origin}/api/funnel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: origin },
+      body: JSON.stringify(body),
+    });
+    assert.strictEqual((await post({
+      event: "choice_open",
+      utm_source: "meta",
+      utm_content: "choice",
+      variant: "parents",
+      package: "magicBundle",
+    })).status, 204);
+    assert.strictEqual((await post({
+      event: "order_tap",
+      utm_source: "meta",
+      utm_content: "choice",
+      variant: "parents",
+      package: "singleVideo",
+    })).status, 204);
+    assert.strictEqual((await post({
+      event: "order_tap",
+      utm_source: "meta",
+      utm_content: "choice",
+      variant: "parents",
+      package: "magicBundle",
+    })).status, 204);
+    assert.strictEqual((await post({
+      event: "order_tap",
+      utm_source: "meta",
+      utm_content: "choice",
+      variant: "parents",
+      package: "https://evil.example",
+    })).status, 204);
+    assert.strictEqual((await post({ event: "purchase", package: "singleVideo" })).status, 400);
+
+    const report = await fetch(`${origin}/admin/funnel`, { headers: { Authorization: `Bearer ${secret}` } });
+    assert.strictEqual(report.status, 200);
+    const body = await report.json();
+    assert.strictEqual(body.total.view, 1);
+    assert.strictEqual(body.total.choice_open, 1);
+    assert.strictEqual(body.total.order_tap, 3);
+    assert.strictEqual(body.total.checkout_start, 0);
+    assert.strictEqual(body.total.checkout_complete, 0);
+    assert.deepStrictEqual(body.total.packages, { singleVideo: 1, magicBundle: 1 });
+    const row = body.buckets.find((item) => item.utm_content === "choice");
+    assert.strictEqual(row.choice_open, 1);
+    assert.strictEqual(row.order_tap, 3);
+    assert.deepStrictEqual(row.packages, { singleVideo: 1, magicBundle: 1 });
+    assert.strictEqual(row.package, undefined);
+    assert.doesNotMatch(JSON.stringify(body), /evil\.example/);
   } finally {
     await close(server);
     fs.rmSync(dir, { recursive: true, force: true });

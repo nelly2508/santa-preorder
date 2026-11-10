@@ -131,7 +131,14 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /santa-preview-v3\.mp4/);
     assert.match(html, /poster="\/assets\/santa-preview-poster-lite\.webp"/);
     assert.match(html, /class="us-order-bar"/);
-    assert.match(html, /us-order-bar[\s\S]*data-pay="magicBundle"/);
+    const bar = html.slice(html.indexOf('class="us-order-bar"'), html.indexOf("js/config.js"));
+    assert.match(bar, /data-choice-open/);
+    assert.match(bar, />Order now</);
+    assert.doesNotMatch(bar, /data-pay/);
+    assert.match(html, /id="hero-order"[^>]*data-choice-open[^>]*>Order now</);
+    assert.match(html, /From/);
+    assert.match(html, /id="choice-sheet"/);
+    assert.match(html, /Most popular/);
     assert.match(html, /Delivered within 48 hours of your order\. Personalized with your child's name\. Secure checkout\./);
     assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bmuted\b/);
     assert.match(html, /id="hero-film"[^>]*\bmuted\b/);
@@ -232,18 +239,27 @@ test("US funnel counts stay out of the UK totals", async () => {
 
     const report = await fetch(`${origin}/admin/funnel`, { headers: { Authorization: `Bearer ${secret}` } });
     const body = await report.json();
-    const ukPage = { view: 1, order_tap: 1, example_tap: 0, checkout_start: 0, checkout_complete: 0 };
-    const usPage = { view: 1, order_tap: 1, example_tap: 0, checkout_start: 1, checkout_complete: 1 };
+    const none = { singleVideo: 0, magicBundle: 0 };
+    const ukPage = { view: 1, choice_open: 0, order_tap: 1, example_tap: 0, checkout_start: 0, checkout_complete: 0, packages: none };
+    const usPage = { view: 1, choice_open: 0, order_tap: 1, example_tap: 0, checkout_start: 1, checkout_complete: 1, packages: none };
     assert.deepStrictEqual(body.markets.uk, ukPage);
     assert.deepStrictEqual(body.markets.us, usPage);
     assert.deepStrictEqual(body.variants.parents, usPage);
-    assert.deepStrictEqual(body.total, { view: 2, order_tap: 2, example_tap: 0, checkout_start: 1, checkout_complete: 1 });
-    assert.deepStrictEqual(body.total_uk, { view: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0 });
+    assert.deepStrictEqual(body.total, { view: 2, choice_open: 0, order_tap: 2, example_tap: 0, checkout_start: 1, checkout_complete: 1, packages: none });
+    assert.deepStrictEqual(body.total_uk, { view: 0, choice_open: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0, packages: none });
     assert.ok(Array.isArray(body.countries));
     assert.strictEqual(body.countries.find((row) => row.country === "GB"), undefined);
     const unknown = body.countries.find((row) => row.country === "XX");
     assert.deepStrictEqual(
-      { view: unknown.view, order_tap: unknown.order_tap, example_tap: unknown.example_tap, checkout_start: unknown.checkout_start, checkout_complete: unknown.checkout_complete },
+      {
+        view: unknown.view,
+        choice_open: unknown.choice_open,
+        order_tap: unknown.order_tap,
+        example_tap: unknown.example_tap,
+        checkout_start: unknown.checkout_start,
+        checkout_complete: unknown.checkout_complete,
+        packages: unknown.packages,
+      },
       body.total
     );
     const usRow = body.buckets.find((item) => item.utm_content === "usa");

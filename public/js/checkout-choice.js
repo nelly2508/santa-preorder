@@ -98,6 +98,73 @@
     return params.toString();
   }
 
+  function priceMinor(label) {
+    const match = String(label == null ? "" : label).replace(/,/g, "").match(/(\d+)(?:\.(\d{1,2}))?/);
+    if (!match) return null;
+    const whole = Number(match[1]);
+    const frac = Number((match[2] || "").padEnd(2, "0") || "0");
+    if (!Number.isFinite(whole) || !Number.isFinite(frac)) return null;
+    return whole * 100 + frac;
+  }
+
+  function moneySymbol(sample) {
+    const match = String(sample == null ? "" : sample).trim().match(/^[^\d-]+/);
+    return match ? match[0] : "£";
+  }
+
+  function formatMinor(minor, sample) {
+    const negative = minor < 0;
+    const abs = Math.abs(minor);
+    const major = Math.floor(abs / 100);
+    const frac = abs % 100;
+    const body = frac === 0 ? String(major) : `${major}.${String(frac).padStart(2, "0")}`;
+    return `${negative ? "-" : ""}${moneySymbol(sample)}${body}`;
+  }
+
+  // Cheapest live price, and the words that explain the bundle gap.
+  // A zero gap (US early bird, both $19.99) is "same price, more magic".
+  function choiceOffer(options) {
+    const source = options || {};
+    const prices = source.prices || {};
+    const late = !!source.late;
+    const early = !!source.early && !late;
+    const single = late ? prices.singleVideoLate : prices.singleVideo;
+    const bundle = late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull;
+    const singleMinor = priceMinor(single);
+    const bundleMinor = priceMinor(bundle);
+    const sleigh = prices.namedSleigh || "";
+    let from = single || bundle || "";
+    if (singleMinor != null && bundleMinor != null && bundleMinor < singleMinor) from = bundle;
+    const diff = singleMinor == null || bundleMinor == null ? null : bundleMinor - singleMinor;
+    const base = "The Magic bundle adds a letter, a Nice List certificate and a named sleigh video";
+    let difference = "";
+    let upsell = `${base}.`;
+    if (diff === 0) {
+      difference = sleigh
+        ? `Same price, more magic — the named sleigh alone is usually ${sleigh}.`
+        : "Same price, more magic.";
+      upsell = `${base} — same price, more magic.`;
+    } else if (diff != null && diff > 0) {
+      const more = formatMinor(diff, bundle || single);
+      difference = sleigh
+        ? `Just ${more} more — the named sleigh alone is usually ${sleigh}.`
+        : `Just ${more} more.`;
+      upsell = early
+        ? `${base} — just ${more} more during early bird.`
+        : `${base} — just ${more} more.`;
+    }
+    return {
+      from,
+      single: single || "",
+      bundle: bundle || "",
+      early,
+      late,
+      diff,
+      difference,
+      upsell,
+    };
+  }
+
   function packageChoice(key, options) {
     const prices = options.prices || {};
     const stripe = options.stripe || {};
@@ -136,6 +203,9 @@
     offerPhase,
     twoChildrenFor,
     packageChoice,
+    priceMinor,
+    formatMinor,
+    choiceOffer,
     clampSiblings,
     campaignPart,
     resumeOrder,

@@ -27,32 +27,31 @@
   const payCurrency = document.body.getAttribute("data-currency") || (marketUs ? "USD" : "GBP");
   const bundlePrice = late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull;
   const singlePrice = late ? prices.singleVideoLate : prices.singleVideo;
+  const offer = choiceApi && choiceApi.choiceOffer
+    ? choiceApi.choiceOffer({ early, late, prices })
+    : null;
 
-  const bundleLabels = {
-    bundle: early
-      ? `Order the Magic bundle — ${bundlePrice} early bird`
-      : `Order the Magic bundle — ${bundlePrice}`,
-    final: early
-      ? `Order now — ${bundlePrice} early bird`
-      : `Order now — ${bundlePrice}`,
-  };
+  const bundleLabel = early
+    ? `Order the Magic bundle — ${bundlePrice} early bird`
+    : `Order the Magic bundle — ${bundlePrice}`;
 
-  document.querySelectorAll("[data-pay]").forEach((link) => {
-    const label = link.getAttribute("data-label");
-    if (!label || !bundleLabels[label]) return;
-    if (link.id === "hero-order") {
-      const short = link.querySelector(".hero-cta-short");
-      if (short) short.textContent = `Order ${bundlePrice}`;
-      const detail = document.getElementById("hero-order-detail");
-      if (detail) detail.textContent = bundleLabels.bundle;
-      return;
-    }
-    link.textContent = bundleLabels[label];
+  document.querySelectorAll("[data-label='bundle']").forEach((link) => {
+    link.textContent = bundleLabel;
   });
 
-  document.querySelectorAll(".us-order-bar .hero-cta-short").forEach((short) => {
-    short.textContent = `Order ${bundlePrice}`;
+  document.querySelectorAll("#hero-order, #final-order, .us-order-bar [data-choice-open]").forEach((control) => {
+    control.textContent = "Order now";
   });
+
+  if (offer) {
+    document.querySelectorAll("[data-price='from']").forEach((el) => {
+      el.textContent = offer.from;
+    });
+    const upsell = document.getElementById("hero-upsell");
+    if (upsell && offer.upsell) upsell.textContent = offer.upsell;
+    const gap = document.getElementById("choice-difference");
+    if (gap) gap.textContent = offer.difference || "";
+  }
 
   document.querySelectorAll("[data-link='tally']").forEach((link) => {
     link.href = config.tallyOrderForm;
@@ -63,7 +62,7 @@
   });
 
   document.querySelectorAll("[data-pay='singleVideo']").forEach((link) => {
-    if (link.id === "pay-continue") return;
+    if (link.id === "pay-continue" || link.closest("#choice-sheet")) return;
     link.textContent = `Order the single video — ${singlePrice}`;
   });
 
@@ -128,7 +127,14 @@
     }
   });
 
-  if (!ordersClosed) setupCheckout();
+  let choiceDialog = null;
+  let choiceOpener = null;
+  let restoreChoiceFocus = true;
+
+  if (!ordersClosed) {
+    setupCheckout();
+    setupChoice();
+  }
   setupFilms();
   setupDeferredImages();
   setupEnlarge();
@@ -338,7 +344,7 @@
         paypal.Buttons({
           style: { layout: "vertical", shape: "rect", label: "paypal" },
           onClick: (data, actions) => {
-            recordFunnel("order_tap");
+            recordOrderTap();
             document.dispatchEvent(new Event("santa-pay"));
             if (window.fbq) window.fbq("track", "InitiateCheckout", { currency: payCurrency });
             return actions.resolve();
@@ -451,16 +457,23 @@
       });
     }
 
+    function recordOrderTap() {
+      recordFunnel("order_tap", { package: selectedKey });
+    }
+
     document.querySelectorAll("[data-pay]").forEach((link) => {
       if (link === continueLink) return;
       link.addEventListener("click", (event) => {
         event.preventDefault();
-        recordFunnel("order_tap");
         selectedKey = link.getAttribute("data-pay") === "singleVideo" ? "singleVideo" : "magicBundle";
+        recordOrderTap();
+        document.dispatchEvent(new Event("santa-pay"));
+        closeChoice({ restore: false });
         showSiblingExample(selectedKey);
         syncContinue(false);
         scrollToCheckout();
         if (!paypalMode) continueLink.focus();
+        else focusCheckout();
       });
     });
 
@@ -474,7 +487,7 @@
         event.preventDefault();
         return;
       }
-      recordFunnel("order_tap");
+      recordOrderTap();
     });
 
     if (addSibling) {
@@ -503,6 +516,84 @@
     if (resume.packageKey || resume.siblings) scrollToCheckout();
   }
 
+  function lockPage() {
+    const gap = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    document.body.style.paddingRight = gap > 0 ? `${gap}px` : "";
+  }
+
+  function unlockPage() {
+    document.body.style.overflow = "";
+    document.body.style.paddingRight = "";
+  }
+
+  function focusCheckout() {
+    const status = document.getElementById("chosen-package");
+    if (!status) return;
+    status.setAttribute("tabindex", "-1");
+    status.focus();
+  }
+
+  function closeChoice(options) {
+    restoreChoiceFocus = !(options && options.restore === false);
+    if (choiceDialog && choiceDialog.open) choiceDialog.close();
+  }
+
+  function openChoice(trigger) {
+    if (!choiceDialog || choiceDialog.open || ordersClosed) return;
+    choiceOpener = trigger || document.activeElement;
+    restoreChoiceFocus = true;
+    recordFunnel("choice_open");
+    lockPage();
+    choiceDialog.showModal();
+    choiceDialog.focus();
+  }
+
+  function setupChoice() {
+    choiceDialog = document.getElementById("choice-sheet");
+    if (!choiceDialog || typeof choiceDialog.showModal !== "function") return;
+
+    choiceDialog.addEventListener("close", () => {
+      unlockPage();
+      const back = choiceOpener;
+      choiceOpener = null;
+      if (restoreChoiceFocus && back && typeof back.focus === "function") back.focus();
+      restoreChoiceFocus = true;
+    });
+
+    choiceDialog.addEventListener("click", (event) => {
+      if (event.target === choiceDialog) choiceDialog.close();
+    });
+
+    choiceDialog.addEventListener("keydown", (event) => {
+      if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
+      const items = [...choiceDialog.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])")]
+        .filter((el) => el.getClientRects().length > 0);
+      if (!items.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const leavingBack = event.shiftKey && (active === first || active === choiceDialog || !choiceDialog.contains(active));
+      const leavingForward = !event.shiftKey && active === last;
+      if (!leavingBack && !leavingForward) return;
+      event.preventDefault();
+      (leavingBack ? last : first).focus();
+    });
+
+    const closeButton = document.getElementById("choice-close");
+    if (closeButton) closeButton.addEventListener("click", () => choiceDialog.close());
+
+    document.addEventListener("click", (event) => {
+      const opener = event.target && event.target.closest && event.target.closest("[data-choice-open]");
+      if (!opener || ordersClosed) return;
+      event.preventDefault();
+      openChoice(opener);
+    });
+  }
+
   function pageVariant() {
     const name = document.body.getAttribute("data-variant") || "";
     return name === "explainer" || name === "parents" ? name : "";
@@ -518,17 +609,20 @@
     }
   }
 
-  function recordFunnel(eventName) {
+  function recordFunnel(eventName, extra) {
     try {
       const params = new URLSearchParams(window.location.search);
-      const body = JSON.stringify({
+      const payload = {
         event: eventName,
         utm_source: params.get("utm_source") || "",
         utm_campaign: params.get("utm_campaign") || "",
         utm_content: params.get("utm_content") || "",
         market: document.body.getAttribute("data-market") === "us" ? "us" : "uk",
         variant: pageVariant(),
-      });
+      };
+      const pkg = extra && extra.package;
+      if (pkg === "singleVideo" || pkg === "magicBundle") payload.package = pkg;
+      const body = JSON.stringify(payload);
       fetch("/api/funnel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

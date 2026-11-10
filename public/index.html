@@ -47,19 +47,19 @@
         </div>
         <div class="hero-offer">
           <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
-          <div class="hero-price-line">
-            <p class="hero-price">
-              <strong data-price="bundle">£16.99</strong>
-              <span data-early-only>early bird</span>
-              <span data-late-only hidden>Christmas week price</span>
-            </p>
-            <p class="reassurance deadline-badge js-early-note" data-early-only>Early bird ends Sun 15 Nov</p>
-          </div>
-          <a class="btn hero-cta" id="hero-order" data-pay="magicBundle" data-label="bundle" href="#checkout" aria-describedby="hero-order-detail"><span class="hero-cta-short">Order £16.99</span></a>
-          <p class="delivery-promise" id="hero-delivery">Delivered within 48 hours of your order, whatever the&nbsp;date.</p>
-          <button type="button" class="btn btn-see" id="see-example">See an example</button>
-          <p class="hero-cta-detail" id="hero-order-detail">Order the Magic bundle — £16.99 early bird</p>
+          <p class="hero-from">
+            <span class="from-label">From</span>
+            <strong data-price="from">£14.99</strong>
+          </p>
+          <ul class="hero-includes">
+            <li>A personalised fireside video, about a minute</li>
+            <li>Santa says their name, a good deed and a wish</li>
+            <li id="hero-delivery">Delivered within 48 hours of your order, whatever the date.</li>
+          </ul>
+          <button type="button" class="btn hero-cta" id="hero-order" data-choice-open>Order now</button>
           <p class="trust-line">Secure checkout with PayPal or card</p>
+          <p class="hero-upsell" id="hero-upsell">The Magic bundle adds a letter, a Nice List certificate and a named sleigh video.</p>
+          <button type="button" class="btn btn-see" id="see-example">See an example</button>
           <figure class="parent-quote">
             <blockquote>
               <p>“My two little ones both ask if Santa will remember them. When he says their name, they’ll be so excited.”</p>
@@ -367,7 +367,7 @@
     <section class="final" id="order">
       <div class="wrap final-inner">
         <h2>Your child's name. By the fire. Before Christmas.</h2>
-        <a class="btn" data-pay="magicBundle" data-label="final" href="#checkout">Order now — £16.99 early bird</a>
+        <button type="button" class="btn" id="final-order" data-choice-open>Order now</button>
         <p class="not-ready">Not ready? <a class="text-link" data-link="free" href="#order">Get the free “Santa's on his way” video</a></p>
         <p class="fine">Email only. No child details. Videos are AI-generated.</p>
       </div>
@@ -425,13 +425,48 @@
     <p class="footer-line">Made with AI · Checked by a human elf</p>
   </footer>
 
+  <dialog id="choice-sheet" class="choice-sheet" aria-labelledby="choice-title" aria-modal="true" tabindex="-1">
+    <div class="choice-sheet-body">
+      <div class="choice-handle" aria-hidden="true"></div>
+      <h2 id="choice-title">Choose your gift</h2>
+      <p class="choice-lead">Pay now. Tell us their name after checkout.</p>
+      <a class="choice-option" id="choose-video" data-pay="singleVideo" href="#checkout">
+        <h3>Video only</h3>
+        <p class="choice-price"><strong data-price="single">£14.99</strong></p>
+        <ul class="ticks">
+          <li>Personalised fireside video</li>
+          <li>Generic Christmas Eve sleigh video</li>
+        </ul>
+        <span class="btn btn-pine">Choose video</span>
+      </a>
+      <a class="choice-option choice-option--lead" id="choose-bundle" data-pay="magicBundle" href="#checkout">
+        <span class="choice-badge">Most popular</span>
+        <h3>Magic bundle</h3>
+        <p class="choice-price">
+          <strong data-price="bundle">£16.99</strong>
+          <span data-early-only>early bird</span>
+          <span data-late-only hidden>Christmas week price</span>
+        </p>
+        <ul class="ticks">
+          <li>Personalised fireside video</li>
+          <li>Christmas Eve sleigh video with their name</li>
+          <li>Letter from Santa</li>
+          <li>Nice List certificate</li>
+        </ul>
+        <p class="choice-save" id="choice-difference"></p>
+        <span class="btn">Choose the bundle</span>
+      </a>
+      <button type="button" class="choice-dismiss" id="choice-close">Close</button>
+    </div>
+  </dialog>
+
   <dialog id="exit-popup" class="exit-popup" role="dialog" aria-modal="true" aria-labelledby="exit-popup-title">
     <button type="button" class="exit-popup-close" id="exit-popup-close" aria-label="Close">&times;</button>
     <div class="exit-popup-media" id="exit-popup-media"></div>
     <div class="exit-popup-body">
       <button type="button" class="btn btn-line" id="exit-unmute" hidden aria-pressed="false" aria-label="Unmute video">Unmute</button>
       <p id="exit-popup-title">Before you go... give your favourite little ones that moment this Christmas.</p>
-      <a class="btn" id="exit-popup-cta" data-pay="magicBundle" href="#checkout">Hear Santa say their name</a>
+      <button type="button" class="btn" id="exit-popup-cta" data-choice-open>Hear Santa say their name</button>
       <button type="button" class="exit-popup-dismiss" id="exit-popup-no">No thanks</button>
     </div>
   </dialog>

@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
+const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
 
 const prices = {
   magicBundleFull: "£19.99",
@@ -218,6 +218,97 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, /The last day is Sat 19 Dec/);
     assert.match(html, /id="orders-closed"/);
     assert.doesNotMatch(html, /data-orders-closed/);
+    assert.match(mainJs, /choice_open/);
+    assert.match(mainJs, /recordFunnel\("order_tap", \{ package: selectedKey \}\)/);
+    assert.doesNotMatch(mainJs, /recordFunnel\("order_tap"\)/);
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("the gift sheet leads with the cheaper video and prices the gap from the live figures", () => {
+  const named = { ...prices, namedSleigh: "£4.99" };
+  const early = choiceOffer({ early: true, prices: named });
+  assert.strictEqual(early.from, "£14.99");
+  assert.strictEqual(early.single, "£14.99");
+  assert.strictEqual(early.bundle, "£16.99");
+  assert.strictEqual(early.difference, "Just £2 more — the named sleigh alone is usually £4.99.");
+  assert.strictEqual(
+    early.upsell,
+    "The Magic bundle adds a letter, a Nice List certificate and a named sleigh video — just £2 more during early bird."
+  );
+
+  const standard = choiceOffer({ early: false, prices: named });
+  assert.strictEqual(standard.from, "£14.99");
+  assert.strictEqual(standard.bundle, "£19.99");
+  assert.strictEqual(standard.difference, "Just £5 more — the named sleigh alone is usually £4.99.");
+  assert.doesNotMatch(standard.upsell, /early bird/);
+
+  const late = choiceOffer({ early: true, late: true, prices: named });
+  assert.strictEqual(late.from, "£19.98");
+  assert.strictEqual(late.bundle, "£24.98");
+  assert.match(late.difference, /^Just £5 more/);
+  assert.strictEqual(late.early, false);
+
+  const usd = {
+    magicBundleEarly: "$19.99",
+    magicBundleFull: "$24.99",
+    magicBundleLate: "$29.98",
+    singleVideo: "$19.99",
+    singleVideoLate: "$24.98",
+    namedSleigh: "$4.99",
+  };
+  const usdEarly = choiceOffer({ early: true, prices: usd });
+  assert.strictEqual(usdEarly.from, "$19.99");
+  assert.strictEqual(usdEarly.bundle, "$19.99");
+  assert.match(usdEarly.difference, /^Same price, more magic/);
+  assert.match(usdEarly.upsell, /same price, more magic/);
+  assert.match(usdEarly.difference, /\$4\.99/);
+
+  const usdStandard = choiceOffer({ early: false, prices: usd });
+  assert.strictEqual(usdStandard.from, "$19.99");
+  assert.strictEqual(usdStandard.bundle, "$24.99");
+  assert.strictEqual(usdStandard.difference, "Just $5 more — the named sleigh alone is usually $4.99.");
+
+  const usdLate = choiceOffer({ late: true, prices: usd });
+  assert.strictEqual(usdLate.from, "$24.98");
+  assert.strictEqual(usdLate.bundle, "$29.98");
+  assert.match(usdLate.difference, /^Just \$5 more/);
+});
+
+test("Order now opens a choice, and the pricing cards still name a package", async () => {
+  const server = createServer({ log() {} });
+  const port = await new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+  });
+  try {
+    const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+    const hero = html.match(/id="hero-order"[^>]*>[^<]*/)[0];
+    assert.match(hero, /data-choice-open/);
+    assert.match(hero, />Order now/);
+    assert.doesNotMatch(hero, /data-pay|£|\$/);
+    assert.match(html, /data-price="from">£14\.99</);
+    assert.match(html, /id="hero-delivery"/);
+    assert.ok(html.indexOf('id="choose-video"') < html.indexOf('id="choose-bundle"'));
+    assert.match(html, /id="choice-sheet"[^>]*aria-labelledby="choice-title"/);
+    assert.match(html, /id="choice-sheet"[^>]*aria-modal="true"/);
+    assert.match(html, /id="choice-close"/);
+    assert.match(html, /Choose your gift/);
+    assert.match(html, /Most popular/);
+    assert.match(html, /id="choose-video"[^>]*data-pay="singleVideo"/);
+    assert.match(html, /id="choose-bundle"[^>]*data-pay="magicBundle"/);
+    const pricing = html.slice(html.indexOf('id="pricing"'), html.indexOf('id="checkout"'));
+    assert.match(pricing, /data-pay="magicBundle"/);
+    assert.match(pricing, /data-pay="singleVideo"/);
+    assert.match(pricing, /Order the Magic bundle/);
+    const finalCta = html.match(/id="final-order"[^>]*>[^<]*/)[0];
+    assert.match(finalCta, /data-choice-open/);
+    assert.match(finalCta, />Order now/);
+    assert.doesNotMatch(finalCta, /data-pay|£/);
+    assert.doesNotMatch(html, /etsy/i);
+    const sheet = html.slice(html.indexOf('id="choice-sheet"'), html.indexOf('id="exit-popup"'));
+    assert.doesNotMatch(sheet, /etsy/i);
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
