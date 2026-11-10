@@ -15,7 +15,7 @@ const { sessionForPaidOrder } = require("../lib/quote");
 const IP_GB = "81.2.69.142";
 const IP_US = "8.8.8.8";
 const IP_GB6 = "2a00:1450:4009:815::200e";
-const COUNTS = ["view", "choice_open", "order_tap", "example_tap", "checkout_start", "checkout_complete"];
+const COUNTS = ["view", "choice_open", "order_tap", "pay_click", "example_tap", "checkout_start", "checkout_complete"];
 const EMPTY_PACKAGES = { singleVideo: 0, magicBundle: 0 };
 
 const EARLY_BUNDLE = "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00";
@@ -198,10 +198,12 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
       view: 1,
       choice_open: 0,
       order_tap: 1,
+      pay_click: 0,
       example_tap: 0,
       checkout_start: 1,
       checkout_complete: 0,
       packages: EMPTY_PACKAGES,
+      pay_packages: EMPTY_PACKAGES,
     });
     assert.strictEqual(body.variants.explainer.view, 1);
     assert.strictEqual(body.variants.explainer.order_tap, 1);
@@ -294,10 +296,12 @@ test("a paid GBP checkout is counted once", async () => {
       view: 0,
       choice_open: 0,
       order_tap: 0,
+      pay_click: 0,
       example_tap: 0,
       checkout_start: 0,
       checkout_complete: 0,
       packages: EMPTY_PACKAGES,
+      pay_packages: EMPTY_PACKAGES,
     });
   } finally {
     await close(server);
@@ -313,16 +317,21 @@ function sumCounts(rows) {
     view: 0,
     choice_open: 0,
     order_tap: 0,
+    pay_click: 0,
     example_tap: 0,
     checkout_start: 0,
     checkout_complete: 0,
     packages: { singleVideo: 0, magicBundle: 0 },
+    pay_packages: { singleVideo: 0, magicBundle: 0 },
   };
   for (const row of rows) {
     for (const event of COUNTS) total[event] += row[event] || 0;
     const packages = row.packages || {};
+    const payPackages = row.pay_packages || {};
     total.packages.singleVideo += packages.singleVideo || 0;
     total.packages.magicBundle += packages.magicBundle || 0;
+    total.pay_packages.singleVideo += payPackages.singleVideo || 0;
+    total.pay_packages.magicBundle += payPackages.magicBundle || 0;
   }
   return total;
 }
@@ -378,19 +387,23 @@ test("old funnel files stay in the total and count as country unknown", async ()
       view: 6,
       choice_open: 0,
       order_tap: 2,
+      pay_click: 0,
       example_tap: 0,
       checkout_start: 1,
       checkout_complete: 0,
       packages: EMPTY_PACKAGES,
+      pay_packages: EMPTY_PACKAGES,
     });
     assert.deepStrictEqual(body.total_uk, {
       view: 1,
       choice_open: 0,
       order_tap: 0,
+      pay_click: 0,
       example_tap: 0,
       checkout_start: 0,
       checkout_complete: 0,
       packages: EMPTY_PACKAGES,
+      pay_packages: EMPTY_PACKAGES,
     });
     const legacy = body.buckets.find((row) => row.country === "XX" && row.utm_content === "video");
     assert.strictEqual(legacy.view, 5);
@@ -541,10 +554,12 @@ test("the report shows UK totals beside the overall total and does not keep the 
       view: gb.view,
       choice_open: gb.choice_open,
       order_tap: gb.order_tap,
+      pay_click: gb.pay_click,
       example_tap: gb.example_tap,
       checkout_start: gb.checkout_start,
       checkout_complete: gb.checkout_complete,
       packages: gb.packages,
+      pay_packages: gb.pay_packages,
     });
     const videoGb = body.buckets.find((row) => row.utm_content === "video" && row.country === "GB");
     const videoUs = body.buckets.find((row) => row.utm_content === "video" && row.country === "US");
@@ -918,6 +933,20 @@ test("choice_open is counted separately, and order_tap keeps the package", async
       variant: "parents",
       package: "https://evil.example",
     })).status, 204);
+    assert.strictEqual((await post({
+      event: "pay_click",
+      utm_source: "meta",
+      utm_content: "choice",
+      variant: "parents",
+      package: "singleVideo",
+    })).status, 204);
+    assert.strictEqual((await post({
+      event: "pay_click",
+      utm_source: "meta",
+      utm_content: "choice",
+      variant: "parents",
+      package: "singleVideo",
+    })).status, 204);
     assert.strictEqual((await post({ event: "purchase", package: "singleVideo" })).status, 400);
 
     const report = await fetch(`${origin}/admin/funnel`, { headers: { Authorization: `Bearer ${secret}` } });
@@ -926,13 +955,17 @@ test("choice_open is counted separately, and order_tap keeps the package", async
     assert.strictEqual(body.total.view, 1);
     assert.strictEqual(body.total.choice_open, 1);
     assert.strictEqual(body.total.order_tap, 3);
+    assert.strictEqual(body.total.pay_click, 2);
     assert.strictEqual(body.total.checkout_start, 0);
     assert.strictEqual(body.total.checkout_complete, 0);
     assert.deepStrictEqual(body.total.packages, { singleVideo: 1, magicBundle: 1 });
+    assert.deepStrictEqual(body.total.pay_packages, { singleVideo: 2, magicBundle: 0 });
     const row = body.buckets.find((item) => item.utm_content === "choice");
     assert.strictEqual(row.choice_open, 1);
     assert.strictEqual(row.order_tap, 3);
+    assert.strictEqual(row.pay_click, 2);
     assert.deepStrictEqual(row.packages, { singleVideo: 1, magicBundle: 1 });
+    assert.deepStrictEqual(row.pay_packages, { singleVideo: 2, magicBundle: 0 });
     assert.strictEqual(row.package, undefined);
     assert.doesNotMatch(JSON.stringify(body), /evil\.example/);
   } finally {

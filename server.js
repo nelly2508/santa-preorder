@@ -577,9 +577,10 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
       sendJson(res, 400, { error: "bad request" }, req.method);
       return;
     }
-    // choice_open is the gift sheet. order_tap stays "they picked a product".
+    // choice_open is the gift sheet. order_tap is choosing a package.
+    // pay_click is the PayPal or card button, and is not another order_tap.
     // view, checkout_start and checkout_complete are recorded on the server.
-    const clientEvents = new Set(["choice_open", "order_tap", "example_tap"]);
+    const clientEvents = new Set(["choice_open", "order_tap", "pay_click", "example_tap"]);
     const event = body && clientEvents.has(body.event) ? body.event : "";
     if (!event) {
       sendJson(res, 400, { error: "bad request" }, req.method);
@@ -588,7 +589,8 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
     try {
       // Country comes from the visitor address, never from the posted body.
       // Market is only which page the button was on. Variant is only the film shown.
-      // package is only singleVideo or magicBundle, and only meaningful on order_tap.
+      // package is only singleVideo or magicBundle. order_tap fills the choice
+      // split. pay_click fills its own split and does not add to order_tap.
       funnel.record(event, {
         utm_source: body.utm_source,
         utm_campaign: body.utm_campaign,

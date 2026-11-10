@@ -240,13 +240,13 @@ test("US funnel counts stay out of the UK totals", async () => {
     const report = await fetch(`${origin}/admin/funnel`, { headers: { Authorization: `Bearer ${secret}` } });
     const body = await report.json();
     const none = { singleVideo: 0, magicBundle: 0 };
-    const ukPage = { view: 1, choice_open: 0, order_tap: 1, example_tap: 0, checkout_start: 0, checkout_complete: 0, packages: none };
-    const usPage = { view: 1, choice_open: 0, order_tap: 1, example_tap: 0, checkout_start: 1, checkout_complete: 1, packages: none };
+    const ukPage = { view: 1, choice_open: 0, order_tap: 1, pay_click: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0, packages: none, pay_packages: none };
+    const usPage = { view: 1, choice_open: 0, order_tap: 1, pay_click: 0, example_tap: 0, checkout_start: 1, checkout_complete: 1, packages: none, pay_packages: none };
     assert.deepStrictEqual(body.markets.uk, ukPage);
     assert.deepStrictEqual(body.markets.us, usPage);
     assert.deepStrictEqual(body.variants.parents, usPage);
-    assert.deepStrictEqual(body.total, { view: 2, choice_open: 0, order_tap: 2, example_tap: 0, checkout_start: 1, checkout_complete: 1, packages: none });
-    assert.deepStrictEqual(body.total_uk, { view: 0, choice_open: 0, order_tap: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0, packages: none });
+    assert.deepStrictEqual(body.total, { view: 2, choice_open: 0, order_tap: 2, pay_click: 0, example_tap: 0, checkout_start: 1, checkout_complete: 1, packages: none, pay_packages: none });
+    assert.deepStrictEqual(body.total_uk, { view: 0, choice_open: 0, order_tap: 0, pay_click: 0, example_tap: 0, checkout_start: 0, checkout_complete: 0, packages: none, pay_packages: none });
     assert.ok(Array.isArray(body.countries));
     assert.strictEqual(body.countries.find((row) => row.country === "GB"), undefined);
     const unknown = body.countries.find((row) => row.country === "XX");
@@ -255,10 +255,12 @@ test("US funnel counts stay out of the UK totals", async () => {
         view: unknown.view,
         choice_open: unknown.choice_open,
         order_tap: unknown.order_tap,
+        pay_click: unknown.pay_click,
         example_tap: unknown.example_tap,
         checkout_start: unknown.checkout_start,
         checkout_complete: unknown.checkout_complete,
         packages: unknown.packages,
+        pay_packages: unknown.pay_packages,
       },
       body.total
     );

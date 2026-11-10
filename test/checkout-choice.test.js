@@ -220,7 +220,11 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.doesNotMatch(html, /data-orders-closed/);
     assert.match(mainJs, /choice_open/);
     assert.match(mainJs, /recordFunnel\("order_tap", \{ package: selectedKey \}\)/);
+    assert.match(mainJs, /recordFunnel\("pay_click", \{ package: selectedKey \}\)/);
     assert.doesNotMatch(mainJs, /recordFunnel\("order_tap"\)/);
+    const paypalClick = mainJs.slice(mainJs.indexOf("onClick:"), mainJs.indexOf("createOrder:"));
+    assert.match(paypalClick, /recordPayClick\(\)/);
+    assert.doesNotMatch(paypalClick, /order_tap|recordOrderTap/);
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));

@@ -344,7 +344,7 @@
         paypal.Buttons({
           style: { layout: "vertical", shape: "rect", label: "paypal" },
           onClick: (data, actions) => {
-            recordOrderTap();
+            recordPayClick();
             document.dispatchEvent(new Event("santa-pay"));
             if (window.fbq) window.fbq("track", "InitiateCheckout", { currency: payCurrency });
             return actions.resolve();
@@ -461,6 +461,10 @@
       recordFunnel("order_tap", { package: selectedKey });
     }
 
+    function recordPayClick() {
+      recordFunnel("pay_click", { package: selectedKey });
+    }
+
     document.querySelectorAll("[data-pay]").forEach((link) => {
       if (link === continueLink) return;
       link.addEventListener("click", (event) => {
@@ -487,7 +491,7 @@
         event.preventDefault();
         return;
       }
-      recordOrderTap();
+      recordPayClick();
     });
 
     if (addSibling) {
