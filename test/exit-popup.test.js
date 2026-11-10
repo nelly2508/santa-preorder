@@ -95,7 +95,8 @@ test("the sales page holds the dialog, and the video file is not in the first HT
     assert.match(popup, /aria-labelledby="exit-popup-title"/);
     assert.match(popup, /aria-label="Close"/);
     assert.match(popup, /Before you go\.\.\. give your favourite little ones that moment this Christmas\./);
-    assert.match(popup, /id="exit-popup-cta"[^>]*data-pay="magicBundle"[^>]*href="#checkout"/);
+    assert.match(popup, /id="exit-popup-cta"[^>]*data-choice-open/);
+    assert.doesNotMatch(popup, /data-pay/);
     assert.match(popup, />Hear Santa say their name</);
     assert.match(popup, /id="exit-popup-no">No thanks</);
     assert.match(popup, /id="exit-unmute"/);

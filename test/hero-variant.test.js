@@ -61,8 +61,8 @@ test("both sales pages keep the assigned film and move the sample below the orde
       assert.doesNotMatch(hero, /santa-preview|exit-sales/);
       assert.match(explainerHtml, new RegExp(DELIVERY.replace(/[.]/g, "\\.")));
       assert.match(explainerHtml, /id="see-example"[^>]*>See an example</);
-      assert.ok(explainerHtml.indexOf('id="hero-order"') < explainerHtml.indexOf('id="hero-delivery"'));
-      assert.ok(explainerHtml.indexOf('id="hero-delivery"') < explainerHtml.indexOf('id="see-example"'));
+      assert.ok(explainerHtml.indexOf('id="hero-delivery"') < explainerHtml.indexOf('id="hero-order"'));
+      assert.ok(explainerHtml.indexOf('id="hero-order"') < explainerHtml.indexOf('id="see-example"'));
       assert.ok(explainerHtml.indexOf('id="see-example"') < explainerHtml.indexOf('id="hear-santa"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="pricing"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="faq"'));
