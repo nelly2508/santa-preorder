@@ -7,7 +7,7 @@ const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/orde
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
 const { UNKNOWN_COUNTRY, createFunnelCounter, funnelFromSession } = require("./lib/funnel-counts");
 const { countryFromRequest } = require("./lib/client-country");
-const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = require("./public/js/checkout-choice");
+const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, orderCta } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
@@ -367,6 +367,23 @@ function salesMarket(pathname) {
 function cookieIsSecure(req) {
   const proto = String((req && req.headers && req.headers["x-forwarded-proto"]) || "").split(",")[0].trim().toLowerCase();
   return proto === "https";
+}
+
+function applyOrderCta(html, config, now, market) {
+  const phase = offerPhase({
+    now,
+    earlyBird: config.earlyBird,
+    earlyBirdEnds: config.earlyBirdEnds,
+    lateOrders: config.lateOrders,
+    lateOrdersFrom: config.lateOrdersFrom,
+  });
+  const book = market === "us" && config.usd ? config.usd : config.prices;
+  const earlyPrice = book.magicBundleEarly;
+  const from = `Order now - ${earlyPrice} - early bird ends Sun`;
+  if (phase === "early") return String(html);
+  const price = phase === "late" ? book.magicBundleLate : book.magicBundleFull;
+  const label = orderCta({ early: false, late: phase === "late", price });
+  return String(html).split(from).join(label);
 }
 
 function decorateSalesHtml(html, env, closed, nonce, variant, market) {
@@ -1023,6 +1040,7 @@ function createServer(options = {}) {
         const query = orderQuery({
           packageKey: choice.key,
           siblings: clampSiblings(url.searchParams.get("siblings")),
+          sleigh: url.searchParams.get("sleigh") === "1",
           utm,
         });
         res.writeHead(302, {
@@ -1051,6 +1069,7 @@ function createServer(options = {}) {
             market,
             variant,
             siblings: clampSiblings(url.searchParams.get("siblings")),
+            sleigh: url.searchParams.get("sleigh") === "1",
             packageKey: choice.key,
             paymentLinkUrl: choice.href,
             phase,
@@ -1084,7 +1103,9 @@ function createServer(options = {}) {
         }
         const closed = !ordersOpen(serverNow(options));
         let html = buf.toString("utf8");
-        if (pageMarket === "us") html = applyUsHtml(html, siteConfig().usd);
+        const config = siteConfig();
+        if (pageMarket === "us") html = applyUsHtml(html, config.usd);
+        html = applyOrderCta(html, config, serverNow(options), pageMarket);
         const headers = {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",

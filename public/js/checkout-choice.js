@@ -79,15 +79,20 @@
     return {
       packageKey,
       siblings: clampSiblings(params.get("siblings")),
+      sleigh: packageKey === "singleVideo" && params.get("sleigh") === "1",
     };
   }
 
   function orderQuery(options) {
     const source = options || {};
     const params = new URLSearchParams();
-    params.set("package", source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle");
+    const packageKey = source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle";
+    params.set("package", packageKey);
     const siblings = clampSiblings(source.siblings);
     if (siblings > 0) params.set("siblings", String(siblings));
+    if (packageKey === "singleVideo" && (source.sleigh === true || source.sleigh === 1 || source.sleigh === "1")) {
+      params.set("sleigh", "1");
+    }
     const utm = source.utm || {};
     for (const key of ["utm_source", "utm_campaign", "utm_content"]) {
       const value = campaignPart(utm[key]);
@@ -96,6 +101,48 @@
     if (source.market === "us") params.set("market", "us");
     if (source.variant === "explainer" || source.variant === "parents") params.set("variant", source.variant);
     return params.toString();
+  }
+
+  // The same pounds or dollars PayPal charges: the phase price, plus each
+  // extra child, plus the named sleigh only on the single video. Late prices
+  // already include the Christmas week amount, so it is not added again.
+  function orderAmount(options) {
+    const source = options || {};
+    const prices = source.prices || {};
+    const late = !!source.late;
+    const early = !!source.early && !late;
+    const packageKey = source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle";
+    const siblings = clampSiblings(source.siblings);
+    const sleigh = packageKey === "singleVideo" && (source.sleigh === true || source.sleigh === 1 || source.sleigh === "1");
+    const baseLabel = packageKey === "singleVideo"
+      ? (late ? prices.singleVideoLate : prices.singleVideo)
+      : (late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull);
+    const base = priceMinor(baseLabel);
+    const sibling = priceMinor(prices.sibling);
+    if (base == null || sibling == null) return null;
+    let total = base + siblings * sibling;
+    if (sleigh) {
+      const extra = priceMinor(prices.namedSleigh);
+      if (extra == null) return null;
+      total += extra;
+    }
+    return {
+      packageKey,
+      siblings,
+      children: siblings + 1,
+      sleigh,
+      totalMinor: total,
+      total: formatMinor(total, baseLabel),
+    };
+  }
+
+  // Early bird keeps the Sunday already named on the page (15 Nov 2026).
+  // After that, the button uses the 48-hour delivery line the page already states.
+  function orderCta(options) {
+    const source = options || {};
+    const price = source.price || "";
+    if (source.early && !source.late) return `Order now - ${price} - early bird ends Sun`;
+    return `Order now - ${price} - delivered within 48 hours`;
   }
 
   function priceMinor(label) {
@@ -210,5 +257,7 @@
     campaignPart,
     resumeOrder,
     orderQuery,
+    orderAmount,
+    orderCta,
   };
 });

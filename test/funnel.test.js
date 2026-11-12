@@ -89,6 +89,7 @@ test("cancel url returns to the UK order page and keeps the form", () => {
   assert.deepStrictEqual(resumeOrder(cancel.split("?")[1]), {
     packageKey: "singleVideo",
     siblings: 4,
+    sleigh: false,
   });
   assert.doesNotMatch(cancel, /agreed=/);
 });
@@ -121,6 +122,35 @@ test("a checkout session copies the GBP payment link and leaves other currencies
   assert.strictEqual(fromUs.params.metadata.ssm_market, "us");
   assert.strictEqual(built.params.line_items[0].price_data, undefined);
   assert.strictEqual(sessionParamsFromPaymentLink(ukLink("usd"), { origin: "https://santasaysmyname.com" }).skip, "not-gbp");
+
+  const withSku = ukLink("gbp");
+  withSku.optional_items = [
+    {
+      price: { id: "price_sibling", metadata: { sku: "addon_sibling" } },
+      quantity: 0,
+      adjustable_quantity: { enabled: true, minimum: 0, maximum: 4 },
+    },
+    {
+      price: { id: "price_sleigh", metadata: { sku: "addon_sleigh" }, product: { metadata: {} } },
+      quantity: 1,
+    },
+  ];
+  const quoted = sessionParamsFromPaymentLink(withSku, {
+    origin: "https://santasaysmyname.com",
+    packageKey: "singleVideo",
+    siblings: 2,
+    sleigh: true,
+  });
+  assert.strictEqual(quoted.params.optional_items[0].quantity, 2);
+  assert.strictEqual(quoted.params.optional_items[1].quantity, 1);
+  const bundle = sessionParamsFromPaymentLink(withSku, {
+    origin: "https://santasaysmyname.com",
+    packageKey: "magicBundle",
+    siblings: 0,
+    sleigh: true,
+  });
+  assert.strictEqual(bundle.params.optional_items[0].quantity, 0);
+  assert.strictEqual(bundle.params.optional_items[1].quantity, 0);
 });
 
 test("funnel counts are aggregate, and checkout cancel_url points at the order page", async () => {
@@ -145,7 +175,7 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     assert.doesNotMatch(home.headers.get("set-cookie") || "", /parent@|utm_source/);
     const html = await home.text();
     assert.match(html, /data-price="bundle">£16\.99</);
-    assert.ok(html.indexOf('id="hero-order"') < html.indexOf('id="hear-santa"'));
+    assert.ok(html.indexOf('id="hear-santa"') < html.indexOf('id="hero-order"'));
 
     const tap = await fetch(`${origin}/api/funnel`, {
       method: "POST",

@@ -34,13 +34,16 @@
   const bundleLabel = early
     ? `Order the Magic bundle — ${bundlePrice} early bird`
     : `Order the Magic bundle — ${bundlePrice}`;
+  const orderButtonLabel = choiceApi && choiceApi.orderCta
+    ? choiceApi.orderCta({ early, late, price: bundlePrice })
+    : `Order now - ${bundlePrice}`;
 
   document.querySelectorAll("[data-label='bundle']").forEach((link) => {
     link.textContent = bundleLabel;
   });
 
-  document.querySelectorAll("#hero-order, #final-order, .us-order-bar [data-choice-open]").forEach((control) => {
-    control.textContent = "Order now";
+  document.querySelectorAll("[data-order-cta]").forEach((control) => {
+    control.textContent = orderButtonLabel;
   });
 
   if (offer) {
@@ -127,13 +130,18 @@
     }
   });
 
-  let choiceDialog = null;
+  let choiceSheet = null;
   let choiceOpener = null;
   let restoreChoiceFocus = true;
+  let syncSheet = function () {};
+  let revealPaypal = function () {};
+  let noteOrder = function () {};
+  let resumeIntoSheet = false;
 
   if (!ordersClosed) {
     setupCheckout();
     setupChoice();
+    if (resumeIntoSheet) openChoice(null, { quietOpen: true, restore: false });
   }
   setupFilms();
   setupDeferredImages();
@@ -158,15 +166,15 @@
     const chosenPrice = document.getElementById("chosen-price");
     if (!continueLink || !choiceApi) return;
 
-    const resume = choiceApi.resumeOrder ? choiceApi.resumeOrder(window.location.search) : { packageKey: "", siblings: 0 };
+    const resume = choiceApi.resumeOrder ? choiceApi.resumeOrder(window.location.search) : { packageKey: "", siblings: 0, sleigh: false };
     let selectedKey = resume.packageKey || "magicBundle";
     let siblings = resume.siblings || 0;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const addSibling = document.getElementById("add-sibling");
-    const removeSibling = document.getElementById("sibling-remove");
-    const siblingCount = document.getElementById("sibling-count");
-    const siblingNext = document.getElementById("sibling-next");
     const siblingFaces = document.getElementById("sibling-faces");
+    const childrenCount = document.getElementById("children-count");
+    const childrenLess = document.getElementById("children-less");
+    const childrenMore = document.getElementById("children-more");
+    const totalAmount = document.getElementById("order-total-amount");
 
     const paypalMode = marketUs || document.body.getAttribute("data-payment-provider") !== "stripe";
     const paypalNote = document.getElementById("paypal-note");
@@ -229,38 +237,35 @@
     }
 
     function renderSiblings() {
-      const amount = prices.sibling || "";
-      if (removeSibling) removeSibling.hidden = siblings === 0;
-      if (addSibling) {
-        addSibling.disabled = siblings >= 4;
-        addSibling.textContent = siblings === 0 ? "Add a sibling" : "Add another sibling";
+      const children = siblings + 1;
+      if (childrenCount) childrenCount.textContent = String(children);
+      if (childrenLess) childrenLess.disabled = siblings <= 0;
+      if (childrenMore) childrenMore.disabled = siblings >= 4;
+    }
+
+    function renderTotal() {
+      if (!choiceApi.orderAmount || !totalAmount) return;
+      const amount = choiceApi.orderAmount({
+        packageKey: selectedKey,
+        siblings,
+        sleigh: !!(sleighBox && sleighBox.checked && selectedKey === "singleVideo"),
+        early,
+        late,
+        prices,
+      });
+      if (amount && amount.total) {
+        totalAmount.textContent = amount.total;
+        if (chosenPrice) chosenPrice.textContent = amount.total;
       }
-      if (siblingCount) {
-        if (siblings === 0) siblingCount.textContent = "No siblings added yet.";
-        else if (siblings === 1) siblingCount.textContent = `1 sibling added (${amount}).`;
-        else siblingCount.textContent = `${siblings} siblings added (${amount} each).`;
-      }
-      if (siblingNext) {
-        const stripeMode = document.body.getAttribute("data-payment-provider") === "stripe";
-        if (!stripeMode) {
-          if (siblings === 0) {
-            siblingNext.hidden = true;
-            siblingNext.textContent = "";
-          } else {
-            siblingNext.hidden = false;
-            siblingNext.textContent = "Included in this payment.";
-          }
-        } else if (siblings === 0) {
-          siblingNext.hidden = true;
-          siblingNext.textContent = "";
-        } else if (siblings === 1) {
-          siblingNext.hidden = false;
-          siblingNext.textContent = "On the card page, tap Add next to Sibling.";
-        } else {
-          siblingNext.hidden = false;
-          siblingNext.textContent = `On the card page, tap Add next to Sibling, then set the quantity to ${siblings}.`;
-        }
-      }
+    }
+
+    function syncRadios() {
+      document.querySelectorAll(".sheet-choice input[name='santa-package']").forEach((input) => {
+        const on = input.value === selectedKey;
+        input.checked = on;
+        const label = input.closest(".sheet-choice");
+        if (label) label.classList.toggle("is-selected", on);
+      });
     }
 
     function renderChoice() {
@@ -419,15 +424,18 @@
       sleighAdd.hidden = !(paypalMode && selectedKey === "singleVideo");
     }
 
-    function syncContinue(moveFocus) {
+    function syncContinue() {
       const picked = renderChoice();
       syncSleigh();
+      syncRadios();
+      renderTotal();
       if (checkout) checkout.classList.add("is-ready");
       const utm = currentUtm();
       const query = choiceApi.orderQuery
         ? choiceApi.orderQuery({
           packageKey: picked.key,
           siblings,
+          sleigh: !!(sleighBox && sleighBox.checked),
           utm,
           market: marketUs ? "us" : "uk",
           variant: pageVariant(),
@@ -435,26 +443,14 @@
         : `package=${encodeURIComponent(picked.key)}`;
       continueLink.setAttribute("aria-disabled", "false");
       continueLink.removeAttribute("tabindex");
-      continueLink.setAttribute("aria-describedby", "chosen-package");
+      continueLink.setAttribute("aria-describedby", "order-total");
       if (paypalMode) {
         continueLink.href = "#checkout";
         continueLink.removeAttribute("data-pay");
-        showPaypal();
       } else {
         continueLink.href = `/order/pay?${query}`;
         continueLink.setAttribute("data-pay", picked.key);
-        if (moveFocus) continueLink.focus();
       }
-    }
-
-    function scrollToCheckout() {
-      const narrow = window.matchMedia("(max-width: 719px)").matches;
-      const target = narrow ? document.querySelector(".delivery-line") || checkout : checkout;
-      if (!target) return;
-      target.scrollIntoView({
-        behavior: motion.matches ? "auto" : "smooth",
-        block: narrow ? "center" : "start",
-      });
     }
 
     function recordOrderTap() {
@@ -466,18 +462,13 @@
     }
 
     document.querySelectorAll("[data-pay]").forEach((link) => {
-      if (link === continueLink) return;
+      if (link === continueLink || link.closest("#choice-sheet")) return;
       link.addEventListener("click", (event) => {
         event.preventDefault();
         selectedKey = link.getAttribute("data-pay") === "singleVideo" ? "singleVideo" : "magicBundle";
-        recordOrderTap();
         document.dispatchEvent(new Event("santa-pay"));
-        closeChoice({ restore: false });
         showSiblingExample(selectedKey);
-        syncContinue(false);
-        scrollToCheckout();
-        if (!paypalMode) continueLink.focus();
-        else focusCheckout();
+        openChoice(link, { quietOpen: false });
       });
     });
 
@@ -494,84 +485,106 @@
       recordPayClick();
     });
 
-    if (addSibling) {
-      addSibling.addEventListener("click", () => {
-        if (siblings >= 4) return;
-        siblings += 1;
-        renderSiblings();
-        renderFaces(siblings, true);
-        syncContinue(false);
-      });
+    function setChildren(next, animate) {
+      const count = Math.max(0, Math.min(4, next));
+      if (count === siblings && animate) return;
+      siblings = count;
+      renderSiblings();
+      renderFaces(siblings, animate);
+      syncContinue();
     }
-    if (removeSibling) {
-      removeSibling.addEventListener("click", () => {
-        if (siblings <= 0) return;
-        siblings -= 1;
-        renderSiblings();
-        renderFaces(siblings, true);
-        syncContinue(false);
-      });
+
+    if (childrenMore) {
+      childrenMore.addEventListener("click", () => setChildren(siblings + 1, true));
     }
+    if (childrenLess) {
+      childrenLess.addEventListener("click", () => setChildren(siblings - 1, true));
+    }
+    document.querySelectorAll(".sheet-choice input[name='santa-package']").forEach((input) => {
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        const next = input.value === "singleVideo" ? "singleVideo" : "magicBundle";
+        if (next === selectedKey) return;
+        selectedKey = next;
+        showSiblingExample(selectedKey);
+        syncContinue();
+        recordOrderTap();
+      });
+    });
+    if (sleighBox) {
+      sleighBox.addEventListener("change", () => syncContinue());
+      if (resume.sleigh) sleighBox.checked = true;
+    }
+
+    syncSheet = function () {
+      showSiblingExample(selectedKey);
+      renderSiblings();
+      syncContinue();
+    };
+    revealPaypal = showPaypal;
+    noteOrder = recordOrderTap;
+    resumeIntoSheet = !!(resume.packageKey || resume.siblings || resume.sleigh);
 
     showSiblingExample(selectedKey);
     renderSiblings();
     renderFaces(siblings, false);
-    syncContinue(false);
-    if (resume.packageKey || resume.siblings) scrollToCheckout();
+    syncContinue();
   }
 
-  function lockPage() {
-    const gap = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = "hidden";
-    document.body.style.paddingRight = gap > 0 ? `${gap}px` : "";
-  }
-
-  function unlockPage() {
-    document.body.style.overflow = "";
-    document.body.style.paddingRight = "";
-  }
-
-  function focusCheckout() {
-    const status = document.getElementById("chosen-package");
-    if (!status) return;
-    status.setAttribute("tabindex", "-1");
-    status.focus();
+  function paypalOverlayOpen() {
+    return !!document.querySelector(".paypal-checkout-sandbox, .venmo-checkout-sandbox, #Cardinal-Modal, #Cardinal-ElementContainer");
   }
 
   function closeChoice(options) {
     restoreChoiceFocus = !(options && options.restore === false);
-    if (choiceDialog && choiceDialog.open) choiceDialog.close();
+    if (!choiceSheet || choiceSheet.hidden) return;
+    choiceSheet.hidden = true;
+    document.body.classList.remove("sheet-open");
+    const back = choiceOpener;
+    choiceOpener = null;
+    if (restoreChoiceFocus && back && typeof back.focus === "function") back.focus({ preventScroll: true });
+    restoreChoiceFocus = true;
   }
 
-  function openChoice(trigger) {
-    if (!choiceDialog || choiceDialog.open || ordersClosed) return;
-    choiceOpener = trigger || document.activeElement;
-    restoreChoiceFocus = true;
-    recordFunnel("choice_open");
-    lockPage();
-    choiceDialog.showModal();
-    choiceDialog.focus();
+  function openChoice(trigger, options) {
+    const source = options || {};
+    if (!choiceSheet || ordersClosed) return;
+    if (choiceSheet.hidden) {
+      choiceOpener = trigger || document.activeElement;
+      restoreChoiceFocus = source.restore !== false;
+      choiceSheet.hidden = false;
+      document.body.classList.add("sheet-open");
+      if (!source.quietOpen) recordFunnel("choice_open");
+      syncSheet();
+      const closeButton = document.getElementById("choice-close");
+      if (closeButton && typeof closeButton.focus === "function") closeButton.focus({ preventScroll: true });
+      requestAnimationFrame(() => revealPaypal());
+    } else {
+      syncSheet();
+    }
+    if (!source.quietOpen) noteOrder();
   }
 
   function setupChoice() {
-    choiceDialog = document.getElementById("choice-sheet");
-    if (!choiceDialog || typeof choiceDialog.showModal !== "function") return;
+    choiceSheet = document.getElementById("choice-sheet");
+    if (!choiceSheet) return;
 
-    choiceDialog.addEventListener("close", () => {
-      unlockPage();
-      const back = choiceOpener;
-      choiceOpener = null;
-      if (restoreChoiceFocus && back && typeof back.focus === "function") back.focus();
-      restoreChoiceFocus = true;
-    });
+    const scrim = document.getElementById("choice-scrim");
+    if (scrim) scrim.addEventListener("click", () => closeChoice());
 
-    choiceDialog.addEventListener("click", (event) => {
-      if (event.target === choiceDialog) choiceDialog.close();
-    });
+    const closeButton = document.getElementById("choice-close");
+    if (closeButton) closeButton.addEventListener("click", () => closeChoice());
 
-    choiceDialog.addEventListener("keydown", (event) => {
+    choiceSheet.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        if (paypalOverlayOpen()) return;
+        event.preventDefault();
+        closeChoice();
+        return;
+      }
       if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) return;
-      const items = [...choiceDialog.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])")]
+      if (paypalOverlayOpen()) return;
+      const items = [...choiceSheet.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])")]
         .filter((el) => el.getClientRects().length > 0);
       if (!items.length) {
         event.preventDefault();
@@ -580,15 +593,16 @@
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
-      const leavingBack = event.shiftKey && (active === first || active === choiceDialog || !choiceDialog.contains(active));
+      const leavingBack = event.shiftKey && (active === first || !choiceSheet.contains(active));
       const leavingForward = !event.shiftKey && active === last;
       if (!leavingBack && !leavingForward) return;
       event.preventDefault();
-      (leavingBack ? last : first).focus();
+      (leavingBack ? last : first).focus({ preventScroll: true });
     });
 
-    const closeButton = document.getElementById("choice-close");
-    if (closeButton) closeButton.addEventListener("click", () => choiceDialog.close());
+    choiceSheet.querySelectorAll('a[href^="#"]').forEach((link) => {
+      link.addEventListener("click", () => closeChoice({ restore: false }));
+    });
 
     document.addEventListener("click", (event) => {
       const opener = event.target && event.target.closest && event.target.closest("[data-choice-open]");
@@ -596,6 +610,15 @@
       event.preventDefault();
       openChoice(opener);
     });
+
+    const checkout = document.getElementById("checkout");
+    if (checkout && "IntersectionObserver" in window) {
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio > 0);
+        document.body.classList.toggle("order-in-view", visible);
+      }, { threshold: [0, 0.15] });
+      observer.observe(checkout);
+    }
   }
 
   function pageVariant() {
@@ -721,7 +744,7 @@
 
   function setupFilms() {
     const sample = armPlayer(document.getElementById("hear-santa"), document.getElementById("sample-play"));
-    armHero(document.getElementById("hero-film"), document.getElementById("hero-play"));
+    armPlayer(document.getElementById("hero-film"), document.getElementById("hero-play"));
     const see = document.getElementById("see-example");
     if (see) {
       see.addEventListener("click", () => {

@@ -371,8 +371,11 @@ p + p {
   text-underline-offset: 0.16em;
 }
 
-.hero-cta-short {
-  white-space: nowrap;
+.hero-cta,
+#final-order,
+.us-order-bar .btn {
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .hero-cta-detail {
@@ -630,27 +633,26 @@ p + p {
       "intro"
       "video"
       "offer"
-      "caption"
       "figure";
     gap: 0.4rem;
   }
 
   .hero-intro { grid-area: intro; }
   .hero-offer { grid-area: offer; }
+  .hero-sample { grid-area: video; }
   .hero-figure { grid-area: figure; }
 
-  /* The video sits under the headline, and the order button follows it.
-     The caption stays with the film, below the button. */
-  .hero-sample { display: contents; }
-
-  .hero-sample .hear-frame {
-    grid-area: video;
-    width: min(100%, 13.6rem);
+  /* The name sample sits under the headline. The order button follows it. */
+  .hero-sample {
+    width: min(100%, 12.5rem);
     margin-inline: auto;
   }
 
+  .hero-sample .hear-frame {
+    width: 100%;
+  }
+
   .hero-sample figcaption {
-    grid-area: caption;
     margin-top: 0.15rem;
   }
 
@@ -705,7 +707,7 @@ p + p {
 
   /* US phones use the same stacked hero as the UK. The sticky bar stays.
      The film is a little smaller so See an example clears that bar. */
-  body[data-market="us"] .hero-sample .hear-frame {
+  body[data-market="us"] .hero-sample {
     width: min(100%, 12.5rem);
   }
 
@@ -739,7 +741,29 @@ p + p {
 
 .us-order-bar { display: none; }
 
-body[data-orders-closed] .us-order-bar { display: none !important; }
+body[data-orders-closed] .us-order-bar,
+body.sheet-open .us-order-bar,
+body.order-in-view .us-order-bar { display: none !important; }
+
+.sample-play--label {
+  width: min(16.5rem, 92%);
+  white-space: normal;
+  line-height: 1.2;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .hero-sample figcaption {
   margin-top: 0.45rem;
@@ -1989,6 +2013,7 @@ body[data-orders-closed] #pay-continue,
 body[data-orders-closed] #paypal-buttons,
 body[data-orders-closed] #pay-label,
 body[data-orders-closed] #sleigh-add,
+body[data-orders-closed] #choice-sheet,
 body[data-orders-closed] #checkout,
 body[data-orders-closed] #sibling-add,
 body[data-orders-closed] .hero-from,
@@ -2177,6 +2202,283 @@ body[data-orders-closed] .reassurance {
   .choice-sheet-body {
     padding: 1.15rem 1.15rem 1rem;
   }
+}
+
+/* Non-modal panel. PayPal's card and 3-D Secure layers are appended to the
+   body and use a very high z-index. A modal dialog would sit in the browser's
+   top layer, above those, and a body scroll-lock can clip them. */
+.order-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.order-sheet[hidden] {
+  display: none !important;
+}
+
+.order-sheet-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(36, 22, 15, 0.48);
+}
+
+.order-sheet-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(26.5rem, 100%);
+  max-height: calc(100vh - 0.75rem);
+  max-height: calc(100svh - 0.75rem);
+  background: #fffdf8;
+  color: var(--ink);
+  border-radius: 1.15rem;
+  box-shadow: 0 24px 60px rgba(36, 22, 15, 0.28);
+}
+
+.order-sheet-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.85rem 0.9rem 0.35rem;
+}
+
+.order-sheet-close {
+  float: right;
+  margin: 0 0 0.15rem 0.6rem;
+  min-height: 44px;
+  padding: 0.2rem 0.15rem;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: 600 0.9rem/1.2 var(--sans);
+  cursor: pointer;
+}
+
+.order-sheet h2 {
+  margin: 0.15rem 0 0.15rem;
+  font-size: 1.35rem;
+  text-align: center;
+  color: var(--pine);
+}
+
+.order-sheet .choice-lead {
+  margin-bottom: 0.65rem;
+}
+
+.sheet-choices {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sheet-choice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.55rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1.5px solid var(--line);
+  border-radius: 0.85rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.sheet-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sheet-choice-mark {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid #8a7768;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.sheet-choice.is-selected {
+  border-color: var(--berry);
+  background: #fff5f4;
+  box-shadow: 0 0 0 1px var(--berry);
+}
+
+.sheet-choice.is-selected .sheet-choice-mark {
+  border-color: var(--berry);
+}
+
+.sheet-choice.is-selected .sheet-choice-mark::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--berry);
+}
+
+.sheet-choice-copy {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.sheet-choice-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sheet-choice-name {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.sheet-choice .choice-badge {
+  position: static;
+  font-size: 0.62rem;
+  padding: 0.12rem 0.4rem;
+}
+
+.sheet-choice-detail {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.sheet-choice-price {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.order-sheet .choice-save {
+  margin: 0.4rem 0 0;
+}
+
+.order-sheet .agree {
+  margin-top: 0.55rem;
+}
+
+.sheet-kids {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+}
+
+.sheet-kids p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stepper button {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--pine);
+  background: #fff;
+  color: var(--pine);
+  font: 600 1.35rem/1 var(--sans);
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stepper span {
+  min-width: 1.4rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.order-sheet .sibling-faces,
+.order-sheet .sibling-faces:empty {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  height: 1.85rem;
+  min-height: 1.85rem;
+  margin-top: 0.35rem;
+  overflow: hidden;
+}
+
+.order-sheet .sibling-face {
+  width: 1.2rem;
+  height: 1.55rem;
+}
+
+.sheet-extra,
+.sheet-after,
+.order-sheet .delivery-line {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.sheet-extra {
+  color: #174a2e;
+  font-weight: 600;
+}
+
+.order-sheet-pay {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.9rem 0.75rem;
+  background: #fffdf8;
+  border-radius: 0 0 1.15rem 1.15rem;
+}
+
+.sheet-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.sheet-total strong {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-weight: 650;
+}
+
+.order-sheet #paypal-buttons {
+  min-height: 6.2rem;
+  margin-top: 0.55rem;
+}
+
+.order-sheet .pay-label,
+.order-sheet .btn-pay {
+  margin-top: 0.55rem;
+}
+
+.order-sheet .promise-line {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.order-sheet .fine {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
 }
 
 .exit-popup {
