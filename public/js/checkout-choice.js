@@ -136,29 +136,15 @@
     };
   }
 
-  // The weekday and date already stored on earlyBirdEnds. Empty when that
-  // clock cannot be read, so the page does not invent a deadline.
-  function earlyBirdDay(ends) {
-    const when = new Date(ends || "");
-    if (Number.isNaN(when.getTime())) return "";
-    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${weekdays[when.getUTCDay()]} ${when.getUTCDate()} ${months[when.getUTCMonth()]}`;
-  }
-
-  // A strip away from the order buttons. Early bird uses the configured end.
-  // After that, the 48-hour line the page already states, with the current
-  // bundle price. Nothing to show when the shop is closed or the price is missing.
+  // Early bird is a fixed line, with no price. After that, the 48-hour
+  // sentence the page already uses, plus the current bundle price.
+  // Nothing to show when the shop is closed, or when that later price is missing.
   function offerBanner(options) {
     const source = options || {};
     if (source.closed) return "";
+    if (source.early && !source.late) return "Early bird pricing ends 15 Nov";
     const price = source.price || "";
     if (!price) return "";
-    if (source.early && !source.late) {
-      const day = earlyBirdDay(source.earlyBirdEnds);
-      if (!day) return "";
-      return `Early bird: ${price} until ${day}`;
-    }
     return `Delivered within 48 hours of your order, whatever the date. ${price}`;
   }
 
@@ -275,7 +261,6 @@
     resumeOrder,
     orderQuery,
     orderAmount,
-    earlyBirdDay,
     offerBanner,
   };
 });

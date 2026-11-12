@@ -136,7 +136,7 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(bar, />Order now</);
     assert.doesNotMatch(bar, /data-pay|\$|£|early bird/);
     assert.match(html, /id="hero-order"[^>]*data-choice-open[^>]*>Order now</);
-    assert.match(html, /id="offer-banner">Early bird: \$19\.99 until Sunday 15 Nov</);
+    assert.match(html, /id="offer-banner"[^>]*data-choice-open[^>]*>Early bird pricing ends 15 Nov</);
     assert.match(html, /From/);
     assert.match(html, /id="choice-sheet"/);
     assert.match(html, /Most popular/);

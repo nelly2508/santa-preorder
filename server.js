@@ -388,10 +388,14 @@ function applyOfferBanner(html, config, now, market, closed) {
     price,
     earlyBirdEnds: config.earlyBirdEnds,
   });
-  const next = label
-    ? `<p class="offer-banner" id="offer-banner">${escapeHtml(label)}</p>`
-    : '<p class="offer-banner" id="offer-banner" hidden></p>';
-  return String(html).replace(/<p class="offer-banner" id="offer-banner">[^<]*<\/p>/, next);
+  const clickable = !!(label && early && !late);
+  let next = '<button type="button" class="offer-banner" id="offer-banner" hidden></button>';
+  if (label && clickable) {
+    next = `<button type="button" class="offer-banner" id="offer-banner" data-choice-open>${escapeHtml(label)}</button>`;
+  } else if (label) {
+    next = `<button type="button" class="offer-banner" id="offer-banner">${escapeHtml(label)}</button>`;
+  }
+  return String(html).replace(/<(?:p|button)\b[^>]*id="offer-banner"[^>]*>[^<]*<\/(?:p|button)>/, next);
 }
 
 function decorateSalesHtml(html, env, closed, nonce, variant, market) {

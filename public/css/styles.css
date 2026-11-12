@@ -177,14 +177,25 @@ p + p {
 }
 
 .offer-banner {
+  display: block;
+  width: 100%;
   margin: 0;
   padding: 0.32rem 1rem;
+  border: 0;
   background: var(--pine);
   color: #f6efe4;
   text-align: center;
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font: 600 0.82rem/1.35 var(--sans);
+  cursor: default;
+}
+
+button.offer-banner[data-choice-open] {
+  cursor: pointer;
+}
+
+button.offer-banner[data-choice-open]:hover,
+button.offer-banner[data-choice-open]:focus-visible {
+  filter: brightness(1.12);
 }
 
 .offer-banner[hidden] {
@@ -2438,6 +2449,10 @@ body[data-orders-closed] .reassurance {
 .order-sheet .sibling-face {
   width: 1.2rem;
   height: 1.55rem;
+}
+
+.order-sheet .sibling-face.is-shown {
+  opacity: 1;
 }
 
 .sheet-extra,

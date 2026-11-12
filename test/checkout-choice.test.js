@@ -229,6 +229,8 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(mainJs, /recordFunnel\("pay_click", \{ package: selectedKey \}\)/);
     assert.doesNotMatch(mainJs, /recordFunnel\("order_tap"\)/);
     assert.doesNotMatch(mainJs, /function focusCheckout|function scrollToCheckout/);
+    assert.match(mainJs, /renderFaces\(siblings \+ 1,/);
+    assert.doesNotMatch(mainJs, /renderFaces\(siblings,/);
     assert.match(mainJs, /preventScroll:\s*true/);
     const paypalClick = mainJs.slice(mainJs.indexOf("onClick:"), mainJs.indexOf("createOrder:"));
     assert.match(paypalClick, /recordPayClick\(\)/);
@@ -322,24 +324,17 @@ test("the sheet total matches the amount PayPal charges", () => {
   assert.strictEqual(quoteCart({ packageKey: "magicBundle", siblings: 1, phase: "early", prices: usd, currency: "USD" }).totalPence, 3498);
 });
 
-test("the offer strip names the early-bird Sunday, then the 48-hour line", () => {
-  const ends = "2026-11-15T23:59:59+00:00";
+test("the offer strip names the early-bird end, then the 48-hour line", () => {
   const later = "Delivered within 48 hours of your order, whatever the date.";
-  assert.strictEqual(
-    offerBanner({ early: true, price: "£16.99", earlyBirdEnds: ends }),
-    "Early bird: £16.99 until Sunday 15 Nov"
-  );
-  assert.strictEqual(
-    offerBanner({ early: true, price: "$19.99", earlyBirdEnds: ends }),
-    "Early bird: $19.99 until Sunday 15 Nov"
-  );
+  assert.strictEqual(offerBanner({ early: true, price: "£16.99" }), "Early bird pricing ends 15 Nov");
+  assert.strictEqual(offerBanner({ early: true, price: "$19.99" }), "Early bird pricing ends 15 Nov");
+  assert.doesNotMatch(offerBanner({ early: true, price: "£16.99" }), /£|\$/);
   assert.strictEqual(offerBanner({ early: false, price: "£19.99" }), `${later} £19.99`);
   assert.strictEqual(offerBanner({ early: false, price: "$24.99" }), `${later} $24.99`);
   assert.strictEqual(offerBanner({ early: true, late: true, price: "£24.98" }), `${later} £24.98`);
-  assert.strictEqual(offerBanner({ early: true, price: "£16.99", closed: true, earlyBirdEnds: ends }), "");
+  assert.strictEqual(offerBanner({ early: true, price: "£16.99", closed: true }), "");
   assert.strictEqual(offerBanner({ early: false, price: "" }), "");
-  assert.strictEqual(offerBanner({ early: true, price: "£16.99", earlyBirdEnds: "not-a-date" }), "");
-  assert.doesNotMatch(offerBanner({ early: false, price: "£19.99" }), /first week|15 December|Sunday/);
+  assert.doesNotMatch(offerBanner({ early: false, price: "£19.99" }), /first week|15 December|Early bird/);
 });
 
 test("the offer strip follows the clock and the order buttons stay plain", async () => {
@@ -357,9 +352,11 @@ test("the offer strip follows the clock and the order buttons stay plain", async
   }
 
   const standard = await pageAt("2026-11-16T00:00:00Z", "/");
-  assert.match(standard, /id="offer-banner">Delivered within 48 hours of your order, whatever the date\. £19\.99</);
+  const standardBanner = standard.match(/id="offer-banner"[^>]*>[^<]*/)[0];
+  assert.match(standardBanner, />Delivered within 48 hours of your order, whatever the date\. £19\.99$/);
+  assert.doesNotMatch(standardBanner, /data-choice-open/);
   assert.match(standard, /id="hero-order"[^>]*>Order now</);
-  assert.doesNotMatch(standard, /Early bird:/);
+  assert.doesNotMatch(standard, /Early bird pricing ends 15 Nov/);
   const late = await pageAt("2026-12-13T00:00:00Z", "/us");
   assert.match(late, /id="offer-banner">Delivered within 48 hours of your order, whatever the date\. \$29\.98</);
   assert.match(late, /class="us-order-bar"[\s\S]*?>Order now</);
@@ -380,7 +377,7 @@ test("Order now opens a choice, and the pricing cards still name a package", asy
     assert.match(hero, /data-choice-open/);
     assert.match(hero, />Order now$/);
     assert.doesNotMatch(hero, /data-pay|£|\$|early bird|48 hours/);
-    assert.match(html, /id="offer-banner">Early bird: £16\.99 until Sunday 15 Nov</);
+    assert.match(html, /id="offer-banner"[^>]*data-choice-open[^>]*>Early bird pricing ends 15 Nov</);
     assert.match(html, /data-price="from">£14\.99</);
     assert.match(html, /id="hero-delivery"/);
     assert.ok(html.indexOf('id="choose-bundle"') < html.indexOf('id="choose-video"'));

@@ -50,6 +50,8 @@
     });
     offerBanner.hidden = !text;
     offerBanner.textContent = text;
+    if (text && early && !late) offerBanner.setAttribute("data-choice-open", "");
+    else offerBanner.removeAttribute("data-choice-open");
   }
 
   if (offer) {
@@ -496,7 +498,7 @@
       if (count === siblings && animate) return;
       siblings = count;
       renderSiblings();
-      renderFaces(siblings, animate);
+      renderFaces(siblings + 1, animate);
       syncContinue();
     }
 
@@ -533,7 +535,7 @@
 
     showSiblingExample(selectedKey);
     renderSiblings();
-    renderFaces(siblings, false);
+    renderFaces(siblings + 1, false);
     syncContinue();
   }
 
