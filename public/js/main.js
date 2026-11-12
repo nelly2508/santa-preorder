@@ -750,15 +750,23 @@
     if (video.autoplay || video.hasAttribute("autoplay")) start();
   }
 
-  function armHeroSound(video, button) {
+  function armHeroTap(video, playButton) {
     if (!video) return;
     video.playsInline = true;
     video.setAttribute("playsinline", "");
     video.setAttribute("webkit-playsinline", "");
+    video.autoplay = false;
+    video.removeAttribute("autoplay");
+    video.loop = false;
+    video.removeAttribute("loop");
+    video.muted = false;
+    video.defaultMuted = false;
+    video.removeAttribute("muted");
     const marketUs = document.body.getAttribute("data-market") === "us";
     const fallbackSrc = marketUs ? "/assets/us-sample-saoirse-4x5-usd.mp4" : "/assets/santa-preview-v3.mp4";
     const fallbackPoster = "/assets/santa-preview-poster-lite.webp";
     let fellBack = false;
+    let started = false;
 
     function currentSrc() {
       const source = video.querySelector("source");
@@ -772,138 +780,89 @@
     function useFallback() {
       if (fellBack || isFinalSample(currentSrc())) return;
       fellBack = true;
+      started = false;
       const source = video.querySelector("source");
       if (source) source.setAttribute("src", fallbackSrc);
       video.setAttribute("poster", fallbackPoster);
       video.load();
-      const pending = video.play();
-      if (pending && typeof pending.catch === "function") pending.catch(() => {});
+      render();
     }
 
     video.addEventListener("error", useFallback);
     const sourceEl = video.querySelector("source");
     if (sourceEl) sourceEl.addEventListener("error", useFallback);
 
-    const soundPlan = window.SANTA_HERO_SOUND;
-    let audible = false;
+    const soundApi = window.SANTA_HERO_SOUND;
     const toggle = document.getElementById("hero-toggle");
-    const hit = document.getElementById("hero-hit");
+    const label = playButton ? playButton.querySelector(".hero-play-label") : null;
 
-    function setToggle(playing) {
-      const label = playing ? "Pause the video" : "Play the video";
-      const word = playing ? "Pause" : "Play";
+    function phase() {
+      if (video.ended) return "ended";
+      if (!started) return "idle";
+      if (video.paused) return "paused";
+      return "playing";
+    }
+
+    function render() {
+      const view = soundApi && soundApi.heroView ? soundApi.heroView(phase()) : null;
+      if (!view) return;
+      if (playButton) {
+        playButton.hidden = !view.poster;
+        playButton.setAttribute("aria-label", view.posterAria);
+      }
+      if (label) {
+        label.textContent = view.posterText;
+        label.hidden = !view.posterText;
+      }
       if (toggle) {
-        toggle.textContent = word;
-        toggle.setAttribute("aria-label", label);
-        toggle.setAttribute("aria-pressed", playing ? "true" : "false");
-      }
-      if (hit) hit.setAttribute("aria-label", label);
-    }
-
-    function togglePlayback() {
-      if (video.paused || video.ended) {
-        const pending = video.play();
-        if (pending && typeof pending.catch === "function") pending.catch(() => {});
-      } else {
-        video.pause();
+        toggle.hidden = !view.toggle;
+        toggle.textContent = view.toggleText;
+        toggle.setAttribute("aria-label", view.toggleAria);
+        toggle.setAttribute("aria-pressed", view.togglePressed ? "true" : "false");
       }
     }
 
-    video.addEventListener("play", () => setToggle(true));
-    video.addEventListener("pause", () => setToggle(false));
-    function hidePrompt() {
-      audible = true;
-      if (!button) return;
-      button.hidden = true;
-      button.setAttribute("aria-pressed", "true");
-    }
-
-    function applyUnmute(where) {
-      const plan = soundPlan && soundPlan.unmutePlan
-        ? soundPlan.unmutePlan(where)
-        : { unmute: true, restart: where === "video" || where === "sound", hidePrompt: true };
-      if (!plan.unmute) return;
+    function begin(restart) {
       video.muted = false;
       video.removeAttribute("muted");
-      if (plan.restart) {
+      if (restart) {
         try {
           video.currentTime = 0;
         } catch (error) {
           // A browser that has not buffered yet still plays from the start.
         }
       }
-      if (plan.hidePrompt) hidePrompt();
       const pending = video.play();
       if (pending && typeof pending.catch === "function") {
-        pending.catch(() => {
-          if (where === "sound" || where === "video") {
-            video.muted = true;
-            audible = false;
-            if (button) {
-              button.hidden = false;
-              button.setAttribute("aria-pressed", "false");
-            }
-          }
-        });
+        pending.catch(() => render());
       }
     }
 
-    function onFirstGesture(event) {
-      if (!video.muted || audible) return;
-      const target = event.target;
-      if (target && target.closest && target.closest("#hero-hit, #hero-sound, #hero-toggle")) return;
-      applyUnmute("page");
-    }
-
-    if (toggle) toggle.addEventListener("click", (event) => {
+    function onControl(event) {
       event.stopPropagation();
-      const wasPaused = video.paused || video.ended;
-      if (video.muted) {
-        const plan = soundPlan && soundPlan.unmutePlan ? soundPlan.unmutePlan("page") : { unmute: true, restart: false, hidePrompt: true };
-        if (plan.unmute) {
-          video.muted = false;
-          video.removeAttribute("muted");
-        }
-        if (plan.hidePrompt) hidePrompt();
-      }
-      if (wasPaused) {
-        const pending = video.play();
-        if (pending && typeof pending.catch === "function") pending.catch(() => {});
-      } else {
+      const action = soundApi && soundApi.heroStart
+        ? soundApi.heroStart(phase())
+        : { restart: !started || video.ended, pause: started && !video.paused && !video.ended };
+      if (action.pause) {
         video.pause();
+        return;
       }
-    });
-    if (hit) hit.addEventListener("click", (event) => {
-      event.stopPropagation();
-      applyUnmute("video");
-    });
+      begin(action.restart);
+    }
 
-    if (button) {
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        applyUnmute("sound");
-      });
-    }
-    document.addEventListener("pointerdown", onFirstGesture);
-    document.addEventListener("click", onFirstGesture);
-    document.addEventListener("keydown", onFirstGesture);
-    setToggle(!video.paused);
-    video.muted = false;
-    video.removeAttribute("muted");
-    const opening = video.play();
-    if (opening && typeof opening.then === "function") {
-      opening.then(() => {
-        if (!video.muted) hidePrompt();
-      }).catch(() => {
-        video.muted = true;
-        const pending = video.play();
-        if (pending && typeof pending.catch === "function") pending.catch(() => {});
-      });
-    }
+    if (playButton) playButton.addEventListener("click", onControl);
+    if (toggle) toggle.addEventListener("click", onControl);
+    video.addEventListener("play", () => {
+      started = true;
+      render();
+    });
+    video.addEventListener("pause", render);
+    video.addEventListener("ended", render);
+    render();
   }
 
   function setupFilms() {
-    armHeroSound(document.getElementById("hear-santa"), document.getElementById("hero-sound"));
+    armHeroTap(document.getElementById("hear-santa"), document.getElementById("hero-start"));
     armPlayer(document.getElementById("hero-film"), document.getElementById("hero-play"));
     const see = document.getElementById("see-example");
     if (see) {
@@ -914,8 +873,8 @@
           const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
           hear.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
         }
-        const sound = document.getElementById("hero-sound");
-        if (sound && !sound.hidden) sound.click();
+        const start = document.getElementById("hero-start");
+        if (start && !start.hidden) start.click();
       });
     }
     tagClarity();

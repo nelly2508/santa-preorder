@@ -40,26 +40,25 @@
     <section class="hero" id="top">
       <div class="snow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <figure class="hero-stage" id="hear">
-        <video
-          id="hear-santa"
-          autoplay
-          muted
-          loop
-          playsinline
-          preload="metadata"
-          poster="/assets/santa-preview-poster-lite.webp"
-          width="1080"
-          height="1350"
-          aria-label="Santa by the fire, saying a name"
-        >
-          <source src="/assets/santa-preview-v3.mp4" type="video/mp4">
-          <track src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English">
-          A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
-        </video>
-        <button type="button" class="hero-hit" id="hero-hit" tabindex="-1" aria-hidden="true"></button>
-        <div class="hero-controls">
-          <button type="button" class="hero-toggle" id="hero-toggle" aria-controls="hear-santa" aria-pressed="true" aria-label="Pause the video">Pause</button>
-          <button type="button" class="hero-sound" id="hero-sound" aria-controls="hear-santa" aria-pressed="false">Tap for sound</button>
+        <div class="hero-screen">
+          <video
+            id="hear-santa"
+            playsinline
+            preload="metadata"
+            poster="/assets/santa-preview-poster-lite.webp"
+            width="1080"
+            height="1350"
+            aria-label="Santa by the fire, saying a name"
+          >
+            <source src="/assets/santa-preview-v3.mp4" type="video/mp4">
+            <track src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English">
+            A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
+          </video>
+          <button type="button" class="hero-play" id="hero-start" aria-controls="hear-santa" aria-label="Tap to hear Santa">
+            <span class="hero-play-mark" aria-hidden="true"></span>
+            <span class="hero-play-label">Tap to hear Santa</span>
+          </button>
+          <button type="button" class="hero-toggle" id="hero-toggle" hidden aria-controls="hear-santa" aria-pressed="false" aria-label="Pause the video">Pause</button>
         </div>
       </figure>
       <div class="wrap hero-copy">
