@@ -6,7 +6,7 @@ const os = require("os");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { assignVariant, normaliseVariant, resolveVariant } = require("../lib/hero-variant");
+const { assignVariant, normaliseVariant, resolveVariant, heroSample, applyHeroSample } = require("../lib/hero-variant");
 
 const DELIVERY = "Delivered within 48 hours of your order, whatever the date.";
 
@@ -20,6 +20,33 @@ function close(server) {
   server.closeAllConnections();
   return new Promise((resolve) => server.close(resolve));
 }
+
+test("the hero video uses Lily or Olivia when those files exist, otherwise the current sample", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "santa-hero-"));
+  assert.deepStrictEqual(heroSample("uk", dir), {
+    src: "/assets/santa-preview-v3.mp4",
+    poster: "/assets/santa-preview-poster-lite.webp",
+    fallback: true,
+  });
+  assert.strictEqual(heroSample("us", dir).fallback, true);
+  fs.writeFileSync(path.join(dir, "hero-uk-lily.mp4"), "film");
+  assert.strictEqual(heroSample("uk", dir).fallback, true);
+  fs.writeFileSync(path.join(dir, "hero-uk-lily.jpg"), "poster");
+  assert.deepStrictEqual(heroSample("uk", dir), {
+    src: "/assets/hero-uk-lily.mp4",
+    poster: "/assets/hero-uk-lily.jpg",
+    fallback: false,
+  });
+  fs.writeFileSync(path.join(dir, "hero-us-olivia.mp4"), "film");
+  fs.writeFileSync(path.join(dir, "hero-us-olivia.jpg"), "poster");
+  assert.strictEqual(heroSample("us", dir).src, "/assets/hero-us-olivia.mp4");
+  const html = '<video poster="/assets/santa-preview-poster-lite.webp"><source src="/assets/santa-preview-v3.mp4" type="video/mp4"><track src="/assets/santa-preview.vtt" kind="captions"></video>';
+  const swapped = applyHeroSample(html, "us", dir);
+  assert.match(swapped, /poster="\/assets\/hero-us-olivia\.jpg"/);
+  assert.match(swapped, /src="\/assets\/hero-us-olivia\.mp4"/);
+  assert.doesNotMatch(swapped, /santa-preview\.vtt/);
+  assert.match(applyHeroSample(html, "uk", os.tmpdir()), /santa-preview-v3\.mp4/);
+});
 
 test("variant assignment is 50/50 and then sticky", () => {
   assert.strictEqual(normaliseVariant("A"), "explainer");
@@ -68,11 +95,17 @@ test("both sales pages keep the assigned film below the name sample", async () =
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="hero-film"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="pricing"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="faq"'));
-      assert.match(explainerHtml, /id="hear-santa"[\s\S]*?data-src="\/assets\/santa-preview-v3\.mp4"/);
-      assert.match(explainerHtml, /Hear Santa say a name/);
-      assert.doesNotMatch(explainerHtml, /id="hear-santa"[\s\S]*?\bmuted\b/);
-      assert.doesNotMatch(explainerHtml, /id="hear-santa"[\s\S]*?\bautoplay\b/);
-      assert.match(explainerHtml, /id="sample-play"/);
+      const sampleOpen = explainerHtml.slice(explainerHtml.indexOf("<video"), explainerHtml.indexOf(">", explainerHtml.indexOf('id="hear-santa"')) + 1);
+      assert.match(sampleOpen, /\bautoplay\b/);
+      assert.match(sampleOpen, /\bmuted\b/);
+      assert.match(sampleOpen, /\bloop\b/);
+      assert.match(sampleOpen, /\bplaysinline\b/);
+      assert.match(sampleOpen, /preload="metadata"/);
+      assert.match(sampleOpen, /poster="\/assets\/santa-preview-poster-lite\.webp"/);
+      assert.match(explainerHtml, /<source src="\/assets\/santa-preview-v3\.mp4"/);
+      assert.match(explainerHtml, />Tap for sound</);
+      assert.doesNotMatch(explainerHtml, /Hear Santa say a name/);
+      assert.doesNotMatch(explainerHtml, /fictional name/i);
       assert.doesNotMatch(explainerHtml, /etsy/i);
 
       const parents = await fetch(`http://127.0.0.1:${port}${pathName}?variant=parents`);
@@ -83,7 +116,7 @@ test("both sales pages keep the assigned film below the name sample", async () =
       assert.match(parentsHero, /data-src="\/assets\/exit-sales-v4\.mp4"/);
       assert.doesNotMatch(parentsHero, /autoplay|muted/);
       assert.doesNotMatch(parentsHero, /explainer-4x5/);
-      assert.match(parentsHtml, /id="hear-santa"[\s\S]*?data-src="\/assets\/santa-preview-v3\.mp4"/);
+      assert.match(parentsHtml, /<source src="\/assets\/santa-preview-v3\.mp4"/);
       assert.match(parentsHtml, /id="see-example"/);
     }
 

@@ -11,7 +11,7 @@ const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, offerB
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
-const { COOKIE, applyHeroFilm, normaliseVariant, readCookie, resolveVariant, variantCookie } = require("./lib/hero-variant");
+const { COOKIE, applyHeroFilm, applyHeroSample, normaliseVariant, readCookie, resolveVariant, variantCookie } = require("./lib/hero-variant");
 const { isPaypalOrderId, createOrderStore } = require("./lib/paypal-orders");
 const { sessionForPaidOrder } = require("./lib/quote");
 const crypto = require("crypto");
@@ -403,6 +403,7 @@ function decorateSalesHtml(html, env, closed, nonce, variant, market) {
   const shown = normaliseVariant(variant);
   const variantAttr = shown ? ` data-variant="${shown}"` : "";
   let next = applyHeroFilm(html, shown || "explainer", market);
+  next = applyHeroSample(next, market, path.join(ROOT, "assets"));
   next = next.replace("<body data-sales-page", `<body data-sales-page${variantAttr}${paymentAttributes(env)}${nonceAttr}`);
   if (paymentProvider(env) === "stripe") {
     next = next.replace(

@@ -750,8 +750,69 @@
     if (video.autoplay || video.hasAttribute("autoplay")) start();
   }
 
+  function armHeroSound(video, button) {
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    const fallbackSrc = "/assets/santa-preview-v3.mp4";
+    const fallbackPoster = "/assets/santa-preview-poster-lite.webp";
+    let fellBack = false;
+
+    function currentSrc() {
+      const source = video.querySelector("source");
+      return (source && source.getAttribute("src")) || video.currentSrc || "";
+    }
+
+    function useFallback() {
+      if (fellBack || currentSrc().indexOf("santa-preview-v3.mp4") !== -1) return;
+      fellBack = true;
+      const source = video.querySelector("source");
+      if (source) source.setAttribute("src", fallbackSrc);
+      video.setAttribute("poster", fallbackPoster);
+      video.load();
+      const pending = video.play();
+      if (pending && typeof pending.catch === "function") pending.catch(() => {});
+    }
+
+    video.addEventListener("error", useFallback);
+    const sourceEl = video.querySelector("source");
+    if (sourceEl) sourceEl.addEventListener("error", useFallback);
+
+    function playMuted() {
+      video.muted = true;
+      const pending = video.play();
+      if (pending && typeof pending.catch === "function") pending.catch(() => {});
+    }
+
+    if (button) {
+      button.addEventListener("click", () => {
+        video.muted = false;
+        try {
+          video.currentTime = 0;
+        } catch (error) {
+          // A browser that has not buffered yet still plays from the start.
+        }
+        button.setAttribute("aria-pressed", "true");
+        const pending = video.play();
+        if (pending && typeof pending.catch === "function") {
+          pending.then(() => {
+            button.hidden = true;
+          }).catch(() => {
+            video.muted = true;
+            button.hidden = false;
+            button.setAttribute("aria-pressed", "false");
+          });
+        } else {
+          button.hidden = true;
+        }
+      });
+    }
+    playMuted();
+  }
+
   function setupFilms() {
-    const sample = armPlayer(document.getElementById("hear-santa"), document.getElementById("sample-play"));
+    armHeroSound(document.getElementById("hear-santa"), document.getElementById("hero-sound"));
     armPlayer(document.getElementById("hero-film"), document.getElementById("hero-play"));
     const see = document.getElementById("see-example");
     if (see) {
@@ -762,7 +823,8 @@
           const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
           hear.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
         }
-        sample.start();
+        const sound = document.getElementById("hero-sound");
+        if (sound && !sound.hidden) sound.click();
       });
     }
     tagClarity();
