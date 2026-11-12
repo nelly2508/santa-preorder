@@ -170,7 +170,9 @@
       video.setAttribute("aria-label", "A short film for grown-ups");
       const source = doc.createElement("source");
       source.type = "video/mp4";
-      source.src = VIDEO_SRC;
+      source.src = doc.body && doc.body.getAttribute("data-market") === "us"
+        ? "/assets/us-grownups-4x5-usd.mp4"
+        : VIDEO_SRC;
       video.appendChild(source);
       slot.appendChild(video);
       if (unmute) {

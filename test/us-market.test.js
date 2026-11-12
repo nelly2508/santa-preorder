@@ -129,8 +129,9 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /Order the Magic bundle/);
     assert.doesNotMatch(html, /Pre-order|December 15|December 12|December 1|rush/i);
     assert.match(html, /same British Santa/);
-    assert.match(html, /santa-preview-v3\.mp4/);
-    assert.match(html, /poster="\/assets\/santa-preview-poster-lite\.webp"/);
+    assert.match(html, /hero-us-v4-full\.mp4/);
+    assert.match(html, /poster="\/assets\/hero-us-v4-full\.jpg"/);
+    assert.doesNotMatch(html, /<source src="\/assets\/santa-preview-v3\.mp4"/);
     assert.match(html, /class="us-order-bar"/);
     const bar = html.slice(html.indexOf('class="us-order-bar"'), html.indexOf("js/config.js"));
     assert.match(bar, /data-choice-open/);
@@ -160,7 +161,8 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, />Tap for sound</);
     assert.doesNotMatch(html, /id="hero-film"[^>]*\bmuted\b/);
     assert.doesNotMatch(html, /id="hero-film"[^>]*\bautoplay\b/);
-    assert.match(html, /us-explainer-4x5-v7\.mp4|exit-sales-v4\.mp4/);
+    assert.match(html, /us-explainer-4x5-v7\.mp4|us-grownups-4x5-usd\.mp4/);
+    assert.doesNotMatch(html, /data-src="\/assets\/exit-sales-v4\.mp4"/);
     assert.match(html, /Do Not Sell or Share My Personal Information/);
     assert.match(html, /do not collect personal information from children/);
     assert.doesNotMatch(html, /£/);

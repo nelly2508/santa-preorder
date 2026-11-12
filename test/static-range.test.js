@@ -150,9 +150,10 @@ test("the homepage hero autoplays muted and the order button has no price", asyn
     assert.match(sampleOpen, /\bloop\b/);
     assert.match(sampleOpen, /\bplaysinline\b/);
     assert.match(sampleOpen, /preload="metadata"/);
-    assert.match(sampleOpen, /poster="\/assets\/santa-preview-poster-lite\.webp"/);
-    assert.match(html, /<source src="\/assets\/santa-preview-v3\.mp4"/);
-    assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
+    assert.match(sampleOpen, /poster="\/assets\/hero-uk-v4-full\.jpg"/);
+    assert.match(sampleOpen, /preload="metadata"/);
+    assert.match(html, /<source src="\/assets\/hero-uk-v4-full\.mp4"/);
+    assert.doesNotMatch(html, /santa-preview\.vtt/);
     assert.match(html, />Tap for sound</);
     assert.match(html, /id="hero-toggle"[^>]*aria-label="Pause the video"[^>]*>Pause</);
     assert.match(html, /width="1080"/);
