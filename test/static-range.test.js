@@ -154,6 +154,9 @@ test("the homepage hero autoplays muted and the order button has no price", asyn
     assert.match(html, /<source src="\/assets\/santa-preview-v3\.mp4"/);
     assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
     assert.match(html, />Tap for sound</);
+    assert.match(html, /id="hero-toggle"[^>]*aria-label="Pause the video"[^>]*>Pause</);
+    assert.match(html, /width="1080"/);
+    assert.match(html, /height="1350"/);
     assert.doesNotMatch(html, /Hear Santa say a name/);
     assert.doesNotMatch(html, /fictional name/i);
     assert.doesNotMatch(html, /fetchpriority="high"/);
@@ -196,6 +199,13 @@ test("the homepage hero autoplays muted and the order button has no price", asyn
     assert.match(html, /Santa sits in an armchair by the fire/);
     assert.match(html, /id="hero-order"[^>]*>Order now</);
     const css = await (await fetch(`http://127.0.0.1:${port}/css/styles.css`)).text();
+    assert.match(css, /\.hero-stage video\s*\{[^}]*object-fit:\s*contain/);
+    assert.match(css, /max-height:\s*80vh/);
+    assert.match(css, /aspect-ratio:\s*auto\s+4\s*\/\s*5/);
+    const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
+    assert.match(mainJs, /video\.pause\(\)/);
+    assert.match(mainJs, /Pause the video/);
+    assert.match(mainJs, /Play the video/);
     assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/);
     assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*object-fit:\s*contain/);
     assert.doesNotMatch(html, /Father Christmas|Oliver|sample\.mp4|Sample clip|sample-video/i);

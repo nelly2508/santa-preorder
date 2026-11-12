@@ -785,8 +785,40 @@
       if (pending && typeof pending.catch === "function") pending.catch(() => {});
     }
 
+    const toggle = document.getElementById("hero-toggle");
+    const hit = document.getElementById("hero-hit");
+
+    function setToggle(playing) {
+      const label = playing ? "Pause the video" : "Play the video";
+      const word = playing ? "Pause" : "Play";
+      if (toggle) {
+        toggle.textContent = word;
+        toggle.setAttribute("aria-label", label);
+        toggle.setAttribute("aria-pressed", playing ? "true" : "false");
+      }
+      if (hit) hit.setAttribute("aria-label", label);
+    }
+
+    function togglePlayback() {
+      if (video.paused || video.ended) {
+        const pending = video.play();
+        if (pending && typeof pending.catch === "function") pending.catch(() => {});
+      } else {
+        video.pause();
+      }
+    }
+
+    video.addEventListener("play", () => setToggle(true));
+    video.addEventListener("pause", () => setToggle(false));
+    if (toggle) toggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      togglePlayback();
+    });
+    if (hit) hit.addEventListener("click", togglePlayback);
+
     if (button) {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
         video.muted = false;
         try {
           video.currentTime = 0;
@@ -796,18 +828,14 @@
         button.setAttribute("aria-pressed", "true");
         const pending = video.play();
         if (pending && typeof pending.catch === "function") {
-          pending.then(() => {
-            button.hidden = true;
-          }).catch(() => {
+          pending.catch(() => {
             video.muted = true;
-            button.hidden = false;
             button.setAttribute("aria-pressed", "false");
           });
-        } else {
-          button.hidden = true;
         }
       });
     }
+    setToggle(!video.paused);
     playMuted();
   }
 
