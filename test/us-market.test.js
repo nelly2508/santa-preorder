@@ -96,7 +96,11 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(ukHtml, /hreflang="x-default" href="https:\/\/santasaysmyname\.com\/"/);
     assert.match(ukHtml, /No app · No subscription · No photos of your child · Love it, or your money back\./);
     assert.match(ukHtml, /Pay with PayPal or card/);
-    assert.doesNotMatch(ukHtml, /us-order-bar|Personalized with your child's name/);
+    assert.doesNotMatch(ukHtml, /Personalized with your child's name/);
+    assert.match(ukHtml, /class="us-order-bar"/);
+    const ukBar = ukHtml.slice(ukHtml.indexOf('class="us-order-bar"'), ukHtml.indexOf("js/config.js"));
+    assert.match(ukBar, />Order now</);
+    assert.doesNotMatch(ukBar, /\$|£/);
     assert.match(ukHtml, /id="cookie-settings"/);
     assert.match(ukHtml, /id="us-do-not-sell"/);
 

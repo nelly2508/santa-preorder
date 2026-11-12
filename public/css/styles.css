@@ -843,8 +843,16 @@ button.offer-banner[data-choice-open]:focus-visible {
     margin-bottom: 0;
   }
 
+  .hero-copy {
+    padding-top: 0.3rem;
+  }
+
   .hero-from {
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .hero-reassure {
+    margin-top: 0.2rem;
   }
 
   .hero-from strong {
@@ -869,8 +877,8 @@ button.offer-banner[data-choice-open]:focus-visible {
     padding-bottom: 0.55rem;
   }
 
-  /* US phones use the same stacked hero as the UK. The sticky bar stays.
-     The film is a little smaller so See an example clears that bar. */
+  /* US phones use the same stacked hero as the UK. The film is a little
+     smaller so See an example clears the sticky bar. */
   body[data-market="us"] .hero-sample {
     width: min(100%, 12.5rem);
   }
@@ -880,7 +888,13 @@ button.offer-banner[data-choice-open]:focus-visible {
     line-height: 1.35;
   }
 
-  body[data-market="us"] .us-order-bar {
+  /* The sticky Order now is the phone button. The hero button would push
+     the price under that bar, so it stays for desktop only. */
+  body[data-sales-page] #hero-order {
+    display: none;
+  }
+
+  body[data-sales-page] .us-order-bar {
     position: fixed;
     z-index: 6;
     left: 0;
@@ -893,13 +907,13 @@ button.offer-banner[data-choice-open]:focus-visible {
     box-shadow: 0 -8px 24px rgba(36, 22, 15, 0.12);
   }
 
-  body[data-market="us"] .us-order-bar .btn {
+  body[data-sales-page] .us-order-bar .btn {
     min-height: 48px;
     font-size: 1.05rem;
   }
 
-  body[data-market="us"] {
-    padding-bottom: calc(4.4rem + env(safe-area-inset-bottom));
+  body[data-sales-page] {
+    padding-bottom: calc(4.8rem + env(safe-area-inset-bottom));
   }
 }
 

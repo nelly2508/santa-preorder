@@ -200,7 +200,12 @@ test("the homepage hero waits for a tap and the order button has no price", asyn
     );
     assert.match(html, /Santa sits in an armchair by the fire/);
     assert.match(html, /id="hero-order"[^>]*>Order now</);
+    assert.match(html, /class="us-order-bar"/);
     const css = await (await fetch(`http://127.0.0.1:${port}/css/styles.css`)).text();
+    const phoneCss = css.slice(css.indexOf("@media (max-width: 719px)"), css.indexOf("@media (prefers-reduced-motion"));
+    assert.match(phoneCss, /#hero-order\s*\{[^}]*display:\s*none/);
+    assert.match(phoneCss, /\.us-order-bar\s*\{[^}]*display:\s*flex/);
+    assert.match(css, /\.us-order-bar\s*\{\s*display:\s*none;\s*\}/);
     assert.match(css, /\.hero-stage video\s*\{[^}]*object-fit:\s*contain/);
     assert.match(css, /max-height:\s*80vh/);
     assert.match(css, /aspect-ratio:\s*auto\s+4\s*\/\s*5/);
