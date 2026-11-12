@@ -176,6 +176,21 @@ p + p {
   background: linear-gradient(180deg, rgba(255, 250, 243, 0.65), rgba(239, 226, 208, 0.45));
 }
 
+.offer-banner {
+  margin: 0;
+  padding: 0.32rem 1rem;
+  background: var(--pine);
+  color: #f6efe4;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.offer-banner[hidden] {
+  display: none !important;
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -2013,6 +2028,7 @@ body[data-orders-closed] #pay-continue,
 body[data-orders-closed] #paypal-buttons,
 body[data-orders-closed] #pay-label,
 body[data-orders-closed] #sleigh-add,
+body[data-orders-closed] .offer-banner,
 body[data-orders-closed] #choice-sheet,
 body[data-orders-closed] #checkout,
 body[data-orders-closed] #sibling-add,

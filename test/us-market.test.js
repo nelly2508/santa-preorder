@@ -133,9 +133,10 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /class="us-order-bar"/);
     const bar = html.slice(html.indexOf('class="us-order-bar"'), html.indexOf("js/config.js"));
     assert.match(bar, /data-choice-open/);
-    assert.match(bar, />Order now - \$19\.99 - early bird ends Sun</);
-    assert.doesNotMatch(bar, /data-pay/);
-    assert.match(html, /id="hero-order"[^>]*data-choice-open[^>]*>Order now - \$19\.99 - early bird ends Sun</);
+    assert.match(bar, />Order now</);
+    assert.doesNotMatch(bar, /data-pay|\$|£|early bird/);
+    assert.match(html, /id="hero-order"[^>]*data-choice-open[^>]*>Order now</);
+    assert.match(html, /id="offer-banner">Early bird: \$19\.99 until Sunday 15 Nov</);
     assert.match(html, /From/);
     assert.match(html, /id="choice-sheet"/);
     assert.match(html, /Most popular/);

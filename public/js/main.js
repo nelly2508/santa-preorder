@@ -34,17 +34,23 @@
   const bundleLabel = early
     ? `Order the Magic bundle — ${bundlePrice} early bird`
     : `Order the Magic bundle — ${bundlePrice}`;
-  const orderButtonLabel = choiceApi && choiceApi.orderCta
-    ? choiceApi.orderCta({ early, late, price: bundlePrice })
-    : `Order now - ${bundlePrice}`;
 
   document.querySelectorAll("[data-label='bundle']").forEach((link) => {
     link.textContent = bundleLabel;
   });
 
-  document.querySelectorAll("[data-order-cta]").forEach((control) => {
-    control.textContent = orderButtonLabel;
-  });
+  const offerBanner = document.getElementById("offer-banner");
+  if (offerBanner && choiceApi && choiceApi.offerBanner) {
+    const text = choiceApi.offerBanner({
+      early,
+      late,
+      closed: ordersClosed,
+      price: bundlePrice,
+      earlyBirdEnds: config.earlyBirdEnds,
+    });
+    offerBanner.hidden = !text;
+    offerBanner.textContent = text;
+  }
 
   if (offer) {
     document.querySelectorAll("[data-price='from']").forEach((el) => {

@@ -7,7 +7,7 @@ const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/orde
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
 const { UNKNOWN_COUNTRY, createFunnelCounter, funnelFromSession } = require("./lib/funnel-counts");
 const { countryFromRequest } = require("./lib/client-country");
-const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, orderCta } = require("./public/js/checkout-choice");
+const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, offerBanner } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
@@ -369,7 +369,7 @@ function cookieIsSecure(req) {
   return proto === "https";
 }
 
-function applyOrderCta(html, config, now, market) {
+function applyOfferBanner(html, config, now, market, closed) {
   const phase = offerPhase({
     now,
     earlyBird: config.earlyBird,
@@ -378,12 +378,20 @@ function applyOrderCta(html, config, now, market) {
     lateOrdersFrom: config.lateOrdersFrom,
   });
   const book = market === "us" && config.usd ? config.usd : config.prices;
-  const earlyPrice = book.magicBundleEarly;
-  const from = `Order now - ${earlyPrice} - early bird ends Sun`;
-  if (phase === "early") return String(html);
-  const price = phase === "late" ? book.magicBundleLate : book.magicBundleFull;
-  const label = orderCta({ early: false, late: phase === "late", price });
-  return String(html).split(from).join(label);
+  const early = phase === "early";
+  const late = phase === "late";
+  const price = late ? book.magicBundleLate : early ? book.magicBundleEarly : book.magicBundleFull;
+  const label = offerBanner({
+    early,
+    late,
+    closed,
+    price,
+    earlyBirdEnds: config.earlyBirdEnds,
+  });
+  const next = label
+    ? `<p class="offer-banner" id="offer-banner">${escapeHtml(label)}</p>`
+    : '<p class="offer-banner" id="offer-banner" hidden></p>';
+  return String(html).replace(/<p class="offer-banner" id="offer-banner">[^<]*<\/p>/, next);
 }
 
 function decorateSalesHtml(html, env, closed, nonce, variant, market) {
@@ -1105,7 +1113,7 @@ function createServer(options = {}) {
         let html = buf.toString("utf8");
         const config = siteConfig();
         if (pageMarket === "us") html = applyUsHtml(html, config.usd);
-        html = applyOrderCta(html, config, serverNow(options), pageMarket);
+        html = applyOfferBanner(html, config, serverNow(options), pageMarket, closed);
         const headers = {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",

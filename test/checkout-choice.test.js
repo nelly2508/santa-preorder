@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, orderAmount, orderCta, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
+const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, orderAmount, offerBanner, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
 const { quoteCart } = require("../lib/quote");
 
 const prices = {
@@ -212,7 +212,9 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.doesNotMatch(termsHtml, /first week of December|15 December|12 December|1 December|in good time for Christmas|tick the box to ask us|lose the right to cancel/i);
     const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
     assert.match(mainJs, /Order the Magic bundle/);
-    assert.match(mainJs, /Order now/);
+    assert.match(html, /id="hero-order"[^>]*>Order now</);
+    assert.match(html, /id="final-order"[^>]*>Order now</);
+    assert.doesNotMatch(mainJs, /Order now -/);
     assert.match(mainJs, /Order the single video/);
     assert.match(mainJs, /Pay now\. Christmas week price\./);
     assert.doesNotMatch(mainJs, /Pre-order|Rush delivery|15 December/);
@@ -320,13 +322,51 @@ test("the sheet total matches the amount PayPal charges", () => {
   assert.strictEqual(quoteCart({ packageKey: "magicBundle", siblings: 1, phase: "early", prices: usd, currency: "USD" }).totalPence, 3498);
 });
 
-test("the order button names the early-bird Sunday, then the 48-hour promise", () => {
-  assert.strictEqual(orderCta({ early: true, price: "£16.99" }), "Order now - £16.99 - early bird ends Sun");
-  assert.strictEqual(orderCta({ early: true, price: "$19.99" }), "Order now - $19.99 - early bird ends Sun");
-  assert.strictEqual(orderCta({ early: false, price: "£19.99" }), "Order now - £19.99 - delivered within 48 hours");
-  assert.strictEqual(orderCta({ early: false, price: "$24.99" }), "Order now - $24.99 - delivered within 48 hours");
-  assert.strictEqual(orderCta({ early: true, late: true, price: "£24.98" }), "Order now - £24.98 - delivered within 48 hours");
-  assert.doesNotMatch(orderCta({ early: false, price: "£19.99" }), /first week|Sun|early bird/);
+test("the offer strip names the early-bird Sunday, then the 48-hour line", () => {
+  const ends = "2026-11-15T23:59:59+00:00";
+  const later = "Delivered within 48 hours of your order, whatever the date.";
+  assert.strictEqual(
+    offerBanner({ early: true, price: "£16.99", earlyBirdEnds: ends }),
+    "Early bird: £16.99 until Sunday 15 Nov"
+  );
+  assert.strictEqual(
+    offerBanner({ early: true, price: "$19.99", earlyBirdEnds: ends }),
+    "Early bird: $19.99 until Sunday 15 Nov"
+  );
+  assert.strictEqual(offerBanner({ early: false, price: "£19.99" }), `${later} £19.99`);
+  assert.strictEqual(offerBanner({ early: false, price: "$24.99" }), `${later} $24.99`);
+  assert.strictEqual(offerBanner({ early: true, late: true, price: "£24.98" }), `${later} £24.98`);
+  assert.strictEqual(offerBanner({ early: true, price: "£16.99", closed: true, earlyBirdEnds: ends }), "");
+  assert.strictEqual(offerBanner({ early: false, price: "" }), "");
+  assert.strictEqual(offerBanner({ early: true, price: "£16.99", earlyBirdEnds: "not-a-date" }), "");
+  assert.doesNotMatch(offerBanner({ early: false, price: "£19.99" }), /first week|15 December|Sunday/);
+});
+
+test("the offer strip follows the clock and the order buttons stay plain", async () => {
+  async function pageAt(now, path) {
+    const server = createServer({ log() {}, now });
+    const port = await new Promise((resolve) => {
+      server.listen(0, "127.0.0.1", () => resolve(server.address().port));
+    });
+    try {
+      return await (await fetch(`http://127.0.0.1:${port}${path}`)).text();
+    } finally {
+      server.closeAllConnections();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+
+  const standard = await pageAt("2026-11-16T00:00:00Z", "/");
+  assert.match(standard, /id="offer-banner">Delivered within 48 hours of your order, whatever the date\. £19\.99</);
+  assert.match(standard, /id="hero-order"[^>]*>Order now</);
+  assert.doesNotMatch(standard, /Early bird:/);
+  const late = await pageAt("2026-12-13T00:00:00Z", "/us");
+  assert.match(late, /id="offer-banner">Delivered within 48 hours of your order, whatever the date\. \$29\.98</);
+  assert.match(late, /class="us-order-bar"[\s\S]*?>Order now</);
+  assert.doesNotMatch(late.slice(late.indexOf('class="us-order-bar"'), late.indexOf("js/config.js")), /\$|£/);
+  const closed = await pageAt("2026-12-20T00:00:00Z", "/");
+  assert.match(closed, /id="offer-banner" hidden/);
+  assert.doesNotMatch(closed, /Early bird:/);
 });
 
 test("Order now opens a choice, and the pricing cards still name a package", async () => {
@@ -338,8 +378,9 @@ test("Order now opens a choice, and the pricing cards still name a package", asy
     const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
     const hero = html.match(/id="hero-order"[^>]*>[^<]*/)[0];
     assert.match(hero, /data-choice-open/);
-    assert.match(hero, />Order now - £16\.99 - early bird ends Sun/);
-    assert.doesNotMatch(hero, /data-pay/);
+    assert.match(hero, />Order now$/);
+    assert.doesNotMatch(hero, /data-pay|£|\$|early bird|48 hours/);
+    assert.match(html, /id="offer-banner">Early bird: £16\.99 until Sunday 15 Nov</);
     assert.match(html, /data-price="from">£14\.99</);
     assert.match(html, /id="hero-delivery"/);
     assert.ok(html.indexOf('id="choose-bundle"') < html.indexOf('id="choose-video"'));
@@ -358,8 +399,8 @@ test("Order now opens a choice, and the pricing cards still name a package", asy
     assert.match(pricing, /Order the Magic bundle/);
     const finalCta = html.match(/id="final-order"[^>]*>[^<]*/)[0];
     assert.match(finalCta, /data-choice-open/);
-    assert.match(finalCta, />Order now - £16\.99 - early bird ends Sun/);
-    assert.doesNotMatch(finalCta, /data-pay/);
+    assert.match(finalCta, />Order now$/);
+    assert.doesNotMatch(finalCta, /data-pay|£|\$/);
     assert.doesNotMatch(html, /etsy/i);
     const sheet = html.slice(html.indexOf('id="choice-sheet"'), html.indexOf('id="exit-popup"'));
     assert.doesNotMatch(sheet, /etsy/i);
