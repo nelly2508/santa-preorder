@@ -752,10 +752,11 @@
 
   function armHeroSound(video, button) {
     if (!video) return;
-    video.muted = true;
-    video.defaultMuted = true;
     video.playsInline = true;
-    const fallbackSrc = "/assets/santa-preview-v3.mp4";
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    const marketUs = document.body.getAttribute("data-market") === "us";
+    const fallbackSrc = marketUs ? "/assets/us-sample-saoirse-4x5-usd.mp4" : "/assets/santa-preview-v3.mp4";
     const fallbackPoster = "/assets/santa-preview-poster-lite.webp";
     let fellBack = false;
 
@@ -764,8 +765,12 @@
       return (source && source.getAttribute("src")) || video.currentSrc || "";
     }
 
+    function isFinalSample(src) {
+      return src.indexOf("santa-preview-v3.mp4") !== -1 || src.indexOf("us-sample-saoirse-4x5-usd.mp4") !== -1;
+    }
+
     function useFallback() {
-      if (fellBack || currentSrc().indexOf("santa-preview-v3.mp4") !== -1) return;
+      if (fellBack || isFinalSample(currentSrc())) return;
       fellBack = true;
       const source = video.querySelector("source");
       if (source) source.setAttribute("src", fallbackSrc);
@@ -779,12 +784,8 @@
     const sourceEl = video.querySelector("source");
     if (sourceEl) sourceEl.addEventListener("error", useFallback);
 
-    function playMuted() {
-      video.muted = true;
-      const pending = video.play();
-      if (pending && typeof pending.catch === "function") pending.catch(() => {});
-    }
-
+    const soundPlan = window.SANTA_HERO_SOUND;
+    let audible = false;
     const toggle = document.getElementById("hero-toggle");
     const hit = document.getElementById("hero-hit");
 
@@ -810,33 +811,95 @@
 
     video.addEventListener("play", () => setToggle(true));
     video.addEventListener("pause", () => setToggle(false));
-    if (toggle) toggle.addEventListener("click", (event) => {
-      event.stopPropagation();
-      togglePlayback();
-    });
-    if (hit) hit.addEventListener("click", togglePlayback);
+    function hidePrompt() {
+      audible = true;
+      if (!button) return;
+      button.hidden = true;
+      button.setAttribute("aria-pressed", "true");
+    }
 
-    if (button) {
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        video.muted = false;
+    function applyUnmute(where) {
+      const plan = soundPlan && soundPlan.unmutePlan
+        ? soundPlan.unmutePlan(where)
+        : { unmute: true, restart: where === "video" || where === "sound", hidePrompt: true };
+      if (!plan.unmute) return;
+      video.muted = false;
+      video.removeAttribute("muted");
+      if (plan.restart) {
         try {
           video.currentTime = 0;
         } catch (error) {
           // A browser that has not buffered yet still plays from the start.
         }
-        button.setAttribute("aria-pressed", "true");
-        const pending = video.play();
-        if (pending && typeof pending.catch === "function") {
-          pending.catch(() => {
+      }
+      if (plan.hidePrompt) hidePrompt();
+      const pending = video.play();
+      if (pending && typeof pending.catch === "function") {
+        pending.catch(() => {
+          if (where === "sound" || where === "video") {
             video.muted = true;
-            button.setAttribute("aria-pressed", "false");
-          });
+            audible = false;
+            if (button) {
+              button.hidden = false;
+              button.setAttribute("aria-pressed", "false");
+            }
+          }
+        });
+      }
+    }
+
+    function onFirstGesture(event) {
+      if (!video.muted || audible) return;
+      const target = event.target;
+      if (target && target.closest && target.closest("#hero-hit, #hero-sound, #hero-toggle")) return;
+      applyUnmute("page");
+    }
+
+    if (toggle) toggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const wasPaused = video.paused || video.ended;
+      if (video.muted) {
+        const plan = soundPlan && soundPlan.unmutePlan ? soundPlan.unmutePlan("page") : { unmute: true, restart: false, hidePrompt: true };
+        if (plan.unmute) {
+          video.muted = false;
+          video.removeAttribute("muted");
         }
+        if (plan.hidePrompt) hidePrompt();
+      }
+      if (wasPaused) {
+        const pending = video.play();
+        if (pending && typeof pending.catch === "function") pending.catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+    if (hit) hit.addEventListener("click", (event) => {
+      event.stopPropagation();
+      applyUnmute("video");
+    });
+
+    if (button) {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        applyUnmute("sound");
       });
     }
+    document.addEventListener("pointerdown", onFirstGesture);
+    document.addEventListener("click", onFirstGesture);
+    document.addEventListener("keydown", onFirstGesture);
     setToggle(!video.paused);
-    playMuted();
+    video.muted = false;
+    video.removeAttribute("muted");
+    const opening = video.play();
+    if (opening && typeof opening.then === "function") {
+      opening.then(() => {
+        if (!video.muted) hidePrompt();
+      }).catch(() => {
+        video.muted = true;
+        const pending = video.play();
+        if (pending && typeof pending.catch === "function") pending.catch(() => {});
+      });
+    }
   }
 
   function setupFilms() {
