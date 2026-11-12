@@ -18,6 +18,7 @@
 </head>
 <body data-sales-page>
   <a class="skip" href="#main">Skip to content</a>
+  <p class="offer-banner" id="offer-banner">Early bird: £16.99 until Sunday 15 Nov</p>
 
   <header class="site-header">
     <a class="logo" href="#top">
@@ -45,53 +46,7 @@
           <h1>Santa. By the fire. Saying your child's name.</h1>
           <p class="lede">A personal video. Santa says your child's name, a good deed and a wish.</p>
         </div>
-        <div class="hero-offer">
-          <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
-          <p class="hero-from">
-            <span class="from-label">From</span>
-            <strong data-price="from">£14.99</strong>
-          </p>
-          <ul class="hero-includes">
-            <li>A personalised fireside video, about a minute</li>
-            <li>Santa says their name, a good deed and a wish</li>
-            <li id="hero-delivery">Delivered within 48 hours of your order, whatever the date.</li>
-          </ul>
-          <button type="button" class="btn hero-cta" id="hero-order" data-choice-open>Order now</button>
-          <p class="trust-line">Secure checkout with PayPal or card</p>
-          <p class="hero-upsell" id="hero-upsell">The Magic bundle adds a letter, a Nice List certificate and a named sleigh video.</p>
-          <button type="button" class="btn btn-see" id="see-example">See an example</button>
-          <figure class="parent-quote">
-            <blockquote>
-              <p>“My two little ones both ask if Santa will remember them. When he says their name, they’ll be so excited.”</p>
-            </blockquote>
-            <figcaption>— Emily, Pontefract</figcaption>
-          </figure>
-          <p class="hero-next"><a href="#pricing">See pricing</a></p>
-        </div>
-        <figure class="player hear-player hero-sample hero-film">
-          <div class="player-frame hear-frame">
-            <video id="hero-film" data-hero-film controls playsinline preload="none" width="1080" height="1350">
-              A short film about the personalised video.
-            </video>
-            <button type="button" class="sample-play" id="hero-play" hidden aria-controls="hero-film" aria-label="Play the film">
-              <span class="sample-play-icon" aria-hidden="true"></span>
-              Play
-            </button>
-          </div>
-        </figure>
-        <figure class="hero-figure">
-          <div class="hero-frame">
-            <img data-src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" decoding="async">
-          </div>
-          <figcaption>By the fire · about a minute · no photos of your child</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section class="section sample-block" id="hear">
-      <div class="wrap">
-        <h2>Hear Santa</h2>
-        <figure class="player hear-player">
+        <figure class="player hear-player hero-sample" id="hear">
           <div class="player-frame hear-frame">
             <video
               id="hear-santa"
@@ -107,15 +62,62 @@
               <track data-src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English" default>
               A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
             </video>
-            <button type="button" class="sample-play" id="sample-play" aria-controls="hear-santa" aria-label="Play Santa saying Saoirse">
+            <button type="button" class="sample-play sample-play--label" id="sample-play" aria-controls="hear-santa" aria-label="Hear Santa say a name">
+              <span class="sample-play-icon" aria-hidden="true"></span>
+              Hear Santa say a name
+            </button>
+          </div>
+          <figcaption>
+            <h2>Hear Santa</h2>
+            <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
+          </figcaption>
+        </figure>
+        <div class="hero-offer">
+          <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
+          <button type="button" class="btn hero-cta" id="hero-order" data-choice-open>Order now</button>
+          <p class="trust-line">Secure checkout with PayPal or card</p>
+          <p class="hero-from">
+            <span class="from-label">From</span>
+            <strong data-price="from">£14.99</strong>
+          </p>
+          <ul class="hero-includes">
+            <li>A personalised fireside video, about a minute</li>
+            <li>Santa says their name, a good deed and a wish</li>
+            <li id="hero-delivery">Delivered within 48 hours of your order, whatever the date.</li>
+          </ul>
+          <p class="hero-upsell" id="hero-upsell">The Magic bundle adds a letter, a Nice List certificate and a named sleigh video.</p>
+          <button type="button" class="btn btn-see" id="see-example">See an example</button>
+          <figure class="parent-quote">
+            <blockquote>
+              <p>“My two little ones both ask if Santa will remember them. When he says their name, they’ll be so excited.”</p>
+            </blockquote>
+            <figcaption>— Emily, Pontefract</figcaption>
+          </figure>
+          <p class="hero-next"><a href="#pricing">See pricing</a></p>
+        </div>
+        <figure class="hero-figure">
+          <div class="hero-frame">
+            <img data-src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" decoding="async">
+          </div>
+          <figcaption>By the fire · about a minute · no photos of your child</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section sample-block" id="film">
+      <div class="wrap">
+        <h2>A short film</h2>
+        <p class="lede">The name sample above is Santa saying Saoirse. This film explains the order. It stays unloaded until you press play.</p>
+        <figure class="player hear-player hero-film">
+          <div class="player-frame hear-frame">
+            <video id="hero-film" data-hero-film controls playsinline preload="none" width="1080" height="1350">
+              A short film about the personalised video.
+            </video>
+            <button type="button" class="sample-play" id="hero-play" aria-controls="hero-film" aria-label="Play the film">
               <span class="sample-play-icon" aria-hidden="true"></span>
               Play
             </button>
           </div>
-          <figcaption>
-            <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
-            <p>A quick hello from Santa. The film you order says your child's name, a good deed and a wish.</p>
-          </figcaption>
         </figure>
       </div>
     </section>
@@ -239,34 +241,6 @@
             <a class="btn btn-pine" data-pay="singleVideo" href="#checkout">Order the single video — £14.99</a>
           </article>
         </div>
-
-        <div class="checkout" id="checkout">
-          <div class="sibling-add" id="sibling-add">
-            <h3>Siblings</h3>
-            <p class="sibling-line"><span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. Each extra child gets the full Magic bundle. <span data-two-children="magicBundle">2 children = £16.99 + £11.99</span><span data-two-children="singleVideo" hidden>2 children = £14.99 + £11.99</span><span data-two-children="video" hidden>2 children = your video + £11.99</span>.</p>
-            <div class="sibling-controls">
-              <button type="button" class="btn" id="add-sibling">Add a sibling</button>
-              <button type="button" class="btn btn-line" id="sibling-remove" hidden>Remove a sibling</button>
-            </div>
-            <div class="sibling-faces" id="sibling-faces" aria-hidden="true"></div>
-            <p class="sibling-count" id="sibling-count" role="status" aria-live="polite">No siblings added yet.</p>
-            <p class="sibling-next" id="sibling-next" hidden></p>
-          </div>
-          <h3>Before you pay</h3>
-          <p>We collect your child's details on the order form after payment, never on the payment page. We delete those details about 90 days after delivery.</p>
-          <p class="chosen" id="chosen-package" role="status" aria-live="polite">You've chosen: <strong id="chosen-name">Magic bundle</strong> — <span id="chosen-price">£16.99 early bird</span></p>
-          <p class="delivery-line">Delivered within 48 hours of your order, whatever the date. The 48 hours start when we have both your payment and the completed order form.</p>
-          <label class="agree" id="sleigh-add" hidden>
-            <input type="checkbox" id="named-sleigh">
-            <span>Add the named sleigh video, <span data-price="namedSleigh">+£4.99</span>. Voice only.</span>
-          </label>
-          <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card</a>
-          <p class="pay-label" id="pay-label" hidden>Pay with PayPal or card</p>
-          <div id="paypal-buttons" hidden></div>
-          <p id="paypal-note" class="agree-hint" role="status" hidden></p>
-          <p class="promise-line"><a href="#promise">Nice List Promise</a>: love it or your money back.</p>
-          <p class="fine" id="pay-extra"><span id="pay-extra-paypal">The Magic bundle already includes the named sleigh. On the single video, tick it above if you want it. Voice only. Your child's name is never typed on the payment.</span><span id="pay-extra-stripe" hidden>Named sleigh on the video only, +£4.99, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed on the card page.</span> <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
-        </div>
       </div>
     </section>
 
@@ -334,7 +308,7 @@
           </details>
           <details>
             <summary>Adding a brother or sister?</summary>
-            <p>Yes. Use Add a sibling before you pay. <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. Each extra child gets the full Magic bundle. They are included when you pay. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
+            <p>Yes. Use How many children? before you pay. <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. That is up to 5 children in one order. Each extra child gets the full Magic bundle. They are included when you pay. After you pay, the order form asks for each child's name, how to say it, and a good deed.</p>
           </details>
           <details>
             <summary>What happens to my child's details?</summary>
@@ -425,40 +399,74 @@
     <p class="footer-line">Made with AI · Checked by a human elf</p>
   </footer>
 
-  <dialog id="choice-sheet" class="choice-sheet" aria-labelledby="choice-title" aria-modal="true" tabindex="-1">
-    <div class="choice-sheet-body">
-      <div class="choice-handle" aria-hidden="true"></div>
-      <h2 id="choice-title">Choose your gift</h2>
-      <p class="choice-lead">Pay now. Tell us their name after checkout.</p>
-      <a class="choice-option" id="choose-video" data-pay="singleVideo" href="#checkout">
-        <h3>Video only</h3>
-        <p class="choice-price"><strong data-price="single">£14.99</strong></p>
-        <ul class="ticks">
-          <li>Personalised fireside video</li>
-          <li>Generic Christmas Eve sleigh video</li>
-        </ul>
-        <span class="btn btn-pine">Choose video</span>
-      </a>
-      <a class="choice-option choice-option--lead" id="choose-bundle" data-pay="magicBundle" href="#checkout">
-        <span class="choice-badge">Most popular</span>
-        <h3>Magic bundle</h3>
-        <p class="choice-price">
-          <strong data-price="bundle">£16.99</strong>
-          <span data-early-only>early bird</span>
-          <span data-late-only hidden>Christmas week price</span>
-        </p>
-        <ul class="ticks">
-          <li>Personalised fireside video</li>
-          <li>Christmas Eve sleigh video with their name</li>
-          <li>Letter from Santa</li>
-          <li>Nice List certificate</li>
-        </ul>
+  <div id="choice-sheet" class="order-sheet" role="dialog" aria-modal="false" aria-labelledby="choice-title" hidden>
+    <div class="order-sheet-scrim" id="choice-scrim"></div>
+    <div class="order-sheet-card" id="checkout">
+      <div class="order-sheet-body">
+        <button type="button" class="order-sheet-close" id="choice-close">Close</button>
+        <h2 id="choice-title">Your Santa video</h2>
+        <p class="choice-lead">Pay now. Tell us their name straight after.</p>
+        <div class="sheet-choices" role="radiogroup" aria-label="Choose your gift">
+          <label class="sheet-choice sheet-choice--lead is-selected">
+            <input type="radio" name="santa-package" id="choose-bundle" value="magicBundle" checked>
+            <span class="sheet-choice-mark" aria-hidden="true"></span>
+            <span class="sheet-choice-copy">
+              <span class="sheet-choice-top">
+                <span class="sheet-choice-name">Magic bundle</span>
+                <span class="choice-badge">Most popular</span>
+              </span>
+              <span class="sheet-choice-detail">Video, named sleigh video, letter, Nice List certificate</span>
+            </span>
+            <span class="sheet-choice-price"><strong data-price="bundle">£16.99</strong></span>
+          </label>
+          <label class="sheet-choice">
+            <input type="radio" name="santa-package" id="choose-video" value="singleVideo">
+            <span class="sheet-choice-mark" aria-hidden="true"></span>
+            <span class="sheet-choice-copy">
+              <span class="sheet-choice-name">Video only</span>
+              <span class="sheet-choice-detail">Fireside video, generic sleigh video</span>
+            </span>
+            <span class="sheet-choice-price"><strong data-price="single">£14.99</strong></span>
+          </label>
+        </div>
         <p class="choice-save" id="choice-difference"></p>
-        <span class="btn">Choose the bundle</span>
-      </a>
-      <button type="button" class="choice-dismiss" id="choice-close">Close</button>
+        <label class="agree" id="sleigh-add" hidden>
+          <input type="checkbox" id="named-sleigh">
+          <span>Add the named sleigh video, <span data-price="namedSleigh">+£4.99</span>. Voice only.</span>
+        </label>
+        <div class="sheet-kids">
+          <p id="children-label">How many children?</p>
+          <div class="stepper" role="group" aria-labelledby="children-label">
+            <button type="button" id="children-less" aria-label="One fewer child">−</button>
+            <span id="children-count" aria-live="polite">1</span>
+            <button type="button" id="children-more" aria-label="One more child">+</button>
+          </div>
+        </div>
+        <div class="sibling-faces" id="sibling-faces" aria-hidden="true"></div>
+        <p class="sheet-extra" id="extra-child-line">Each extra child gets the full bundle, <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>.</p>
+        <p class="sheet-examples" hidden>
+          <span data-two-children="magicBundle">2 children = £16.99 + £11.99</span>
+          <span data-two-children="singleVideo" hidden>2 children = £14.99 + £11.99</span>
+          <span data-two-children="video" hidden>2 children = your video + £11.99</span>
+        </p>
+        <p class="delivery-line">Delivered within 48 hours of your order, whatever the date. The 48 hours start when we have both your payment and the completed order form.</p>
+        <p class="sheet-after">We collect your child's details on the order form after payment, never on the payment page.</p>
+      </div>
+      <div class="order-sheet-pay">
+        <p class="sheet-total" id="order-total">
+          <span>Total</span>
+          <strong id="order-total-amount">£16.99</strong>
+        </p>
+        <p class="visually-hidden" id="chosen-package" role="status" aria-live="polite">Total <span id="chosen-price">£16.99</span> for the <span id="chosen-name">Magic bundle</span>.</p>
+        <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card</a>
+        <p class="pay-label" id="pay-label" hidden>Pay with PayPal or card</p>
+        <div id="paypal-buttons" hidden></div>
+        <p id="paypal-note" class="agree-hint" role="status" hidden></p>
+        <p class="promise-line"><a href="#promise">Nice List Promise</a>: love it or your money back.</p>
+        <p class="fine" id="pay-extra"><span id="pay-extra-paypal">The Magic bundle already includes the named sleigh. On the single video, tick it above if you want it. Voice only. Your child's name is never typed on the payment.</span><span id="pay-extra-stripe" hidden>Named sleigh on the video only, +£4.99, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed on the card page.</span> <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
+      </div>
     </div>
-  </dialog>
+  </div>
 
   <dialog id="exit-popup" class="exit-popup" role="dialog" aria-modal="true" aria-labelledby="exit-popup-title">
     <button type="button" class="exit-popup-close" id="exit-popup-close" aria-label="Close">&times;</button>

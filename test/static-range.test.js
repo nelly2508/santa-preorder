@@ -157,7 +157,8 @@ test("the homepage offers Hear Santa without autoplay", async () => {
     assert.doesNotMatch(html, /fetchpriority="high"/);
     assert.match(html, /data-src="assets\/fireside\.webp"/);
     assert.doesNotMatch(html, /<img[^>]* src="assets\/fireside\.webp"/);
-    assert.ok(html.indexOf('id="hero-order"') < html.indexOf('id="hear-santa"'));
+    assert.ok(html.indexOf('id="hear-santa"') < html.indexOf('id="hero-order"'));
+    assert.match(html, /Hear Santa say a name/);
     assert.match(
       html,
       /A quick hello from Santa\. The film you order says your child's name, a good deed and a wish\./
@@ -179,11 +180,11 @@ test("the homepage offers Hear Santa without autoplay", async () => {
       hear < what &&
         what < samples &&
         samples < pricing &&
-        pricing < checkout &&
-        checkout < how &&
+        pricing < how &&
         how < faq &&
         faq < order &&
-        order < privacy,
+        order < privacy &&
+        privacy < checkout,
       "homepage sections are out of order"
     );
     assert.match(html, /Santa sits in an armchair by the fire/);

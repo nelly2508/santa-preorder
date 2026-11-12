@@ -7,7 +7,7 @@ const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/orde
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
 const { UNKNOWN_COUNTRY, createFunnelCounter, funnelFromSession } = require("./lib/funnel-counts");
 const { countryFromRequest } = require("./lib/client-country");
-const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery } = require("./public/js/checkout-choice");
+const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, offerBanner } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
@@ -367,6 +367,31 @@ function salesMarket(pathname) {
 function cookieIsSecure(req) {
   const proto = String((req && req.headers && req.headers["x-forwarded-proto"]) || "").split(",")[0].trim().toLowerCase();
   return proto === "https";
+}
+
+function applyOfferBanner(html, config, now, market, closed) {
+  const phase = offerPhase({
+    now,
+    earlyBird: config.earlyBird,
+    earlyBirdEnds: config.earlyBirdEnds,
+    lateOrders: config.lateOrders,
+    lateOrdersFrom: config.lateOrdersFrom,
+  });
+  const book = market === "us" && config.usd ? config.usd : config.prices;
+  const early = phase === "early";
+  const late = phase === "late";
+  const price = late ? book.magicBundleLate : early ? book.magicBundleEarly : book.magicBundleFull;
+  const label = offerBanner({
+    early,
+    late,
+    closed,
+    price,
+    earlyBirdEnds: config.earlyBirdEnds,
+  });
+  const next = label
+    ? `<p class="offer-banner" id="offer-banner">${escapeHtml(label)}</p>`
+    : '<p class="offer-banner" id="offer-banner" hidden></p>';
+  return String(html).replace(/<p class="offer-banner" id="offer-banner">[^<]*<\/p>/, next);
 }
 
 function decorateSalesHtml(html, env, closed, nonce, variant, market) {
@@ -1023,6 +1048,7 @@ function createServer(options = {}) {
         const query = orderQuery({
           packageKey: choice.key,
           siblings: clampSiblings(url.searchParams.get("siblings")),
+          sleigh: url.searchParams.get("sleigh") === "1",
           utm,
         });
         res.writeHead(302, {
@@ -1051,6 +1077,7 @@ function createServer(options = {}) {
             market,
             variant,
             siblings: clampSiblings(url.searchParams.get("siblings")),
+            sleigh: url.searchParams.get("sleigh") === "1",
             packageKey: choice.key,
             paymentLinkUrl: choice.href,
             phase,
@@ -1084,7 +1111,9 @@ function createServer(options = {}) {
         }
         const closed = !ordersOpen(serverNow(options));
         let html = buf.toString("utf8");
-        if (pageMarket === "us") html = applyUsHtml(html, siteConfig().usd);
+        const config = siteConfig();
+        if (pageMarket === "us") html = applyUsHtml(html, config.usd);
+        html = applyOfferBanner(html, config, serverNow(options), pageMarket, closed);
         const headers = {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",

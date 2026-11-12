@@ -33,7 +33,7 @@ test("variant assignment is 50/50 and then sticky", () => {
   assert.strictEqual(resolveVariant({ random: () => 0.9 }), "parents");
 });
 
-test("both sales pages keep the assigned film and move the sample below the order button", async () => {
+test("both sales pages keep the assigned film below the name sample", async () => {
   const server = createServer({
     log() {},
     now: "2026-10-31T12:00:00Z",
@@ -52,21 +52,26 @@ test("both sales pages keep the assigned film and move the sample below the orde
         ? "/assets/us-explainer-4x5-v7.mp4"
         : "/assets/uk-explainer-4x5-v7.mp4";
       const hero = explainerHtml.slice(explainerHtml.indexOf("<video id=\"hero-film\""), explainerHtml.indexOf("id=\"hero-play\""));
-      assert.match(hero, /autoplay/);
-      assert.match(hero, /\bmuted\b/);
-      assert.match(hero, /\bloop\b/);
+      assert.doesNotMatch(hero, /autoplay/);
+      assert.doesNotMatch(hero, /\bmuted\b/);
+      assert.doesNotMatch(hero, /\bloop\b/);
       assert.match(hero, /playsinline/);
-      assert.match(hero, new RegExp(`src="${explainerSrc.replace(/\./g, "\\.")}"`));
-      assert.match(hero, /poster="\/assets\/(?:uk|us)-explainer-4x5-v7-poster\.jpg"/);
+      assert.match(hero, /preload="none"/);
+      assert.match(hero, new RegExp(`data-src="${explainerSrc.replace(/\./g, "\\.")}"`));
+      assert.match(hero, /data-poster="\/assets\/(?:uk|us)-explainer-4x5-v7-poster\.jpg"/);
+      assert.doesNotMatch(hero, /<source/);
       assert.doesNotMatch(hero, /santa-preview|exit-sales/);
       assert.match(explainerHtml, new RegExp(DELIVERY.replace(/[.]/g, "\\.")));
       assert.match(explainerHtml, /id="see-example"[^>]*>See an example</);
-      assert.ok(explainerHtml.indexOf('id="hero-delivery"') < explainerHtml.indexOf('id="hero-order"'));
+      assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="hero-order"'));
       assert.ok(explainerHtml.indexOf('id="hero-order"') < explainerHtml.indexOf('id="see-example"'));
-      assert.ok(explainerHtml.indexOf('id="see-example"') < explainerHtml.indexOf('id="hear-santa"'));
+      assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="hero-film"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="pricing"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="faq"'));
       assert.match(explainerHtml, /id="hear-santa"[\s\S]*?data-src="\/assets\/santa-preview-v3\.mp4"/);
+      assert.match(explainerHtml, /Hear Santa say a name/);
+      assert.doesNotMatch(explainerHtml, /id="hear-santa"[\s\S]*?\bmuted\b/);
+      assert.doesNotMatch(explainerHtml, /id="hear-santa"[\s\S]*?\bautoplay\b/);
       assert.match(explainerHtml, /id="sample-play"/);
       assert.doesNotMatch(explainerHtml, /etsy/i);
 
@@ -75,7 +80,8 @@ test("both sales pages keep the assigned film and move the sample below the orde
       assert.match(parents.headers.get("set-cookie") || "", /^ssmn_variant=parents;/);
       assert.match(parentsHtml, /data-variant="parents"/);
       const parentsHero = parentsHtml.slice(parentsHtml.indexOf("<video id=\"hero-film\""), parentsHtml.indexOf("id=\"hero-play\""));
-      assert.match(parentsHero, /src="\/assets\/exit-sales-v4\.mp4"/);
+      assert.match(parentsHero, /data-src="\/assets\/exit-sales-v4\.mp4"/);
+      assert.doesNotMatch(parentsHero, /autoplay|muted/);
       assert.doesNotMatch(parentsHero, /explainer-4x5/);
       assert.match(parentsHtml, /id="hear-santa"[\s\S]*?data-src="\/assets\/santa-preview-v3\.mp4"/);
       assert.match(parentsHtml, /id="see-example"/);
@@ -86,7 +92,7 @@ test("both sales pages keep the assigned film and move the sample below the orde
     });
     const stickyHtml = await sticky.text();
     assert.match(stickyHtml, /data-variant="parents"/);
-    assert.match(stickyHtml, /<video id="hero-film"[\s\S]*?src="\/assets\/exit-sales-v4\.mp4"/);
+    assert.match(stickyHtml, /<video id="hero-film"[\s\S]*?data-src="\/assets\/exit-sales-v4\.mp4"/);
   } finally {
     await close(server);
   }

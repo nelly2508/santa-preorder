@@ -79,15 +79,20 @@
     return {
       packageKey,
       siblings: clampSiblings(params.get("siblings")),
+      sleigh: packageKey === "singleVideo" && params.get("sleigh") === "1",
     };
   }
 
   function orderQuery(options) {
     const source = options || {};
     const params = new URLSearchParams();
-    params.set("package", source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle");
+    const packageKey = source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle";
+    params.set("package", packageKey);
     const siblings = clampSiblings(source.siblings);
     if (siblings > 0) params.set("siblings", String(siblings));
+    if (packageKey === "singleVideo" && (source.sleigh === true || source.sleigh === 1 || source.sleigh === "1")) {
+      params.set("sleigh", "1");
+    }
     const utm = source.utm || {};
     for (const key of ["utm_source", "utm_campaign", "utm_content"]) {
       const value = campaignPart(utm[key]);
@@ -96,6 +101,65 @@
     if (source.market === "us") params.set("market", "us");
     if (source.variant === "explainer" || source.variant === "parents") params.set("variant", source.variant);
     return params.toString();
+  }
+
+  // The same pounds or dollars PayPal charges: the phase price, plus each
+  // extra child, plus the named sleigh only on the single video. Late prices
+  // already include the Christmas week amount, so it is not added again.
+  function orderAmount(options) {
+    const source = options || {};
+    const prices = source.prices || {};
+    const late = !!source.late;
+    const early = !!source.early && !late;
+    const packageKey = source.packageKey === "singleVideo" ? "singleVideo" : "magicBundle";
+    const siblings = clampSiblings(source.siblings);
+    const sleigh = packageKey === "singleVideo" && (source.sleigh === true || source.sleigh === 1 || source.sleigh === "1");
+    const baseLabel = packageKey === "singleVideo"
+      ? (late ? prices.singleVideoLate : prices.singleVideo)
+      : (late ? prices.magicBundleLate : early ? prices.magicBundleEarly : prices.magicBundleFull);
+    const base = priceMinor(baseLabel);
+    const sibling = priceMinor(prices.sibling);
+    if (base == null || sibling == null) return null;
+    let total = base + siblings * sibling;
+    if (sleigh) {
+      const extra = priceMinor(prices.namedSleigh);
+      if (extra == null) return null;
+      total += extra;
+    }
+    return {
+      packageKey,
+      siblings,
+      children: siblings + 1,
+      sleigh,
+      totalMinor: total,
+      total: formatMinor(total, baseLabel),
+    };
+  }
+
+  // The weekday and date already stored on earlyBirdEnds. Empty when that
+  // clock cannot be read, so the page does not invent a deadline.
+  function earlyBirdDay(ends) {
+    const when = new Date(ends || "");
+    if (Number.isNaN(when.getTime())) return "";
+    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${weekdays[when.getUTCDay()]} ${when.getUTCDate()} ${months[when.getUTCMonth()]}`;
+  }
+
+  // A strip away from the order buttons. Early bird uses the configured end.
+  // After that, the 48-hour line the page already states, with the current
+  // bundle price. Nothing to show when the shop is closed or the price is missing.
+  function offerBanner(options) {
+    const source = options || {};
+    if (source.closed) return "";
+    const price = source.price || "";
+    if (!price) return "";
+    if (source.early && !source.late) {
+      const day = earlyBirdDay(source.earlyBirdEnds);
+      if (!day) return "";
+      return `Early bird: ${price} until ${day}`;
+    }
+    return `Delivered within 48 hours of your order, whatever the date. ${price}`;
   }
 
   function priceMinor(label) {
@@ -210,5 +274,8 @@
     campaignPart,
     resumeOrder,
     orderQuery,
+    orderAmount,
+    earlyBirdDay,
+    offerBanner,
   };
 });
