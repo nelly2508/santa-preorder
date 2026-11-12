@@ -39,75 +39,63 @@
   <main id="main">
     <section class="hero" id="top">
       <div class="snow" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-      <div class="wrap hero-grid">
-        <div class="hero-intro">
-          <p class="kicker" data-before-late>Order · delivered within 48 hours</p>
-          <p class="kicker" data-late-only hidden>Order · Christmas week price</p>
-          <h1>Santa. By the fire. Saying your child's name.</h1>
-          <p class="lede">A personal video. Santa says your child's name, a good deed and a wish.</p>
-        </div>
-        <figure class="player hear-player hero-sample" id="hear">
-          <div class="player-frame hear-frame">
-            <video
-              id="hear-santa"
-              controls
-              playsinline
-              preload="none"
-              width="1080"
-              height="1350"
-              data-src="/assets/santa-preview-v3.mp4"
-              data-poster="/assets/santa-preview-poster-lite.webp"
-              aria-label="Santa saying a short hello"
-            >
-              <track data-src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English" default>
-              A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
-            </video>
-            <button type="button" class="sample-play sample-play--label" id="sample-play" aria-controls="hear-santa" aria-label="Hear Santa say a name">
-              <span class="sample-play-icon" aria-hidden="true"></span>
-              Hear Santa say a name
-            </button>
-          </div>
-          <figcaption>
-            <h2>Hear Santa</h2>
-            <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
-          </figcaption>
+      <figure class="hero-stage" id="hear">
+        <video
+          id="hear-santa"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          poster="/assets/santa-preview-poster-lite.webp"
+          width="1920"
+          height="1080"
+          aria-label="Santa by the fire, saying a name"
+        >
+          <source src="/assets/santa-preview-v3.mp4" type="video/mp4">
+          <track src="/assets/santa-preview.vtt" kind="captions" srclang="en" label="English">
+          A quick hello from Santa. The film you order says your child's name, a good deed and a wish.
+        </video>
+        <button type="button" class="hero-sound" id="hero-sound" aria-controls="hear-santa" aria-pressed="false">Tap for sound</button>
+      </figure>
+      <div class="wrap hero-copy">
+        <h1>Hear Santa say your child's name.</h1>
+        <p class="lede">A one-minute fireside video with their name, a good deed and a wish. In your inbox within 48 hours.</p>
+        <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
+        <button type="button" class="btn hero-cta" id="hero-order" data-choice-open>Order now</button>
+        <p class="hero-from">
+          <span class="from-label">From</span>
+          <strong data-price="from">£14.99</strong>
+        </p>
+        <p class="hero-reassure">No app · No subscription · No photos of your child · Love it, or your money back.</p>
+        <ul class="hero-includes">
+          <li>A personalised fireside video, about a minute</li>
+          <li>Santa says their name, a good deed and a wish</li>
+          <li id="hero-delivery">Delivered within 48 hours of your order, whatever the date.</li>
+        </ul>
+        <p class="hero-upsell" id="hero-upsell">The Magic bundle adds a letter, a Nice List certificate and a named sleigh video.</p>
+        <button type="button" class="btn btn-see" id="see-example">See an example</button>
+        <figure class="parent-quote">
+          <blockquote>
+            <p>“My two little ones both ask if Santa will remember them. When he says their name, they’ll be so excited.”</p>
+          </blockquote>
+          <figcaption>— Emily, Pontefract</figcaption>
         </figure>
-        <div class="hero-offer">
-          <p class="lede" id="orders-closed" hidden>Santa's workshop is closed for orders this Christmas. Thank you!</p>
-          <button type="button" class="btn hero-cta" id="hero-order" data-choice-open>Order now</button>
-          <p class="trust-line">Secure checkout with PayPal or card</p>
-          <p class="hero-from">
-            <span class="from-label">From</span>
-            <strong data-price="from">£14.99</strong>
-          </p>
-          <ul class="hero-includes">
-            <li>A personalised fireside video, about a minute</li>
-            <li>Santa says their name, a good deed and a wish</li>
-            <li id="hero-delivery">Delivered within 48 hours of your order, whatever the date.</li>
-          </ul>
-          <p class="hero-upsell" id="hero-upsell">The Magic bundle adds a letter, a Nice List certificate and a named sleigh video.</p>
-          <button type="button" class="btn btn-see" id="see-example">See an example</button>
-          <figure class="parent-quote">
-            <blockquote>
-              <p>“My two little ones both ask if Santa will remember them. When he says their name, they’ll be so excited.”</p>
-            </blockquote>
-            <figcaption>— Emily, Pontefract</figcaption>
-          </figure>
-          <p class="hero-next"><a href="#pricing">See pricing</a></p>
-        </div>
         <figure class="hero-figure">
           <div class="hero-frame">
             <img data-src="assets/fireside.webp" width="1152" height="864" alt="Illustrated Santa in a green armchair, reading a letter beside a lit fire" decoding="async">
           </div>
           <figcaption>By the fire · about a minute · no photos of your child</figcaption>
         </figure>
+        <p class="hero-next"><a href="#pricing">See pricing</a></p>
       </div>
     </section>
 
     <section class="section sample-block" id="film">
       <div class="wrap">
-        <h2>A short film</h2>
-        <p class="lede">The name sample above is Santa saying Saoirse. This film explains the order. It stays unloaded until you press play.</p>
+        <h2>Hear Santa</h2>
+        <p>Santa says Saoirse (Seer-sha) perfectly. He'll get your child's name right too.</p>
+        <p class="lede">This film explains the order. It stays unloaded until you press play.</p>
         <figure class="player hear-player hero-film">
           <div class="player-frame hear-frame">
             <video id="hero-film" data-hero-film controls playsinline preload="none" width="1080" height="1350">

@@ -138,27 +138,33 @@ test("preview assets are the original files, with a smaller webp poster", () => 
   assert.doesNotMatch(vtt, /Ho ho/);
 });
 
-test("the homepage offers Hear Santa without autoplay", async () => {
+test("the homepage hero autoplays muted and the order button has no price", async () => {
   await withServer(async (port) => {
     const home = await fetch(`http://127.0.0.1:${port}/`);
     assert.strictEqual(home.status, 200);
     const html = await home.text();
     assert.match(html, /<h2>Hear Santa<\/h2>/);
-    assert.match(html, /id="hear-santa"[\s\S]*?\bcontrols\b/);
-    assert.match(html, /id="hear-santa"[\s\S]*?\bplaysinline\b/);
-    assert.match(html, /id="hear-santa"[\s\S]*?preload="none"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?width="1080"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?height="1350"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?data-poster="\/assets\/santa-preview-poster-lite\.webp"/);
-    assert.match(html, /id="hear-santa"[\s\S]*?aria-label="Santa saying a short hello"/);
-    assert.match(html, /data-src="\/assets\/santa-preview-v3\.mp4"/);
-    assert.match(html, /data-src="\/assets\/santa-preview\.vtt"/);
-    assert.doesNotMatch(html, /<source[^>]+src="\/assets\/santa-preview-v3\.mp4"/);
+    const sampleOpen = html.slice(html.indexOf("<video"), html.indexOf(">", html.indexOf('id="hear-santa"')) + 1);
+    assert.match(sampleOpen, /\bautoplay\b/);
+    assert.match(sampleOpen, /\bmuted\b/);
+    assert.match(sampleOpen, /\bloop\b/);
+    assert.match(sampleOpen, /\bplaysinline\b/);
+    assert.match(sampleOpen, /preload="metadata"/);
+    assert.match(sampleOpen, /poster="\/assets\/santa-preview-poster-lite\.webp"/);
+    assert.match(html, /<source src="\/assets\/santa-preview-v3\.mp4"/);
+    assert.match(html, /src="\/assets\/santa-preview\.vtt"/);
+    assert.match(html, />Tap for sound</);
+    assert.doesNotMatch(html, /Hear Santa say a name/);
+    assert.doesNotMatch(html, /fictional name/i);
     assert.doesNotMatch(html, /fetchpriority="high"/);
     assert.match(html, /data-src="assets\/fireside\.webp"/);
     assert.doesNotMatch(html, /<img[^>]* src="assets\/fireside\.webp"/);
     assert.ok(html.indexOf('id="hear-santa"') < html.indexOf('id="hero-order"'));
-    assert.match(html, /Hear Santa say a name/);
+    assert.match(html, /Hear Santa say your child's name\./);
+    assert.match(html, /A one-minute fireside video with their name, a good deed and a wish\. In your inbox within 48 hours\./);
+    assert.match(html, /No app · No subscription · No photos of your child · Love it, or your money back\./);
+    assert.match(html, /Emily, Pontefract/);
+    assert.match(html, /My two little ones both ask/);
     assert.match(
       html,
       /A quick hello from Santa\. The film you order says your child's name, a good deed and a wish\./
@@ -188,8 +194,7 @@ test("the homepage offers Hear Santa without autoplay", async () => {
       "homepage sections are out of order"
     );
     assert.match(html, /Santa sits in an armchair by the fire/);
-    assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bautoplay\b/);
-    assert.doesNotMatch(html, /id="hear-santa"[\s\S]*?\bmuted\b/);
+    assert.match(html, /id="hero-order"[^>]*>Order now</);
     const css = await (await fetch(`http://127.0.0.1:${port}/css/styles.css`)).text();
     assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/);
     assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*object-fit:\s*contain/);
