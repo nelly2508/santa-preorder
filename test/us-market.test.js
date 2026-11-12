@@ -153,12 +153,13 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /favorite/);
     assert.doesNotMatch(html, /personalised|favourite|colour|organise/);
     const sampleOpen = html.slice(html.indexOf("<video"), html.indexOf(">", html.indexOf('id="hear-santa"')) + 1);
-    assert.match(sampleOpen, /\bautoplay\b/);
-    assert.match(sampleOpen, /\bmuted\b/);
-    assert.match(sampleOpen, /\bloop\b/);
+    assert.doesNotMatch(sampleOpen, /\bautoplay\b/);
+    assert.doesNotMatch(sampleOpen, /\bmuted\b/);
+    assert.doesNotMatch(sampleOpen, /\bloop\b/);
     assert.match(sampleOpen, /\bplaysinline\b/);
     assert.match(sampleOpen, /preload="metadata"/);
-    assert.match(html, />Tap for sound</);
+    assert.match(html, />Tap to hear Santa</);
+    assert.doesNotMatch(html, /Tap for sound/);
     assert.doesNotMatch(html, /id="hero-film"[^>]*\bmuted\b/);
     assert.doesNotMatch(html, /id="hero-film"[^>]*\bautoplay\b/);
     assert.match(html, /us-explainer-4x5-v7\.mp4|us-grownups-4x5-usd\.mp4/);

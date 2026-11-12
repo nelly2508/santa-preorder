@@ -7,7 +7,7 @@ const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
 const { assignVariant, normaliseVariant, resolveVariant, heroSample, applyHeroSample, filmFor } = require("../lib/hero-variant");
-const { unmutePlan } = require("../public/js/hero-sound");
+const { heroView, heroStart } = require("../public/js/hero-sound");
 
 const DELIVERY = "Delivered within 48 hours of your order, whatever the date.";
 
@@ -53,20 +53,28 @@ test("the hero video uses the full v4 explainer when those files exist, otherwis
   assert.match(applyHeroSample(html, "uk", os.tmpdir()), /santa-preview-v3\.mp4/);
 });
 
-test("the hero unmutes in place, and a tap on the video or the prompt restarts", () => {
-  assert.deepStrictEqual(unmutePlan("page"), { unmute: true, restart: false, hidePrompt: true });
-  assert.deepStrictEqual(unmutePlan("video"), { unmute: true, restart: true, hidePrompt: true });
-  assert.deepStrictEqual(unmutePlan("sound"), { unmute: true, restart: true, hidePrompt: true });
+test("the hero waits for a tap, resumes in place, and starts again only at the end", () => {
+  assert.strictEqual(heroView("idle").posterText, "Tap to hear Santa");
+  assert.strictEqual(heroView("idle").posterAria, "Tap to hear Santa");
+  assert.strictEqual(heroView("idle").toggle, false);
+  assert.deepStrictEqual(heroStart("idle"), { restart: true, pause: false });
+  assert.strictEqual(heroView("playing").poster, false);
+  assert.strictEqual(heroView("playing").toggleText, "Pause");
+  assert.strictEqual(heroView("playing").toggleAria, "Pause the video");
+  assert.deepStrictEqual(heroStart("playing"), { restart: false, pause: true });
+  assert.strictEqual(heroView("paused").poster, true);
+  assert.strictEqual(heroView("paused").posterText, "");
+  assert.strictEqual(heroView("paused").posterAria, "Play the video");
+  assert.deepStrictEqual(heroStart("paused"), { restart: false, pause: false });
+  assert.strictEqual(heroView("ended").posterText, "Watch again");
+  assert.strictEqual(heroView("ended").posterAria, "Watch again");
+  assert.deepStrictEqual(heroStart("ended"), { restart: true, pause: false });
   const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
-  assert.match(mainJs, /video\.muted = false/);
-  assert.match(mainJs, /\.catch\(\(\) => \{\s*video\.muted = true/);
-  assert.match(mainJs, /addEventListener\("pointerdown", onFirstGesture\)/);
-  assert.match(mainJs, /addEventListener\("click", onFirstGesture\)/);
-  assert.match(mainJs, /addEventListener\("keydown", onFirstGesture\)/);
-  assert.match(mainJs, /applyUnmute\("page"\)/);
-  assert.match(mainJs, /applyUnmute\("video"\)/);
-  assert.match(mainJs, /applyUnmute\("sound"\)/);
-  assert.match(mainJs, /preload="metadata"|video\.pause\(\)/);
+  assert.match(mainJs, /function armHeroTap/);
+  assert.match(mainJs, /heroStart\(phase\(\)\)/);
+  assert.match(mainJs, /video\.pause\(\)/);
+  assert.match(mainJs, /webkit-playsinline/);
+  assert.doesNotMatch(mainJs, /onFirstGesture|applyUnmute|hero-sound/);
   assert.strictEqual(filmFor("parents", "us").src, "/assets/us-grownups-4x5-usd.mp4");
   assert.strictEqual(filmFor("parents", "uk").src, "/assets/exit-sales-v4.mp4");
 });
@@ -119,16 +127,19 @@ test("both sales pages keep the assigned film below the name sample", async () =
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="pricing"'));
       assert.ok(explainerHtml.indexOf('id="hear-santa"') < explainerHtml.indexOf('id="faq"'));
       const sampleOpen = explainerHtml.slice(explainerHtml.indexOf("<video"), explainerHtml.indexOf(">", explainerHtml.indexOf('id="hear-santa"')) + 1);
-      assert.match(sampleOpen, /\bautoplay\b/);
-      assert.match(sampleOpen, /\bmuted\b/);
-      assert.match(sampleOpen, /\bloop\b/);
+      assert.doesNotMatch(sampleOpen, /\bautoplay\b/);
+      assert.doesNotMatch(sampleOpen, /\bmuted\b/);
+      assert.doesNotMatch(sampleOpen, /\bloop\b/);
       assert.match(sampleOpen, /\bplaysinline\b/);
       assert.match(sampleOpen, /preload="metadata"/);
       const heroFile = pathName === "/us" ? "hero-us-v4-full" : "hero-uk-v4-full";
       assert.match(sampleOpen, new RegExp(`poster="/assets/${heroFile}\\.jpg"`));
       assert.match(explainerHtml, new RegExp(`<source src="/assets/${heroFile}\\.mp4"`));
       assert.doesNotMatch(explainerHtml, /santa-preview\.vtt/);
-      assert.match(explainerHtml, />Tap for sound</);
+      assert.match(explainerHtml, /id="hero-start"[^>]*aria-label="Tap to hear Santa"/);
+      assert.match(explainerHtml, /<span class="hero-play-label">Tap to hear Santa<\/span>/);
+      assert.match(explainerHtml, /id="hero-toggle"[^>]*hidden[^>]*aria-label="Pause the video"/);
+      assert.doesNotMatch(explainerHtml, /Tap for sound/);
       assert.doesNotMatch(explainerHtml, /Hear Santa say a name/);
       assert.doesNotMatch(explainerHtml, /fictional name/i);
       assert.doesNotMatch(explainerHtml, /etsy/i);

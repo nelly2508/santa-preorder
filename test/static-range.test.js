@@ -138,24 +138,25 @@ test("preview assets are the original files, with a smaller webp poster", () => 
   assert.doesNotMatch(vtt, /Ho ho/);
 });
 
-test("the homepage hero autoplays muted and the order button has no price", async () => {
+test("the homepage hero waits for a tap and the order button has no price", async () => {
   await withServer(async (port) => {
     const home = await fetch(`http://127.0.0.1:${port}/`);
     assert.strictEqual(home.status, 200);
     const html = await home.text();
     assert.match(html, /<h2>Hear Santa<\/h2>/);
     const sampleOpen = html.slice(html.indexOf("<video"), html.indexOf(">", html.indexOf('id="hear-santa"')) + 1);
-    assert.match(sampleOpen, /\bautoplay\b/);
-    assert.match(sampleOpen, /\bmuted\b/);
-    assert.match(sampleOpen, /\bloop\b/);
+    assert.doesNotMatch(sampleOpen, /\bautoplay\b/);
+    assert.doesNotMatch(sampleOpen, /\bmuted\b/);
+    assert.doesNotMatch(sampleOpen, /\bloop\b/);
     assert.match(sampleOpen, /\bplaysinline\b/);
     assert.match(sampleOpen, /preload="metadata"/);
     assert.match(sampleOpen, /poster="\/assets\/hero-uk-v4-full\.jpg"/);
-    assert.match(sampleOpen, /preload="metadata"/);
     assert.match(html, /<source src="\/assets\/hero-uk-v4-full\.mp4"/);
     assert.doesNotMatch(html, /santa-preview\.vtt/);
-    assert.match(html, />Tap for sound</);
-    assert.match(html, /id="hero-toggle"[^>]*aria-label="Pause the video"[^>]*>Pause</);
+    assert.match(html, /<button type="button" class="hero-play" id="hero-start"[^>]*aria-label="Tap to hear Santa"/);
+    assert.match(html, />Tap to hear Santa</);
+    assert.doesNotMatch(html, /Tap for sound/);
+    assert.match(html, /id="hero-toggle"[^>]*hidden[^>]*aria-label="Pause the video"[^>]*>Pause</);
     assert.match(html, /width="1080"/);
     assert.match(html, /height="1350"/);
     assert.doesNotMatch(html, /Hear Santa say a name/);
@@ -204,9 +205,12 @@ test("the homepage hero autoplays muted and the order button has no price", asyn
     assert.match(css, /max-height:\s*80vh/);
     assert.match(css, /aspect-ratio:\s*auto\s+4\s*\/\s*5/);
     const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
+    const heroSound = fs.readFileSync(path.join(__dirname, "../public/js/hero-sound.js"), "utf8");
     assert.match(mainJs, /video\.pause\(\)/);
-    assert.match(mainJs, /Pause the video/);
-    assert.match(mainJs, /Play the video/);
+    assert.match(heroSound, /Pause the video/);
+    assert.match(heroSound, /Play the video/);
+    assert.match(heroSound, /Watch again/);
+    assert.match(heroSound, /Tap to hear Santa/);
     assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*5/);
     assert.match(css, /\.hear-player \.hear-frame video\s*\{[^}]*object-fit:\s*contain/);
     assert.doesNotMatch(html, /Father Christmas|Oliver|sample\.mp4|Sample clip|sample-video/i);
