@@ -213,14 +213,14 @@
     bar.setAttribute("aria-label", "Cookies");
 
     var copy = document.createElement("p");
-    copy.appendChild(document.createTextNode("We use a Meta cookie to measure ads, and Microsoft Clarity on this page. They stay off unless you accept. "));
-    var privacy = document.createElement("a");
-    privacy.href = "/privacy#cookies";
-    privacy.textContent = "Privacy";
-    copy.appendChild(privacy);
+    copy.appendChild(document.createTextNode("We use a Meta cookie to measure ads, and Microsoft Clarity on this page. They stay off unless you accept."));
 
     var actions = document.createElement("div");
     actions.className = "consent-actions";
+    var privacy = document.createElement("a");
+    privacy.href = "/privacy#cookies";
+    privacy.textContent = "Privacy";
+    actions.appendChild(privacy);
 
     var yes = choiceButton("Accept");
     var no = choiceButton("Reject");

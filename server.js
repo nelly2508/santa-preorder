@@ -607,10 +607,11 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
       sendJson(res, 400, { error: "bad request" }, req.method);
       return;
     }
-    // choice_open is the gift sheet. order_tap is choosing a package.
+    // sheet_open is the order sheet. order_tap is one intent for that open
+    // sheet. choice_open is the older name and stays so earlier counts remain.
     // pay_click is the PayPal or card button, and is not another order_tap.
     // view, checkout_start and checkout_complete are recorded on the server.
-    const clientEvents = new Set(["choice_open", "order_tap", "pay_click", "example_tap"]);
+    const clientEvents = new Set(["choice_open", "sheet_open", "order_tap", "pay_click", "example_tap"]);
     const event = body && clientEvents.has(body.event) ? body.event : "";
     if (!event) {
       sendJson(res, 400, { error: "bad request" }, req.method);
@@ -640,6 +641,55 @@ function handleFunnelEvent(req, res, funnel, countryOf) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function funnelReportHtml(data) {
+  const total = data && data.total ? data.total : {};
+  const rows = [
+    ["Sheet opens", total.sheet_open],
+    ["Pay clicks", total.pay_click],
+    ["Checkout starts", total.checkout_start],
+    ["Checkout completes", total.checkout_complete],
+    ["Order taps", total.order_tap],
+    ["Earlier sheet opens", total.choice_open],
+    ["Page views", total.view],
+    ["Example taps", total.example_tap],
+  ];
+  const body = rows.map(([label, count]) => {
+    const number = Number(count);
+    return `<tr><th scope="row">${escapeHtml(label)}</th><td>${Number.isFinite(number) ? number : 0}</td></tr>`;
+  }).join("");
+  return `<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Funnel</title>
+  <style>
+    body { font: 16px/1.4 sans-serif; margin: 1.5rem; color: #1c140f; }
+    h1 { font-size: 1.4rem; }
+    table { border-collapse: collapse; min-width: 18rem; }
+    th, td { text-align: left; padding: 0.35rem 0.8rem; border-bottom: 1px solid #e6dcc8; }
+    td { text-align: right; font-variant-numeric: tabular-nums; }
+    p { max-width: 36rem; color: #5c4d42; }
+  </style>
+</head>
+<body>
+  <h1>Funnel</h1>
+  <p>Sheet opens, pay clicks and checkout starts are the current steps. Order taps are one per open sheet, and also include earlier counts from before that change. Earlier sheet opens are the old choice_open numbers.</p>
+  <table>
+    <tbody>${body}</tbody>
+  </table>
+</body>
+</html>`;
+}
+
 function handleVisitReport(req, res, env, visits) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { Allow: "GET, HEAD", "Cache-Control": "no-store" });
@@ -655,7 +705,17 @@ function handleVisitReport(req, res, env, visits) {
     sendJson(res, 401, { error: "unauthorised" }, req.method, { "WWW-Authenticate": "Bearer" });
     return;
   }
-  sendJson(res, 200, visits.snapshot(), req.method);
+  const data = visits.snapshot();
+  const accept = String(req.headers.accept || "");
+  const funnelPage = data && data.total && Object.prototype.hasOwnProperty.call(data.total, "sheet_open");
+  if (funnelPage && accept.includes("text/html") && !accept.includes("application/json")) {
+    send(res, 200, funnelReportHtml(data), {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    }, req.method);
+    return;
+  }
+  sendJson(res, 200, data, req.method);
 }
 
 function createServer(options = {}) {

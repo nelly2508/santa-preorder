@@ -901,7 +901,7 @@ button.offer-banner[data-choice-open]:focus-visible {
     right: 0;
     bottom: 0;
     display: flex;
-    padding: 0.55rem 0.85rem calc(0.55rem + env(safe-area-inset-bottom));
+    padding: 0.55rem 0.85rem calc(0.55rem + max(34px, env(safe-area-inset-bottom)));
     background: rgba(255, 253, 248, 0.96);
     border-top: 3px solid var(--berry);
     box-shadow: 0 -8px 24px rgba(36, 22, 15, 0.12);
@@ -914,6 +914,42 @@ button.offer-banner[data-choice-open]:focus-visible {
 
   body[data-sales-page] {
     padding-bottom: calc(4.8rem + env(safe-area-inset-bottom));
+  }
+
+  /* Room for the sticky bar, including an iPhone home indicator, so the
+     money-back line is not cut off. The cookie bar, when it is open, sits
+     in the extra space above that bar. */
+  .hero-screen,
+  .hero-stage video {
+    width: auto;
+    max-width: 100%;
+    max-height: calc(100svh - 21.5rem - max(34px, env(safe-area-inset-bottom)));
+  }
+
+  body.has-consent .hero-screen,
+  body.has-consent .hero-stage video {
+    max-height: calc(100svh - 27rem - max(34px, env(safe-area-inset-bottom)));
+  }
+
+  body[data-sales-page].has-consent .consent {
+    bottom: calc(4.7rem + max(34px, env(safe-area-inset-bottom)));
+    z-index: 7;
+    flex-wrap: nowrap;
+    padding: 0.3rem 0.55rem;
+  }
+
+  body.sheet-open.has-consent .consent,
+  body[data-orders-closed].has-consent .consent,
+  body.order-in-view.has-consent .consent {
+    bottom: 0;
+  }
+
+  body[data-sales-page].has-consent {
+    padding-bottom: calc(7.7rem + env(safe-area-inset-bottom));
+  }
+
+  body[data-sales-page] .us-order-bar {
+    z-index: 8;
   }
 }
 
@@ -2120,6 +2156,7 @@ body[data-market="us"] .us-only {
 .consent a {
   color: var(--gold-deep);
   font-weight: 600;
+  align-self: center;
 }
 
 .consent-actions {
@@ -2145,11 +2182,22 @@ body.has-consent {
 
 @media (max-width: 719px) {
   .consent {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.55rem calc(0.3rem + env(safe-area-inset-bottom));
+    font-size: 0.72rem;
   }
 
   .consent-actions {
     margin-left: auto;
+  }
+
+  .consent .btn {
+    min-width: 4.5rem;
+    min-height: 44px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.78rem;
   }
 
   body.has-consent {
@@ -2413,6 +2461,7 @@ body[data-orders-closed] .reassurance {
   display: flex;
   flex-direction: column;
   width: min(26.5rem, 100%);
+  min-height: 0;
   max-height: calc(100vh - 0.75rem);
   max-height: calc(100svh - 0.75rem);
   background: #fffdf8;
@@ -2422,9 +2471,11 @@ body[data-orders-closed] .reassurance {
 }
 
 .order-sheet-body {
+  min-height: 0;
+  flex: 1 1 auto;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 0.85rem 0.9rem 0.35rem;
+  padding: 0.7rem 0.9rem 0.35rem;
 }
 
 .order-sheet-close {
@@ -2542,6 +2593,31 @@ body[data-orders-closed] .reassurance {
   margin: 0.4rem 0 0;
 }
 
+.order-sheet.is-video #choice-difference {
+  display: none;
+}
+
+.order-sheet [data-extra="singleVideo"] {
+  display: none;
+}
+
+.order-sheet.is-video [data-extra="magicBundle"] {
+  display: none;
+}
+
+.order-sheet.is-video [data-extra="singleVideo"] {
+  display: inline;
+}
+
+.order-sheet .sheet-trim,
+.order-sheet #pay-extra {
+  display: none;
+}
+
+body.sheet-open .consent {
+  display: none;
+}
+
 .order-sheet .agree {
   margin-top: 0.55rem;
 }
@@ -2644,9 +2720,33 @@ body[data-orders-closed] .reassurance {
   font-weight: 650;
 }
 
-.order-sheet #paypal-buttons {
-  min-height: 6.2rem;
-  margin-top: 0.55rem;
+.paypal-slot {
+  margin-top: 0.45rem;
+}
+
+#paypal-slot:has(#paypal-skeleton[hidden]):has(#paypal-buttons[hidden]) {
+  display: none;
+}
+
+.paypal-skeleton {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.paypal-skeleton span {
+  display: block;
+  height: 2.85rem;
+  border-radius: 0.3rem;
+  background: #f3ecdf;
+  border: 1px solid #e6dcc8;
+}
+
+.paypal-skeleton span + span {
+  background: #e7f3ee;
+}
+
+.order-sheet #paypal-buttons:not([hidden]) {
+  min-height: 6.15rem;
 }
 
 .order-sheet .pay-label,

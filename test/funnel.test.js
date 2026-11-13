@@ -15,7 +15,7 @@ const { sessionForPaidOrder } = require("../lib/quote");
 const IP_GB = "81.2.69.142";
 const IP_US = "8.8.8.8";
 const IP_GB6 = "2a00:1450:4009:815::200e";
-const COUNTS = ["view", "choice_open", "order_tap", "pay_click", "example_tap", "checkout_start", "checkout_complete"];
+const COUNTS = ["view", "choice_open", "sheet_open", "order_tap", "pay_click", "example_tap", "checkout_start", "checkout_complete"];
 const EMPTY_PACKAGES = { singleVideo: 0, magicBundle: 0 };
 
 const EARLY_BUNDLE = "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00";
@@ -227,6 +227,7 @@ test("funnel counts are aggregate, and checkout cancel_url points at the order p
     assert.deepStrictEqual(body.total, {
       view: 1,
       choice_open: 0,
+      sheet_open: 0,
       order_tap: 1,
       pay_click: 0,
       example_tap: 0,
@@ -325,6 +326,7 @@ test("a paid GBP checkout is counted once", async () => {
     assert.deepStrictEqual(body.total_uk, {
       view: 0,
       choice_open: 0,
+      sheet_open: 0,
       order_tap: 0,
       pay_click: 0,
       example_tap: 0,
@@ -346,6 +348,7 @@ function sumCounts(rows) {
   const total = {
     view: 0,
     choice_open: 0,
+    sheet_open: 0,
     order_tap: 0,
     pay_click: 0,
     example_tap: 0,
@@ -416,6 +419,7 @@ test("old funnel files stay in the total and count as country unknown", async ()
     assert.deepStrictEqual(body.total, {
       view: 6,
       choice_open: 0,
+      sheet_open: 0,
       order_tap: 2,
       pay_click: 0,
       example_tap: 0,
@@ -427,6 +431,7 @@ test("old funnel files stay in the total and count as country unknown", async ()
     assert.deepStrictEqual(body.total_uk, {
       view: 1,
       choice_open: 0,
+      sheet_open: 0,
       order_tap: 0,
       pay_click: 0,
       example_tap: 0,
@@ -583,6 +588,7 @@ test("the report shows UK totals beside the overall total and does not keep the 
     assert.deepStrictEqual(body.total_uk, {
       view: gb.view,
       choice_open: gb.choice_open,
+      sheet_open: gb.sheet_open,
       order_tap: gb.order_tap,
       pay_click: gb.pay_click,
       example_tap: gb.example_tap,

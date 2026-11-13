@@ -143,7 +143,6 @@
   let restoreChoiceFocus = true;
   let syncSheet = function () {};
   let revealPaypal = function () {};
-  let noteOrder = function () {};
   let resumeIntoSheet = false;
 
   if (!ordersClosed) {
@@ -348,13 +347,13 @@
       if (paypalRendered || paypalLoading) return;
       showPaypalNote("");
       paypalLoading = true;
-      showPaypalNote("Loading PayPal…");
+      setPaypalSkeleton(true);
       loadPaypalSdk(clientId).then((paypal) => {
         paypalLoading = false;
         if (!paypalSlot || paypalRendered) return;
         showPaypalNote("");
         paypalRendered = true;
-        paypal.Buttons({
+        const rendered = paypal.Buttons({
           style: { layout: "vertical", shape: "rect", label: "paypal" },
           onClick: (data, actions) => {
             recordPayClick();
@@ -414,17 +413,28 @@
           onError: () => {
             showPaypalNote("The payment did not complete. Please try again, or email hello@santasaysmyname.com.");
           },
-        }).render(paypalSlot).catch(() => {
+        }).render(paypalSlot);
+        Promise.resolve(rendered).then(() => {
+          setPaypalSkeleton(false);
+        }).catch(() => {
           paypalRendered = false;
           paypalLoading = false;
+          setPaypalSkeleton(false);
           hidePaypal();
           showPaypalNote(paypalMessage);
         });
       }).catch(() => {
         paypalLoading = false;
+        setPaypalSkeleton(false);
         hidePaypal();
         showPaypalNote(paypalMessage);
       });
+    }
+
+    function setPaypalSkeleton(on) {
+      const skeleton = document.getElementById("paypal-skeleton");
+      if (!skeleton) return;
+      skeleton.hidden = !on;
     }
 
     function syncSleigh() {
@@ -434,6 +444,8 @@
 
     function syncContinue() {
       const picked = renderChoice();
+      const sheet = document.getElementById("choice-sheet");
+      if (sheet) sheet.classList.toggle("is-video", selectedKey === "singleVideo");
       syncSleigh();
       syncRadios();
       renderTotal();
@@ -459,10 +471,6 @@
         continueLink.href = `/order/pay?${query}`;
         continueLink.setAttribute("data-pay", picked.key);
       }
-    }
-
-    function recordOrderTap() {
-      recordFunnel("order_tap", { package: selectedKey });
     }
 
     function recordPayClick() {
@@ -516,7 +524,6 @@
         selectedKey = next;
         showSiblingExample(selectedKey);
         syncContinue();
-        recordOrderTap();
       });
     });
     if (sleighBox) {
@@ -530,7 +537,6 @@
       syncContinue();
     };
     revealPaypal = showPaypal;
-    noteOrder = recordOrderTap;
     resumeIntoSheet = !!(resume.packageKey || resume.siblings || resume.sleigh);
 
     showSiblingExample(selectedKey);
@@ -548,10 +554,26 @@
     if (!choiceSheet || choiceSheet.hidden) return;
     choiceSheet.hidden = true;
     document.body.classList.remove("sheet-open");
+    trackSheet("close");
     const back = choiceOpener;
     choiceOpener = null;
     if (restoreChoiceFocus && back && typeof back.focus === "function") back.focus({ preventScroll: true });
     restoreChoiceFocus = true;
+  }
+
+  let sheetState = { open: false, intent: false };
+
+  function trackSheet(action) {
+    const step = choiceApi && choiceApi.nextSheetEvent
+      ? choiceApi.nextSheetEvent(sheetState, action)
+      : { state: sheetState, events: [] };
+    sheetState = step.state;
+    const picked = document.querySelector(".sheet-choice input[name='santa-package']:checked");
+    const packageKey = picked && picked.value === "singleVideo" ? "singleVideo" : "magicBundle";
+    (step.events || []).forEach((event) => {
+      if (event === "order_tap") recordFunnel("order_tap", { package: packageKey });
+      else recordFunnel(event);
+    });
   }
 
   function openChoice(trigger, options) {
@@ -562,15 +584,17 @@
       restoreChoiceFocus = source.restore !== false;
       choiceSheet.hidden = false;
       document.body.classList.add("sheet-open");
-      if (!source.quietOpen) recordFunnel("choice_open");
+      trackSheet(source.quietOpen ? "resume" : "open");
       syncSheet();
       const closeButton = document.getElementById("choice-close");
       if (closeButton && typeof closeButton.focus === "function") closeButton.focus({ preventScroll: true });
-      requestAnimationFrame(() => revealPaypal());
+      requestAnimationFrame(() => {
+        revealPaypal();
+        if (!source.quietOpen) trackSheet("pay");
+      });
     } else {
       syncSheet();
     }
-    if (!source.quietOpen) noteOrder();
   }
 
   function setupChoice() {
