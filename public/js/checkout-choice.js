@@ -244,6 +244,26 @@
     };
   }
 
+  // One sheet open, then one order tap when the pay buttons are first shown.
+  // Changing package in the same open sheet does not count again.
+  function nextSheetEvent(state, action) {
+    const current = state && typeof state === "object" ? state : { open: false, intent: false };
+    if (action === "resume") return { state: { open: true, intent: true }, events: [] };
+    if (action === "open") {
+      if (current.open) return { state: current, events: [] };
+      return { state: { open: true, intent: false }, events: ["sheet_open"] };
+    }
+    if (action === "pay") {
+      if (!current.open || current.intent) return { state: current, events: [] };
+      return { state: { open: true, intent: true }, events: ["order_tap"] };
+    }
+    if (action === "change" || action === "close") {
+      if (action === "close") return { state: { open: false, intent: false }, events: [] };
+      return { state: current, events: [] };
+    }
+    return { state: current, events: [] };
+  }
+
   return {
     LATE_ORDERS_FROM,
     ORDERS_CLOSE_AT,
@@ -262,5 +282,6 @@
     orderQuery,
     orderAmount,
     offerBanner,
+    nextSheetEvent,
   };
 });

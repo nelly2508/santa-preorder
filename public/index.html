@@ -434,14 +434,15 @@
           </div>
         </div>
         <div class="sibling-faces" id="sibling-faces" aria-hidden="true"></div>
-        <p class="sheet-extra" id="extra-child-line">Each extra child gets the full bundle, <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>.</p>
+        <p class="sheet-extra" id="extra-child-line"><span data-extra="magicBundle">Each extra child gets the full bundle, </span><span data-extra="singleVideo">Each extra child gets the same video, </span><span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>.</p>
         <p class="sheet-examples" hidden>
           <span data-two-children="magicBundle">2 children = £16.99 + £11.99</span>
           <span data-two-children="singleVideo" hidden>2 children = £14.99 + £11.99</span>
           <span data-two-children="video" hidden>2 children = your video + £11.99</span>
         </p>
-        <p class="delivery-line">Delivered within 48 hours of your order, whatever the date. The 48 hours start when we have both your payment and the completed order form.</p>
-        <p class="sheet-after">We collect your child's details on the order form after payment, never on the payment page.</p>
+        <p class="delivery-line sheet-trim">Delivered within 48 hours of your order, whatever the date. The 48 hours start when we have both your payment and the completed order form.</p>
+        <p class="sheet-after sheet-trim">We collect your child's details on the order form after payment, never on the payment page.</p>
+        <p class="fine" id="pay-extra"><span id="pay-extra-paypal">The Magic bundle already includes the named sleigh. On the single video, tick it above if you want it. Voice only. Your child's name is never typed on the payment.</span><span id="pay-extra-stripe" hidden>Named sleigh on the video only, +£4.99, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed on the card page.</span> <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
       </div>
       <div class="order-sheet-pay">
         <p class="sheet-total" id="order-total">
@@ -449,12 +450,17 @@
           <strong id="order-total-amount">£16.99</strong>
         </p>
         <p class="visually-hidden" id="chosen-package" role="status" aria-live="polite">Total <span id="chosen-price">£16.99</span> for the <span id="chosen-name">Magic bundle</span>.</p>
+        <div class="paypal-slot" id="paypal-slot">
+          <div class="paypal-skeleton" id="paypal-skeleton" hidden aria-hidden="true">
+            <span></span>
+            <span></span>
+          </div>
+          <div id="paypal-buttons" hidden></div>
+        </div>
         <a class="btn btn-pay" id="pay-continue" href="#checkout" aria-disabled="false">Pay with PayPal or card</a>
         <p class="pay-label" id="pay-label" hidden>Pay with PayPal or card</p>
-        <div id="paypal-buttons" hidden></div>
         <p id="paypal-note" class="agree-hint" role="status" hidden></p>
         <p class="promise-line"><a href="#promise">Nice List Promise</a>: love it or your money back.</p>
-        <p class="fine" id="pay-extra"><span id="pay-extra-paypal">The Magic bundle already includes the named sleigh. On the single video, tick it above if you want it. Voice only. Your child's name is never typed on the payment.</span><span id="pay-extra-stripe" hidden>Named sleigh on the video only, +£4.99, on the card page. The Magic bundle already includes it. Voice only. Your child's name is never typed on the card page.</span> <a data-link="tally" href="#privacy">Preview the order form</a>. The <a href="/terms">terms</a> explain delivery, cancellation and refunds.</p>
       </div>
     </div>
   </div>

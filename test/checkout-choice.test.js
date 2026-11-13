@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, orderAmount, offerBanner, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
+const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, orderAmount, offerBanner, nextSheetEvent, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
 const { quoteCart } = require("../lib/quote");
 
 const prices = {
@@ -224,10 +224,12 @@ test("the page copy uses the configured sibling price and the pay step", async (
     assert.match(html, /The last day is Sat 19 Dec/);
     assert.match(html, /id="orders-closed"/);
     assert.doesNotMatch(html, /data-orders-closed/);
-    assert.match(mainJs, /choice_open/);
-    assert.match(mainJs, /recordFunnel\("order_tap", \{ package: selectedKey \}\)/);
+    assert.match(mainJs, /trackSheet\(source\.quietOpen \? "resume" : "open"\)/);
+    assert.match(mainJs, /trackSheet\("pay"\)/);
+    assert.match(mainJs, /recordFunnel\("order_tap", \{ package: packageKey \}\)/);
     assert.match(mainJs, /recordFunnel\("pay_click", \{ package: selectedKey \}\)/);
     assert.doesNotMatch(mainJs, /recordFunnel\("order_tap"\)/);
+    assert.doesNotMatch(mainJs, /recordOrderTap\(\)/);
     assert.doesNotMatch(mainJs, /function focusCheckout|function scrollToCheckout/);
     assert.match(mainJs, /renderFaces\(siblings \+ 1,/);
     assert.doesNotMatch(mainJs, /renderFaces\(siblings,/);
@@ -239,6 +241,26 @@ test("the page copy uses the configured sibling price and the pay step", async (
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
   }
+});
+
+test("a sheet open counts once, and the pay view counts one order tap", () => {
+  let step = nextSheetEvent({ open: false, intent: false }, "open");
+  assert.deepStrictEqual(step.events, ["sheet_open"]);
+  step = nextSheetEvent(step.state, "change");
+  assert.deepStrictEqual(step.events, []);
+  step = nextSheetEvent(step.state, "pay");
+  assert.deepStrictEqual(step.events, ["order_tap"]);
+  step = nextSheetEvent(step.state, "pay");
+  assert.deepStrictEqual(step.events, []);
+  step = nextSheetEvent(step.state, "change");
+  assert.deepStrictEqual(step.events, []);
+  step = nextSheetEvent(step.state, "close");
+  assert.deepStrictEqual(step.state, { open: false, intent: false });
+  step = nextSheetEvent(step.state, "open");
+  assert.deepStrictEqual(step.events, ["sheet_open"]);
+  const resumed = nextSheetEvent({ open: false, intent: false }, "resume");
+  assert.deepStrictEqual(resumed.events, []);
+  assert.deepStrictEqual(nextSheetEvent(resumed.state, "pay").events, []);
 });
 
 test("the gift sheet leads with the cheaper video and prices the gap from the live figures", () => {
