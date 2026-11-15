@@ -6,7 +6,8 @@ const path = require("path");
 const { describeOrder, fallbackLocation, selectSecretKey } = require("./lib/order-continue");
 const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = require("./lib/visit-counts");
 const { UNKNOWN_COUNTRY, createFunnelCounter, funnelFromSession } = require("./lib/funnel-counts");
-const { countryFromRequest } = require("./lib/client-country");
+const { countryFromRequest, countryForRedirect } = require("./lib/client-country");
+const { isBot } = require("./lib/bot-ua");
 const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, offerBanner } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
@@ -367,6 +368,37 @@ function salesMarket(pathname) {
 function cookieIsSecure(req) {
   const proto = String((req && req.headers && req.headers["x-forwarded-proto"]) || "").split(",")[0].trim().toLowerCase();
   return proto === "https";
+}
+
+// Remember an explicit visit to the pound page. Links on that page back to
+// "/" do not carry ?market=uk, and without this a US-located visitor would
+// be sent to /us again.
+const MARKET_COOKIE = "ssmn_market";
+const MARKET_MAX_AGE = 60 * 60 * 24 * 180;
+
+function wantsUkMarket(req, url) {
+  const query = String(url.searchParams.get("market") || "").trim().toLowerCase();
+  if (query === "uk") return true;
+  return readCookie(req && req.headers && req.headers.cookie, MARKET_COOKIE) === "uk";
+}
+
+function marketChoiceCookie(secure) {
+  const bits = [`${MARKET_COOKIE}=uk`, `Max-Age=${MARKET_MAX_AGE}`, "Path=/", "HttpOnly", "SameSite=Lax"];
+  if (secure) bits.push("Secure");
+  return bits.join("; ");
+}
+
+function assignSetCookie(headers, cookies) {
+  const list = cookies.filter(Boolean);
+  if (list.length === 1) headers["Set-Cookie"] = list[0];
+  else if (list.length > 1) headers["Set-Cookie"] = list;
+}
+
+function usRedirectLocation(url) {
+  const search = typeof url.search === "string" && url.search.startsWith("?") && !/[\r\n]/.test(url.search)
+    ? url.search
+    : "";
+  return `/us${search}`;
 }
 
 function applyOfferBanner(html, config, now, market, closed) {
@@ -876,6 +908,30 @@ function createServer(options = {}) {
 
     const pageMarket = salesMarket(url.pathname);
     let pageVariant = "";
+    const bot = isBot(req);
+    const keepUk = wantsUkMarket(req, url);
+    // US visitors on the UK homepage go to the dollar page. The query string
+    // is kept so campaign labels survive. ?market=uk, or the cookie it sets,
+    // stays here. Crawlers are not redirected, so they still see "/" .
+    // No country header and no forwarded address means we cannot tell, and
+    // we do not redirect.
+    if ((req.method === "GET" || req.method === "HEAD") && pageMarket === "uk" && !bot && !keepUk) {
+      let redirectCountry = "";
+      try {
+        redirectCountry = countryForRedirect(req, options.countryLookup);
+      } catch {
+        redirectCountry = "";
+      }
+      if (redirectCountry === "US") {
+        res.writeHead(302, {
+          Location: usRedirectLocation(url),
+          "Cache-Control": "private, no-store",
+          Vary: "User-Agent, Cookie, X-Forwarded-For, X-Real-IP, CF-IPCountry",
+        });
+        res.end();
+        return;
+      }
+    }
     if ((req.method === "GET" || req.method === "HEAD") && pageMarket) {
       const purpose = String(req.headers["sec-purpose"] || req.headers.purpose || "");
       const prefetch = /prefetch/i.test(purpose);
@@ -883,7 +939,7 @@ function createServer(options = {}) {
         query: url.searchParams.get("variant"),
         cookie: readCookie(req.headers.cookie, COOKIE),
       });
-      if (!prefetch) {
+      if (!prefetch && !bot) {
         try {
           if (pageMarket === "uk") visits.record(url);
           funnel.record("view", {
@@ -1183,8 +1239,11 @@ function createServer(options = {}) {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": closed ? "no-store" : "no-cache",
         };
+        const cookies = [];
         const baked = variantCookie(pageVariant, cookieIsSecure(req));
-        if (baked) headers["Set-Cookie"] = baked;
+        if (baked) cookies.push(baked);
+        if (pageMarket === "uk" && keepUk) cookies.push(marketChoiceCookie(cookieIsSecure(req)));
+        assignSetCookie(headers, cookies);
         send(res, 200, decorateSalesHtml(html, env, closed, cspNonce(res), pageVariant, pageMarket), headers, req.method);
       });
       return;
