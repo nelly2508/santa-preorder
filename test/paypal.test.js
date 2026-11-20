@@ -569,3 +569,44 @@ test("the content security policy allows PayPal card styles, images, and hosts",
     await close(server);
   }
 });
+
+test("PayPal charges the early-bird price through 30 Nov and the standard price from 1 Dec", async () => {
+  async function charge(now, body) {
+    const { state, paypalFetch } = mockPaypal();
+    const server = createServer({
+      log() {},
+      now,
+      visitsFile: null,
+      funnelFile: null,
+      paypalOrdersFile: null,
+      env: paypalEnv(),
+      paypalFetch,
+    });
+    const port = await listen(server);
+    try {
+      const origin = `http://127.0.0.1:${port}`;
+      const created = await fetch(`${origin}/api/paypal/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: origin },
+        body: JSON.stringify({ ...body, amount: "0.01" }),
+      });
+      assert.strictEqual(created.status, 201, await created.text());
+      const amount = state.created.purchase_units[0].amount;
+      const sku = state.created.purchase_units[0].items[0].sku;
+      return { currency: amount.currency_code, value: amount.value, sku };
+    } finally {
+      await close(server);
+    }
+  }
+
+  const ukEarly = await charge("2026-11-30T23:59:59Z", { package: "magicBundle" });
+  assert.deepStrictEqual(ukEarly, { currency: "GBP", value: "16.99", sku: "bundle_early_bird" });
+  const usEarly = await charge("2026-11-30T12:00:00Z", { package: "magicBundle", market: "us" });
+  assert.deepStrictEqual(usEarly, { currency: "USD", value: "19.99", sku: "bundle_early_bird" });
+  const ukAfter = await charge("2026-12-01T00:00:00Z", { package: "magicBundle" });
+  assert.deepStrictEqual(ukAfter, { currency: "GBP", value: "19.99", sku: "bundle" });
+  const usAfter = await charge("2026-12-01T00:00:00Z", { package: "magicBundle", market: "us" });
+  assert.deepStrictEqual(usAfter, { currency: "USD", value: "24.99", sku: "bundle" });
+  const single = await charge("2026-11-30T23:59:59Z", { package: "singleVideo" });
+  assert.deepStrictEqual(single, { currency: "GBP", value: "14.99", sku: "single" });
+});

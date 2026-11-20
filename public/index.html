@@ -18,7 +18,7 @@
 </head>
 <body data-sales-page>
   <a class="skip" href="#main">Skip to content</a>
-  <button type="button" class="offer-banner" id="offer-banner" data-choice-open>Early bird pricing ends 15 Nov</button>
+  <button type="button" class="offer-banner" id="offer-banner" data-choice-open>Black Friday: early-bird price is back. Magic bundle £16.99 until Mon 30 Nov</button>
 
   <header class="site-header">
     <a class="logo" href="#top">
@@ -192,7 +192,7 @@
       <div class="wrap">
         <p class="kicker">Pricing</p>
         <h2 id="pricing-heading">Pay now. Delivered within 48 hours.</h2>
-        <p class="lede js-price-switch" data-before-late>Delivered within 48 hours of your order, whatever the date. Early bird until Sun 15 Nov, then the standard price. From Sun 13 Dec the Christmas week price applies. That is not a faster delivery. Orders close Sat 19 Dec at 23:59 UK.</p>
+        <p class="lede js-price-switch" data-before-late>Delivered within 48 hours of your order, whatever the date. Black Friday early-bird price until Mon 30 Nov, then the standard price. From Sun 13 Dec the Christmas week price applies. That is not a faster delivery. Orders close Sat 19 Dec at 23:59 UK.</p>
         <p class="lede" data-late-only hidden>Delivered within 48 hours of your order, whatever the date. The Christmas week price applies from Sun 13 Dec. It is the same delivery, not a faster one. Orders close Sat 19 Dec at 23:59 UK.</p>
 
         <div class="price-grid">
@@ -213,8 +213,9 @@
               <span data-early-only>early bird</span>
               <span data-late-only hidden>Christmas week price</span>
             </p>
-            <p class="price-after" data-early-only>£19.99 after Sun 15 Nov</p>
-            <a class="btn" data-pay="magicBundle" data-label="bundle" href="#checkout">Order the Magic bundle — £16.99 early bird</a>
+            <p class="price-after" data-early-only><span data-config-price="magicBundleFull">£19.99</span> after Mon 30 Nov</p>
+            <p class="bundle-gap" id="bundle-gap" hidden></p>
+            <button type="button" class="btn" data-pay="magicBundle" data-package="magicBundle" data-choice-open data-label="bundle">Order the Magic bundle — £16.99 early bird</button>
           </article>
 
           <article class="price-card">
@@ -229,7 +230,7 @@
               <strong data-price="single">£14.99</strong>
               <span data-late-only hidden>Christmas week price</span>
             </p>
-            <a class="btn btn-pine" data-pay="singleVideo" href="#checkout">Order the single video — £14.99</a>
+            <button type="button" class="btn btn-pine" data-pay="singleVideo" data-package="singleVideo" data-choice-open>Order the single video — £14.99</button>
           </article>
         </div>
       </div>
@@ -383,7 +384,7 @@
         <button type="button" class="footer-choice us-only" id="us-do-not-sell">Do Not Sell or Share My Personal Information</button>
       </nav>
       <div class="terms-blurb">
-        <p>Prices in pounds sterling. No VAT is charged. Early bird £16.99 until Sun 15 Nov 2026, then the Magic bundle is £19.99 and the single video is £14.99. From Sun 13 Dec 2026 the Christmas week price applies: the Magic bundle is £24.98 and the single video is £19.98. That price is not a faster delivery. A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. A named sleigh on the single video is +£4.99. Delivered within 48 hours of your order, whatever the date. Orders close Sat 19 Dec at 23:59 UK.</p>
+        <p>Prices in pounds sterling. No VAT is charged. Black Friday early-bird price: Magic bundle <span data-config-price="magicBundleEarly">£16.99</span> until Mon 30 Nov 2026, then the Magic bundle is <span data-config-price="magicBundleFull">£19.99</span> and the single video is <span data-config-price="singleVideo">£14.99</span>. From Sun 13 Dec 2026 the Christmas week price applies: the Magic bundle is <span data-config-price="magicBundleLate">£24.98</span> and the single video is <span data-config-price="singleVideoLate">£19.98</span>. That price is not a faster delivery. A sibling is <span data-sibling-rate>+£11.99 per extra child (up to 4 siblings)</span>. A named sleigh on the single video is +<span data-config-price="namedSleigh">£4.99</span>. Delivered within 48 hours of your order, whatever the date. Orders close Sat 19 Dec at 23:59 UK.</p>
         <p>The 48 hours start when we have both the payment and the completed order form. We do not ask you to give up your right to cancel. If the video is not with you within 48 hours, you get a full refund. The Nice List Promise still applies. Videos are AI-generated. A human elf checks every one.</p>
       </div>
     </div>

@@ -8,7 +8,7 @@ const { createVisitCounter, secretsMatch, presentedSecret, partsFromUrl } = requ
 const { UNKNOWN_COUNTRY, createFunnelCounter, funnelFromSession } = require("./lib/funnel-counts");
 const { countryFromRequest, countryForRedirect } = require("./lib/client-country");
 const { isBot } = require("./lib/bot-ua");
-const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, offerBanner } = require("./public/js/checkout-choice");
+const { offerPhase, ordersOpen, packageChoice, clampSiblings, orderQuery, offerBanner, choiceOffer } = require("./public/js/checkout-choice");
 const { publicOrigin, createCheckoutSession } = require("./lib/checkout-session");
 const { paymentProvider, paypalEnv, createPaypalOrder, capturePaypalOrder, fulfilStoredOrder, handlePaypalWebhook } = require("./lib/paypal");
 const { applyUsHtml } = require("./lib/us-page");
@@ -427,7 +427,21 @@ function applyOfferBanner(html, config, now, market, closed) {
   } else if (label) {
     next = `<button type="button" class="offer-banner" id="offer-banner">${escapeHtml(label)}</button>`;
   }
-  return String(html).replace(/<(?:p|button)\b[^>]*id="offer-banner"[^>]*>[^<]*<\/(?:p|button)>/, next);
+  let page = String(html).replace(/<(?:p|button)\b[^>]*id="offer-banner"[^>]*>[^<]*<\/(?:p|button)>/, next);
+  const offer = choiceOffer({ early, late, prices: book });
+  if (offer.upsell) page = fillById(page, "hero-upsell", offer.upsell);
+  if (offer.difference) page = fillById(page, "choice-difference", offer.difference);
+  if (offer.difference) {
+    page = fillById(page, "bundle-gap", offer.difference);
+    page = page.replace('id="bundle-gap" hidden', 'id="bundle-gap"');
+  }
+  return page;
+}
+
+function fillById(html, id, text) {
+  const safe = escapeHtml(text);
+  const pattern = new RegExp(`(<[a-z0-9]+\\b[^>]*\\bid="${id}"[^>]*>)[\\s\\S]*?(</[a-z0-9]+>)`);
+  return String(html).replace(pattern, `$1${safe}$2`);
 }
 
 function decorateSalesHtml(html, env, closed, nonce, variant, market) {
