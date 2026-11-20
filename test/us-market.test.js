@@ -9,7 +9,7 @@ const vm = require("vm");
 const { createServer } = require("../server");
 const { quoteCart, sessionForPaidOrder } = require("../lib/quote");
 const { funnelFromSession } = require("../lib/funnel-counts");
-const { offerPhase } = require("../public/js/checkout-choice");
+const { offerPhase, orderAmount, offerBanner } = require("../public/js/checkout-choice");
 
 const ORDER_ID = "5O190127TN364715T";
 
@@ -45,20 +45,44 @@ test("US prices follow the UK early-bird clock and the standard bundle is $24.99
   const config = loadConfig();
   assert.strictEqual(config.usd.magicBundleEarly, "$19.99");
   assert.strictEqual(config.usd.magicBundleFull, "$24.99");
-  assert.strictEqual(config.earlyBirdEnds, "2026-11-15T23:59:59+00:00");
+  assert.strictEqual(config.earlyBirdEnds, "2026-11-30T23:59:59+00:00");
+  assert.strictEqual(config.prices.magicBundleEarly, "£16.99");
+  assert.strictEqual(config.prices.magicBundleFull, "£19.99");
+  assert.strictEqual(config.prices.singleVideo, "£14.99");
+  assert.strictEqual(config.prices.magicBundleLate, "£24.98");
+  assert.strictEqual(config.prices.sibling, "£11.99");
+  assert.strictEqual(config.prices.namedSleigh, "£4.99");
+  assert.strictEqual(config.usd.singleVideo, "$19.99");
+  assert.strictEqual(config.lateOrdersFrom, "2026-12-13T00:00:00Z");
   const phaseOptions = {
     earlyBird: config.earlyBird,
     earlyBirdEnds: config.earlyBirdEnds,
     lateOrdersFrom: config.lateOrdersFrom,
   };
-  assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-11-15T23:59:59Z" }), "early");
-  assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-11-16T00:00:00Z" }), "standard");
+  assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-11-30T23:59:59Z" }), "early");
+  assert.strictEqual(offerPhase({ ...phaseOptions, now: "2026-12-01T00:00:00Z" }), "standard");
 
   const early = quoteCart({ packageKey: "magicBundle", phase: "early", prices: config.usd, currency: "USD" });
   const standard = quoteCart({ packageKey: "magicBundle", phase: "standard", prices: config.usd, currency: "USD" });
   const late = quoteCart({ packageKey: "magicBundle", phase: "late", prices: config.usd, currency: "USD" });
   const single = quoteCart({ packageKey: "singleVideo", siblings: 1, sleigh: true, phase: "standard", prices: config.usd, currency: "USD" });
   assert.strictEqual(early.totalPence, 1999);
+  const shownUk = orderAmount({ packageKey: "magicBundle", early: true, prices: config.prices });
+  const shownUs = orderAmount({ packageKey: "magicBundle", early: true, prices: config.usd });
+  const shownLater = orderAmount({ packageKey: "magicBundle", early: false, prices: config.prices });
+  assert.strictEqual(shownUk.total, "£16.99");
+  assert.strictEqual(shownUk.totalMinor, quoteCart({ packageKey: "magicBundle", phase: "early", prices: config.prices }).totalPence);
+  assert.strictEqual(shownUs.total, "$19.99");
+  assert.strictEqual(shownUs.totalMinor, early.totalPence);
+  assert.strictEqual(shownLater.total, "£19.99");
+  assert.strictEqual(
+    offerBanner({ early: true, price: config.usd.magicBundleEarly, earlyBirdEnds: config.earlyBirdEnds }),
+    "Black Friday: early-bird price is back. Magic bundle $19.99 until Mon 30 Nov"
+  );
+  assert.doesNotMatch(
+    offerBanner({ early: false, price: config.prices.magicBundleFull, earlyBirdEnds: config.earlyBirdEnds }),
+    /Black Friday/
+  );
   assert.strictEqual(early.currency, "USD");
   assert.strictEqual(early.market, "us");
   assert.strictEqual(standard.totalPence, 2499);
@@ -125,7 +149,7 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(html, /\$24\.99/);
     assert.match(html, /personalized/);
     assert.match(html, /Delivered within 48 hours of your order, whatever the date/);
-    assert.match(html, /Sun Nov 15/);
+    assert.match(html, /Mon Nov 30/);
     assert.match(html, /Sun Dec 13/);
     assert.match(html, /Sat Dec 19/);
     assert.match(html, /6:59pm Eastern/);
@@ -142,7 +166,10 @@ test("the US page is reachable, quiet, and does not steal the UK homepage", asyn
     assert.match(bar, />Order now</);
     assert.doesNotMatch(bar, /data-pay|\$|£|early bird/);
     assert.match(html, /id="hero-order"[^>]*data-choice-open[^>]*>Order now</);
-    assert.match(html, /id="offer-banner"[^>]*data-choice-open[^>]*>Early bird pricing ends 15 Nov</);
+    assert.match(html, /id="offer-banner"[^>]*data-choice-open[^>]*>Black Friday: early-bird price is back\. Magic bundle \$19\.99 until Mon 30 Nov</);
+    assert.match(html, /id="hero-upsell"[^>]*>[^<]*same price, more magic/i);
+    assert.match(html, /id="bundle-gap">[^<]*[Ss]ame price, more magic/);
+    assert.doesNotMatch(html, /id="bundle-gap" hidden/);
     assert.match(html, /From/);
     assert.match(html, /id="choice-sheet"/);
     assert.match(html, /Most popular/);

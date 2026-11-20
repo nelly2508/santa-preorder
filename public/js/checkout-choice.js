@@ -136,16 +136,41 @@
     };
   }
 
-  // Early bird is a fixed line, with no price. After that, the 48-hour
-  // sentence the page already uses, plus the current bundle price.
-  // Nothing to show when the shop is closed, or when that later price is missing.
+  const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // The deadline is stored in UTC. November is GMT in the UK, so the
+  // calendar day is the same on the US page.
+  function earlyBirdWhen(iso) {
+    const date = new Date(iso || "");
+    if (Number.isNaN(date.getTime())) return "Mon 30 Nov";
+    return `${WEEKDAYS[date.getUTCDay()]} ${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}`;
+  }
+
+  // Black Friday brings the early-bird price back. The price and the end
+  // date come from config. After earlyBirdEnds the caller passes early: false
+  // and this falls back to the 48-hour line. Nothing to show when the shop
+  // is closed, or when that later price is missing.
   function offerBanner(options) {
     const source = options || {};
     if (source.closed) return "";
-    if (source.early && !source.late) return "Early bird pricing ends 15 Nov";
+    if (source.early && !source.late) {
+      const price = source.price || "";
+      const when = earlyBirdWhen(source.earlyBirdEnds);
+      if (!price) return `Black Friday: early-bird price is back until ${when}`;
+      return `Black Friday: early-bird price is back. Magic bundle ${price} until ${when}`;
+    }
     const price = source.price || "";
     if (!price) return "";
     return `Delivered within 48 hours of your order, whatever the date. ${price}`;
+  }
+
+  // Pricing-grid buttons name a package. A generic Order now does not.
+  function preselectedPackage(value) {
+    const raw = String(value == null ? "" : value).trim();
+    if (raw === "singleVideo" || raw === "video" || raw === "video-only") return "singleVideo";
+    if (raw === "magicBundle" || raw === "bundle") return "magicBundle";
+    return "";
   }
 
   function priceMinor(label) {
@@ -282,6 +307,8 @@
     orderQuery,
     orderAmount,
     offerBanner,
+    earlyBirdWhen,
+    preselectedPackage,
     nextSheetEvent,
   };
 });

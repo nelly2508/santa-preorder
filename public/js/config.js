@@ -32,9 +32,11 @@
    on Tally, never on the card page, and are deleted about 90 days after delivery.
 
    Early bird
-   magicBundleEarlyBird (£16.99) is used until the end of Sun 15 Nov 2026.
-   From 16 Nov the Magic bundle buttons use magicBundleFullPrice (£19.99).
-   Set earlyBird to false to end the £16.99 offer sooner.
+   magicBundleEarlyBird (£16.99) is the Black Friday price until the end of
+   Mon 30 Nov 2026 (earlyBirdEnds). From 1 Dec the Magic bundle buttons use
+   magicBundleFullPrice (£19.99). The switch is automatic. Set earlyBird to
+   false to end the £16.99 offer sooner. Single, sibling, sleigh and the
+   13 Dec Christmas week prices are unchanged.
 
    Late orders
    From 00:00 Europe/London on Sun 13 Dec 2026 the UK is on GMT, so the
@@ -56,7 +58,7 @@
    ============================================================================= */
 window.SANTA_CONFIG = {
   earlyBird: true,
-  earlyBirdEnds: "2026-11-15T23:59:59+00:00",
+  earlyBirdEnds: "2026-11-30T23:59:59+00:00",
   lateOrders: null,
   lateOrdersFrom: "2026-12-13T00:00:00Z",
 
@@ -72,7 +74,7 @@ window.SANTA_CONFIG = {
   },
 
   // United States page (/us). Same early-bird and Christmas week dates as the UK.
-  // Early bird is $19.99 through 15 Nov 2026 inclusive. The standard Magic
+  // Early bird is $19.99 through Mon 30 Nov 2026 inclusive. The standard Magic
   // bundle after that is magicBundleFull. Neil: confirm $24.99.
   // Late totals must equal the standard price plus the rush amount, or checkout refuses:
   // $24.99 + $4.99 = $29.98, and the single video $19.99 + $4.99 = $24.98.

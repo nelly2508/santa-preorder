@@ -62,7 +62,17 @@
     if (upsell && offer.upsell) upsell.textContent = offer.upsell;
     const gap = document.getElementById("choice-difference");
     if (gap) gap.textContent = offer.difference || "";
+    const bundleGap = document.getElementById("bundle-gap");
+    if (bundleGap) {
+      bundleGap.textContent = offer.difference || "";
+      bundleGap.hidden = !offer.difference;
+    }
   }
+
+  document.querySelectorAll("[data-config-price]").forEach((el) => {
+    const key = el.getAttribute("data-config-price");
+    if (key && prices[key]) el.textContent = prices[key];
+  });
 
   document.querySelectorAll("[data-link='tally']").forEach((link) => {
     link.href = config.tallyOrderForm;
@@ -143,6 +153,7 @@
   let restoreChoiceFocus = true;
   let syncSheet = function () {};
   let revealPaypal = function () {};
+  let applyPackage = function () {};
   let resumeIntoSheet = false;
 
   if (!ordersClosed) {
@@ -477,14 +488,28 @@
       recordFunnel("pay_click", { package: selectedKey });
     }
 
+    applyPackage = function (key) {
+      selectedKey = key === "singleVideo" ? "singleVideo" : "magicBundle";
+    };
+
     document.querySelectorAll("[data-pay]").forEach((link) => {
       if (link === continueLink || link.closest("#choice-sheet")) return;
       link.addEventListener("click", (event) => {
+        // Pricing buttons also carry data-choice-open. The sheet opener
+        // preselects from data-package / data-pay. Opening the sheet records
+        // sheet_open, not order_tap. order_tap is the later pay view.
+        if (link.hasAttribute("data-choice-open")) {
+          document.dispatchEvent(new Event("santa-pay"));
+          return;
+        }
         event.preventDefault();
-        selectedKey = link.getAttribute("data-pay") === "singleVideo" ? "singleVideo" : "magicBundle";
+        const picked = choiceApi.preselectedPackage
+          ? choiceApi.preselectedPackage(link.getAttribute("data-pay"))
+          : "";
+        selectedKey = picked === "singleVideo" ? "singleVideo" : "magicBundle";
         document.dispatchEvent(new Event("santa-pay"));
         showSiblingExample(selectedKey);
-        openChoice(link, { quietOpen: false });
+        openChoice(link, { quietOpen: false, packageKey: selectedKey });
       });
     });
 
@@ -576,16 +601,24 @@
     });
   }
 
+  function packageOn(trigger) {
+    if (!trigger || typeof trigger.getAttribute !== "function" || !choiceApi || !choiceApi.preselectedPackage) return "";
+    const raw = trigger.getAttribute("data-package") || trigger.getAttribute("data-pay") || "";
+    return choiceApi.preselectedPackage(raw);
+  }
+
   function openChoice(trigger, options) {
     const source = options || {};
     if (!choiceSheet || ordersClosed) return;
+    const picked = source.packageKey || packageOn(trigger);
+    if (picked) applyPackage(picked);
     if (choiceSheet.hidden) {
       choiceOpener = trigger || document.activeElement;
       restoreChoiceFocus = source.restore !== false;
+      syncSheet();
       choiceSheet.hidden = false;
       document.body.classList.add("sheet-open");
       trackSheet(source.quietOpen ? "resume" : "open");
-      syncSheet();
       const closeButton = document.getElementById("choice-close");
       if (closeButton && typeof closeButton.focus === "function") closeButton.focus({ preventScroll: true });
       requestAnimationFrame(() => {

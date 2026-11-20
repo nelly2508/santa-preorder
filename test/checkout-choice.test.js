@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const test = require("node:test");
 const { createServer } = require("../server");
-const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, orderAmount, offerBanner, nextSheetEvent, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
+const { siblingRate, twoChildrenFor, packageChoice, offerPhase, ordersOpen, orderQuery, choiceOffer, orderAmount, offerBanner, preselectedPackage, nextSheetEvent, LATE_ORDERS_FROM, ORDERS_CLOSE_AT } = require("../public/js/checkout-choice");
 const { quoteCart } = require("../lib/quote");
 
 const prices = {
@@ -124,6 +124,22 @@ test("the server refuses checkout after 19 December, including rush, and redirec
     assert.strictEqual(single.headers.get("location"), "https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02");
     const odd = await fetch(`http://127.0.0.1:${port}/order/pay?package=https://evil.example`, { redirect: "manual" });
     assert.strictEqual(odd.headers.get("location"), "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00");
+  });
+
+  await withServer("2026-11-30T23:59:59Z", async (port) => {
+    const early = await fetch(`http://127.0.0.1:${port}/order/pay?package=magicBundle`, { redirect: "manual" });
+    assert.strictEqual(early.status, 302);
+    assert.strictEqual(early.headers.get("location"), "https://buy.stripe.com/5kQaEYfzNeFI4gq1fD1wY00");
+    const single = await fetch(`http://127.0.0.1:${port}/order/pay?package=singleVideo`, { redirect: "manual" });
+    assert.strictEqual(single.headers.get("location"), "https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02");
+  });
+
+  await withServer("2026-12-01T00:00:00Z", async (port) => {
+    const full = await fetch(`http://127.0.0.1:${port}/order/pay?package=magicBundle`, { redirect: "manual" });
+    assert.strictEqual(full.status, 302);
+    assert.strictEqual(full.headers.get("location"), "https://buy.stripe.com/eVq5kE0ET2X0dR03nL1wY01");
+    const single = await fetch(`http://127.0.0.1:${port}/order/pay?package=singleVideo`, { redirect: "manual" });
+    assert.strictEqual(single.headers.get("location"), "https://buy.stripe.com/8x29AUdrFcxA28i6zX1wY02");
   });
 
   await withServer("2026-12-19T18:00:00Z", async (port) => {
@@ -346,17 +362,37 @@ test("the sheet total matches the amount PayPal charges", () => {
   assert.strictEqual(quoteCart({ packageKey: "magicBundle", siblings: 1, phase: "early", prices: usd, currency: "USD" }).totalPence, 3498);
 });
 
-test("the offer strip names the early-bird end, then the 48-hour line", () => {
+test("the offer strip names the Black Friday early-bird price, then the 48-hour line", () => {
   const later = "Delivered within 48 hours of your order, whatever the date.";
-  assert.strictEqual(offerBanner({ early: true, price: "£16.99" }), "Early bird pricing ends 15 Nov");
-  assert.strictEqual(offerBanner({ early: true, price: "$19.99" }), "Early bird pricing ends 15 Nov");
-  assert.doesNotMatch(offerBanner({ early: true, price: "£16.99" }), /£|\$/);
-  assert.strictEqual(offerBanner({ early: false, price: "£19.99" }), `${later} £19.99`);
+  const ends = "2026-11-30T23:59:59+00:00";
+  assert.strictEqual(
+    offerBanner({ early: true, price: "£16.99", earlyBirdEnds: ends }),
+    "Black Friday: early-bird price is back. Magic bundle £16.99 until Mon 30 Nov"
+  );
+  assert.strictEqual(
+    offerBanner({ early: true, price: "$19.99", earlyBirdEnds: ends }),
+    "Black Friday: early-bird price is back. Magic bundle $19.99 until Mon 30 Nov"
+  );
+  assert.strictEqual(offerBanner({ early: false, price: "£19.99", earlyBirdEnds: ends }), `${later} £19.99`);
   assert.strictEqual(offerBanner({ early: false, price: "$24.99" }), `${later} $24.99`);
-  assert.strictEqual(offerBanner({ early: true, late: true, price: "£24.98" }), `${later} £24.98`);
+  assert.strictEqual(offerBanner({ early: true, late: true, price: "£24.98", earlyBirdEnds: ends }), `${later} £24.98`);
   assert.strictEqual(offerBanner({ early: true, price: "£16.99", closed: true }), "");
   assert.strictEqual(offerBanner({ early: false, price: "" }), "");
-  assert.doesNotMatch(offerBanner({ early: false, price: "£19.99" }), /first week|15 December|Early bird/);
+  assert.doesNotMatch(offerBanner({ early: false, price: "£19.99" }), /first week|15 December|Black Friday|Early bird/);
+});
+
+test("a pricing button preselects its package, and opening the sheet is not an order tap", () => {
+  assert.strictEqual(preselectedPackage("magicBundle"), "magicBundle");
+  assert.strictEqual(preselectedPackage("bundle"), "magicBundle");
+  assert.strictEqual(preselectedPackage("singleVideo"), "singleVideo");
+  assert.strictEqual(preselectedPackage("video-only"), "singleVideo");
+  assert.strictEqual(preselectedPackage(""), "");
+  assert.strictEqual(preselectedPackage("Order now"), "");
+  const opened = nextSheetEvent({ open: false, intent: false }, "open");
+  assert.deepStrictEqual(opened.events, ["sheet_open"]);
+  assert.ok(!opened.events.includes("order_tap"));
+  const paid = nextSheetEvent(opened.state, "pay");
+  assert.deepStrictEqual(paid.events, ["order_tap"]);
 });
 
 test("the offer strip follows the clock and the order buttons stay plain", async () => {
@@ -373,12 +409,21 @@ test("the offer strip follows the clock and the order buttons stay plain", async
     }
   }
 
-  const standard = await pageAt("2026-11-16T00:00:00Z", "/");
+  const early = await pageAt("2026-11-30T23:59:59Z", "/");
+  assert.match(early, /id="offer-banner"[^>]*data-choice-open[^>]*>Black Friday: early-bird price is back\. Magic bundle £16\.99 until Mon 30 Nov</);
+  assert.match(early, /id="hero-upsell"[^>]*>[^<]*just £2 more during early bird/);
+  const earlyUs = await pageAt("2026-11-30T23:59:59Z", "/us");
+  assert.match(earlyUs, /id="offer-banner"[^>]*data-choice-open[^>]*>Black Friday: early-bird price is back\. Magic bundle \$19\.99 until Mon 30 Nov</);
+  assert.match(earlyUs, /id="hero-upsell"[^>]*>[^<]*same price, more magic/i);
+  assert.match(earlyUs, /id="bundle-gap">[^<]*[Ss]ame price, more magic/);
+  assert.doesNotMatch(earlyUs, /id="bundle-gap" hidden/);
+  assert.doesNotMatch(earlyUs, /£/);
+  const standard = await pageAt("2026-12-01T00:00:00Z", "/");
   const standardBanner = standard.match(/id="offer-banner"[^>]*>[^<]*/)[0];
   assert.match(standardBanner, />Delivered within 48 hours of your order, whatever the date\. £19\.99$/);
   assert.doesNotMatch(standardBanner, /data-choice-open/);
   assert.match(standard, /id="hero-order"[^>]*>Order now</);
-  assert.doesNotMatch(standard, /Early bird pricing ends 15 Nov/);
+  assert.doesNotMatch(standardBanner, /Black Friday|Early bird pricing ends 15 Nov|data-choice-open/);
   const late = await pageAt("2026-12-13T00:00:00Z", "/us");
   assert.match(late, /id="offer-banner">Delivered within 48 hours of your order, whatever the date\. \$29\.98</);
   assert.match(late, /class="us-order-bar"[\s\S]*?>Order now</);
@@ -389,7 +434,7 @@ test("the offer strip follows the clock and the order buttons stay plain", async
 });
 
 test("Order now opens a choice, and the pricing cards still name a package", async () => {
-  const server = createServer({ log() {} });
+  const server = createServer({ log() {}, now: "2026-11-20T12:00:00Z" });
   const port = await new Promise((resolve) => {
     server.listen(0, "127.0.0.1", () => resolve(server.address().port));
   });
@@ -399,7 +444,7 @@ test("Order now opens a choice, and the pricing cards still name a package", asy
     assert.match(hero, /data-choice-open/);
     assert.match(hero, />Order now$/);
     assert.doesNotMatch(hero, /data-pay|£|\$|early bird|48 hours/);
-    assert.match(html, /id="offer-banner"[^>]*data-choice-open[^>]*>Early bird pricing ends 15 Nov</);
+    assert.match(html, /id="offer-banner"[^>]*data-choice-open[^>]*>Black Friday: early-bird price is back\. Magic bundle £16\.99 until Mon 30 Nov</);
     assert.match(html, /data-price="from">£14\.99</);
     assert.match(html, /id="hero-delivery"/);
     assert.ok(html.indexOf('id="choose-bundle"') < html.indexOf('id="choose-video"'));
@@ -413,9 +458,14 @@ test("Order now opens a choice, and the pricing cards still name a package", asy
     assert.match(html, /id="choose-bundle"[^>]*value="magicBundle"/);
     assert.match(html, /id="choose-bundle"[^>]*checked/);
     const pricing = html.slice(html.indexOf('id="pricing"'), html.indexOf('id="checkout"'));
-    assert.match(pricing, /data-pay="magicBundle"/);
-    assert.match(pricing, /data-pay="singleVideo"/);
+    assert.match(pricing, /data-pay="magicBundle"[^>]*data-package="magicBundle"[^>]*data-choice-open/);
+    assert.match(pricing, /data-pay="singleVideo"[^>]*data-package="singleVideo"[^>]*data-choice-open/);
+    assert.doesNotMatch(pricing, /href="#checkout"/);
     assert.match(pricing, /Order the Magic bundle/);
+    const mainJs = fs.readFileSync(path.join(__dirname, "../public/js/main.js"), "utf8");
+    assert.match(mainJs, /preselectedPackage\(raw\)/);
+    assert.match(mainJs, /if \(picked\) applyPackage\(picked\)/);
+    assert.match(mainJs, /sheet_open, not order_tap/);
     const finalCta = html.match(/id="final-order"[^>]*>[^<]*/)[0];
     assert.match(finalCta, /data-choice-open/);
     assert.match(finalCta, />Order now$/);

@@ -1315,6 +1315,16 @@ body.order-in-view .us-order-bar { display: none !important; }
   color: #f0d7a4;
 }
 
+.bundle-gap {
+  margin: -0.35rem 0 0;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.price-card--lead .bundle-gap {
+  color: #f0d7a4;
+}
+
 .sibling-line {
   font-size: 0.95rem;
   font-weight: 600;
@@ -2443,6 +2453,7 @@ body[data-orders-closed] .reassurance {
   align-items: center;
   justify-content: center;
   padding: 0.5rem;
+  overflow: hidden;
 }
 
 .order-sheet[hidden] {
@@ -2462,8 +2473,9 @@ body[data-orders-closed] .reassurance {
   flex-direction: column;
   width: min(26.5rem, 100%);
   min-height: 0;
-  max-height: calc(100vh - 0.75rem);
-  max-height: calc(100svh - 0.75rem);
+  max-height: calc(100vh - 1rem);
+  max-height: calc(100dvh - 1rem - env(safe-area-inset-bottom));
+  overflow: hidden;
   background: #fffdf8;
   color: var(--ink);
   border-radius: 1.15rem;
@@ -2698,10 +2710,14 @@ body.sheet-open .consent {
 }
 
 .order-sheet-pay {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
   flex: 0 0 auto;
-  padding: 0.45rem 0.9rem 0.75rem;
+  padding: 0.45rem 0.9rem calc(0.75rem + env(safe-area-inset-bottom));
   background: #fffdf8;
   border-radius: 0 0 1.15rem 1.15rem;
+  box-shadow: 0 -10px 18px rgba(36, 22, 15, 0.08);
 }
 
 .sheet-total {
